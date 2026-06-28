@@ -1,0 +1,3 @@
+date,game_pk,batter,name,team,matchup,slot,p_hit,p_no_hit,hit_odds,no_hit_odds,actual_hit
+2026-06-28,823204,673490,Ha-Seong Kim,ATL,ATL @ SF,9,0.261,0.739,,,
+2026-06-28,823769,621020,Dansby Swanson,CHC,CHC @ MIL,9,0.2399,0.7601,,,
