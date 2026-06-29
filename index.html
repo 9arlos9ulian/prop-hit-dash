@@ -2100,7 +2100,7 @@ function render(){
         <div class="bcard-inner" style="flex:1;min-width:0;display:flex;gap:0">
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px">
-            <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="display:flex;gap:10px;align-items:center">
               <div style="font-family:var(--disp);font-size:32px;font-weight:700;color:${scoreColor};line-height:1;flex:none;cursor:default" ${circleHover}>${scoreVal}</div>
               <div style="flex:1;min-width:0">
                 <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
@@ -2120,20 +2120,21 @@ function render(){
                   return `<div style="font-family:var(--disp);font-size:16px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:baseline;gap:5px">${nameNode}${idHint}</div>`;
                 })()}
                 ${streakRowHtml(l.last5, false, true)}
-                ${(()=>{
-                  const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history — probability less reliable">${l.bNGames}g thin</span>`:'';
-                  const rest=l.bDaysRest>=8?(()=>{
-                    const warn=l.bDaysRest>=15;
-                    const tip=warn?`${l.bDaysRest}d since last game — likely returning from IL`:`${l.bDaysRest}d since last game`;
-                    return `<span class="restbadge${warn?' restbadge-warn':''}" title="${tip}">${l.bDaysRest}d rest</span>`;
-                  })():'';
-                  const est=l.lineupEst?`<span class="estbadge" title="Lineup not yet confirmed — batter may not play">⚠ Est. Lineup</span>`:'';
-                  if(!thin&&!rest&&!est) return '';
-                  return `<div class="bbadges" style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${thin}${rest}${est}</div>`;
-                })()}
                 ${liveInningAbHtml(l)}
               </div>
             </div>
+            ${(()=>{
+              const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history — probability less reliable">${l.bNGames}g thin</span>`:'';
+              const rest=l.bDaysRest>=8?(()=>{
+                const warn=l.bDaysRest>=15;
+                const tip=warn?`${l.bDaysRest}d since last game — likely returning from IL`:`${l.bDaysRest}d since last game`;
+                return `<span class="restbadge${warn?' restbadge-warn':''}" title="${tip}">${l.bDaysRest}d rest</span>`;
+              })():'';
+              const est=l.lineupEst?`<span class="estbadge" title="Lineup not yet confirmed — batter may not play">⚠ Est. Lineup</span>`:'';
+              const streakAlert=streakBadge(l.last5,false);
+              const allAlerts=[streakAlert,thin,rest,est].filter(Boolean).join('');
+              return allAlerts?`<div class="bbadges" style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">${allAlerts}</div>`:'';
+            })()}
           </div>
           <!-- FORM -->
           ${(()=>{
@@ -2148,7 +2149,7 @@ function render(){
             const babipColor=babip==null?'var(--chalk)':parseFloat(babip)>=0.350?'var(--amber)':parseFloat(babip)<=0.250?'var(--good)':'var(--chalk)';
             const babipStat=babip?`<div style="text-align:center"><div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)">BABIP</div><div style="font-family:var(--mono);font-size:11px;color:${babipColor}">${babip}</div></div>`:'';
             const bstatsHtml=(avg||xba||hh||babip)?`<div class="bstats-row" style="display:flex;gap:10px;margin-top:5px">${bstat('AVG',avg,.300,.230)}${bstat('xBA',xba,.290,.220)}${bstat('HH%',hh,50,30)}${babipStat}</div>`:'';
-            const badge=streakBadge(l.last5,false);
+            const badge=null; // moved to binner alerts row
             const vsHtml=(()=>{
               if(!l.pitcher) return '';
               const platoonDelta=l.splitDiff!=null&&Math.abs(l.splitDiff)>=0.005
@@ -2246,14 +2247,13 @@ function render(){
             </div>`;
           })():''}
           <div class="bet-col" style="width:110px;border-left:1px solid var(--line);padding-left:12px;flex:none;display:flex;flex-direction:column;justify-content:space-between;gap:6px">
-            <div>
+            ${(l.hit||l.no)?`<div>
               <div class="col-hdr">Bet</div>
               ${l.hit?`<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:2px"><span style="color:var(--sage)">HIT</span><span style="color:var(--chalk)">${Number(l.hit)>0?'+':''}${Number(l.hit).toFixed(0)}</span></div>`:''}
               ${l.no?`<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:6px"><span style="color:var(--sage)">NO</span><span style="color:var(--chalk)">${Number(l.no)>0?'+':''}${Number(l.no).toFixed(0)}</span></div>`:''}
-              ${!l.hit&&!l.no?`<div class="no-prices-label" style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-bottom:6px">no prices</div>`:''}
               ${edge!=null?`<div class="emeter" title="${pillTxt}"><div class="emid"></div><div class="efill" style="${eside}"></div></div><div style="font-family:var(--mono);font-size:9px;color:${ecol};margin-top:3px">${pillTxt}</div>`:''}
-            </div>
-            ${(!l.hasHit&&!missed&&!ppd)?`<button onclick="toggle(${l.id})" style="width:100%;font-family:var(--mono);font-size:11px;padding:5px 0;border-radius:6px;border:1px solid ${l.inSlip?'rgba(111,207,142,.5)':'var(--line)'};background:${l.inSlip?'rgba(111,207,142,.12)':'transparent'};color:${l.inSlip?'var(--good)':'var(--sage)'};cursor:pointer;transition:all .15s" onmouseover="if(!${l.inSlip})this.style.borderColor='var(--amber)',this.style.color='var(--amber)'" onmouseout="this.style.borderColor='${l.inSlip?'rgba(111,207,142,.5)':'var(--line)'};this.style.color='${l.inSlip?'var(--good)':'var(--sage)'}">${l.inSlip?'✓ In slip':'+ Add'}</button>`:''}
+            </div>`:''}
+            ${(!l.hasHit&&!missed&&!ppd)?`<button onclick="toggle(${l.id})" style="${!l.hit&&!l.no?'width:100%':'width:100%'};font-family:var(--mono);font-size:11px;padding:5px 0;border-radius:6px;border:1px solid ${l.inSlip?'rgba(111,207,142,.5)':'var(--line)'};background:${l.inSlip?'rgba(111,207,142,.12)':'transparent'};color:${l.inSlip?'var(--good)':'var(--sage)'};cursor:pointer;transition:all .15s" onmouseover="if(!${l.inSlip})this.style.borderColor='var(--amber)',this.style.color='var(--amber)'" onmouseout="this.style.borderColor='${l.inSlip?'rgba(111,207,142,.5)':'var(--line)'};this.style.color='${l.inSlip?'var(--good)':'var(--sage)'}">${l.inSlip?'✓ In slip':(!l.hit&&!l.no?'+ Add to slip':'+ Add')}</button>`:''}
           </div>
         </div>
       </div>
@@ -3758,7 +3758,7 @@ function renderNoHit() {
         <div class="bcard-inner" style="flex:1;min-width:0;display:flex;gap:0">
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px">
-            <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="display:flex;gap:10px;align-items:center">
               <div style="font-family:var(--disp);font-size:32px;font-weight:700;color:${scoreColor};line-height:1;flex:none;cursor:default" ${nhCircleHover}>${pct100}</div>
               <div style="flex:1;min-width:0">
                 <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">${slotBadge}${teamBadge}${nhBadge}</div>
@@ -3771,21 +3771,21 @@ function renderNoHit() {
                   return `<div style="font-family:var(--disp);font-size:16px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:baseline;gap:5px">${nameNode}${idHint}</div>`;
                 })()}
                 ${streakRowHtml(l.last5, true, true)}
-                ${(()=>{
-                  const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history — probability less reliable">${l.bNGames}g thin</span>`:'';
-                  const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;const tip=warn?`${l.bDaysRest}d since last game — likely returning from IL`:`${l.bDaysRest}d since last game`;return `<span class="restbadge${warn?' restbadge-warn':''}" title="${tip}">${l.bDaysRest}d rest</span>`;})():'';
-                  const est=l.lineupEst?`<span class="estbadge" title="Lineup not yet confirmed — batter may not play">⚠ Est. Lineup</span>`:'';
-                  if(!thin&&!rest&&!est) return '';
-                  return `<div class="bbadges" style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${thin}${rest}${est}</div>`;
-                })()}
                 ${liveInningAbHtml(l)}
               </div>
             </div>
+            ${(()=>{
+              const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history — probability less reliable">${l.bNGames}g thin</span>`:'';
+              const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;const tip=warn?`${l.bDaysRest}d since last game — likely returning from IL`:`${l.bDaysRest}d since last game`;return `<span class="restbadge${warn?' restbadge-warn':''}" title="${tip}">${l.bDaysRest}d rest</span>`;})():'';
+              const est=l.lineupEst?`<span class="estbadge" title="Lineup not yet confirmed — batter may not play">⚠ Est. Lineup</span>`:'';
+              const streakAlert=streakBadge(l.last5,true);
+              const allAlerts=[streakAlert,thin,rest,est].filter(Boolean).join('');
+              return allAlerts?`<div class="bbadges" style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">${allAlerts}</div>`:'';
+            })()}
           </div>
           <!-- FORM (no-hit) -->
           <div class="form-col" style="width:190px;border-left:1px solid var(--line);padding-left:12px;flex:none">
             <div class="col-hdr">Form</div>
-            ${(()=>{const b=streakBadge(l.last5,true);return b?`<div style="margin-bottom:4px">${b}</div>`:''})()}
             ${batterStats}
             ${bvpLine}
             ${(()=>{
@@ -3800,12 +3800,12 @@ function renderNoHit() {
           ${pitcherHtml}
           ${gameHtml}
           <div class="bet-col" style="width:110px;border-left:1px solid var(--line);padding-left:12px;flex:none;display:flex;flex-direction:column;justify-content:space-between;gap:6px">
-            <div>
+            ${l.no?`<div>
               <div class="col-hdr">Bet</div>
-              ${l.no?`<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:6px"><span style="color:var(--sage)">NO HIT</span><span style="color:var(--chalk)">${Number(l.no)>0?'+':''}${Number(l.no).toFixed(0)}</span></div>`:`<div style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-bottom:6px">no prices</div>`}
+              <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:6px"><span style="color:var(--sage)">NO HIT</span><span style="color:var(--chalk)">${Number(l.no)>0?'+':''}${Number(l.no).toFixed(0)}</span></div>
               ${noEdge!=null?`<div class="emeter" title="${pillTxt}"><div class="emid"></div><div class="efill" style="${eside}"></div></div><div style="font-family:var(--mono);font-size:9px;color:${ecol};margin-top:3px">${pillTxt}</div>`:''}
-            </div>
-            ${(!nhSettled&&!nhPpd)?`<button onclick="toggle(${l.id})" style="width:100%;font-family:var(--mono);font-size:11px;padding:5px 0;border-radius:6px;border:1px solid ${inSlip?'rgba(111,207,142,.5)':'var(--line)'};background:${inSlip?'rgba(111,207,142,.12)':'transparent'};color:${inSlip?'var(--good)':'var(--sage)'};cursor:pointer;transition:all .15s" onmouseover="if(!${inSlip})this.style.borderColor='var(--amber)',this.style.color='var(--amber)'" onmouseout="this.style.borderColor='${inSlip?'rgba(111,207,142,.5)':'var(--line)'};this.style.color='${inSlip?'var(--good)':'var(--sage)'}">${inSlip?'✓ In slip':'+ Add'}</button>`:''}
+            </div>`:''}
+            ${(!nhSettled&&!nhPpd)?`<button onclick="toggle(${l.id})" style="width:100%;font-family:var(--mono);font-size:11px;padding:5px 0;border-radius:6px;border:1px solid ${inSlip?'rgba(111,207,142,.5)':'var(--line)'};background:${inSlip?'rgba(111,207,142,.12)':'transparent'};color:${inSlip?'var(--good)':'var(--sage)'};cursor:pointer;transition:all .15s" onmouseover="if(!${inSlip})this.style.borderColor='var(--amber)',this.style.color='var(--amber)'" onmouseout="this.style.borderColor='${inSlip?'rgba(111,207,142,.5)':'var(--line)'};this.style.color='${inSlip?'var(--good)':'var(--sage)'}">${inSlip?'✓ In slip':(!l.no?'+ Add to slip':'+ Add')}</button>`:''}
           </div>
         </div>
       </div>
