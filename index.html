@@ -72,6 +72,8 @@
     /* score circle: align to top of card */
     .rtop{align-items:flex-start !important}
     .scorecircle{margin-top:4px}
+    /* mobile info bar: pitcher + matchup, only on mobile */
+    .mobile-info-bar{display:flex !important;flex-wrap:wrap;align-items:center;gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;color:var(--sage)}
 
     /* history table: horizontal scroll */
     .htable-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -156,6 +158,7 @@
   input.odd{width:62px;background:var(--field);border:1px solid var(--line);border-radius:5px;color:var(--chalk);font-family:var(--mono);font-size:13px;padding:6px 7px;outline:none}
   .pill{font-family:var(--mono);font-size:12px;padding:3px 8px;border-radius:20px;margin-left:auto}
   .add{flex:none}
+  .mobile-info-bar{display:none}
   .poolbar{display:flex;flex-direction:column;gap:0;border-bottom:1px solid var(--line)}
   .poolbar-row{display:flex;align-items:center;gap:6px;padding:8px 15px;flex-wrap:nowrap}
   .poolbar-row+.poolbar-row{border-top:1px solid var(--line);padding:6px 15px;flex-wrap:wrap}
@@ -2164,11 +2167,20 @@ function render(){
               const bvpSample=l.bvpAb<10?`<span style="opacity:.55;font-size:8px">(${l.bvpAb} AB)</span>`:`<span style="opacity:.7;font-size:9px">${l.bvpH}-for-${l.bvpAb}</span>`;
               return `<div style="font-family:var(--mono);font-size:10px;margin-top:5px;padding-top:4px;border-top:1px solid var(--line);display:flex;align-items:baseline;gap:4px"><span style="color:var(--sage)">BvP</span><span style="color:${bvpColor};font-weight:600">${bvpAvg}</span>${bvpSample}${platoonDelta}</div>`;
             })();
+            const mobileBar = (()=>{
+              const gradeChip = l.pGrade ? `<span class="pgrade pgrade-${l.pGrade}" style="font-size:9px;padding:1px 4px">${l.pGrade}</span>` : '';
+              const pitPart = l.pitcher ? `<span style="color:var(--chalk)">${esc(l.pitcher.split(' ').pop())}</span>${l.pitcherHand?`<span> ${l.pitcherHand}</span>`:''}${gradeChip}` : '';
+              const gameState = isLive(l.gameState) ? `<span style="color:#e05c5c">● LIVE</span>` : isFinal(l.gameState) ? `<span style="opacity:.5">Final</span>` : l.startTime ? `<span style="color:var(--amber)">${esc(l.startTime)}</span>` : '';
+              const matchPart = l.matchup ? `<span style="color:var(--chalk);opacity:.7">${esc(l.matchup)}</span>` : '';
+              if(!pitPart && !matchPart) return '';
+              return `<div class="mobile-info-bar">${pitPart}${pitPart&&matchPart?'<span style="opacity:.3">·</span>':''}${matchPart}${gameState?'<span style="opacity:.3">·</span>':''}${gameState}</div>`;
+            })();
             return `<div class="form-col" style="width:190px;border-left:1px solid var(--line);padding-left:12px;flex:none">
               <div class="col-hdr">Form</div>
               ${badge?`<div style="margin-bottom:4px">${badge}</div>`:''}
               ${bstatsHtml}
               ${vsHtml}
+              ${mobileBar}
             </div>`;
           })()}
           <!-- PITCHER -->
@@ -3744,7 +3756,7 @@ function renderNoHit() {
         <div class="scorecircle${nhSettled?' scorecircle-done':''}" style="--sc:${scoreColor}" ${nhCircleHover}>
           <span class="scoreval" style="font-family:var(--disp);font-size:20px;font-weight:400;color:var(--sc,var(--sage));line-height:1;pointer-events:none">${pct100}</span>
         </div>
-        <div style="flex:1;min-width:0;display:flex;gap:0">
+        <div class="bcard-inner" style="flex:1;min-width:0;display:flex;gap:0">
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px">
             <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">${slotBadge}${teamBadge}${nhBadge}</div>
@@ -3772,6 +3784,14 @@ function renderNoHit() {
             ${(()=>{const b=streakBadge(l.last5,true);return b?`<div style="margin-bottom:4px">${b}</div>`:''})()}
             ${batterStats}
             ${bvpLine}
+            ${(()=>{
+              const gradeChip = l.pGrade ? `<span class="pgrade pgrade-${l.pGrade}" style="font-size:9px;padding:1px 4px">${l.pGrade}</span>` : '';
+              const pitPart = l.pitcher ? `<span style="color:var(--chalk)">${esc(l.pitcher.split(' ').pop())}</span>${l.pitcherHand?`<span> ${l.pitcherHand}</span>`:''}${gradeChip}` : '';
+              const gameState = isLive(l.gameState) ? `<span style="color:#e05c5c">● LIVE</span>` : isFinal(l.gameState) ? `<span style="opacity:.5">Final</span>` : l.startTime ? `<span style="color:var(--amber)">${esc(l.startTime)}</span>` : '';
+              const matchPart = l.matchup ? `<span style="color:var(--chalk);opacity:.7">${esc(l.matchup)}</span>` : '';
+              if(!pitPart && !matchPart) return '';
+              return `<div class="mobile-info-bar">${pitPart}${pitPart&&matchPart?'<span style="opacity:.3">·</span>':''}${matchPart}${gameState?'<span style="opacity:.3">·</span>':''}${gameState}</div>`;
+            })()}
           </div>
           ${pitcherHtml}
           ${gameHtml}
