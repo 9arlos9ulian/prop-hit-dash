@@ -2107,6 +2107,7 @@ function render(){
                   <span class="slot" style="flex:none">${l.slot||'–'}</span>
                   ${l.team?`<span class="teamtag" style="font-size:10px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}
                   ${hitBadge}
+                  ${streakBadge(l.last5,false)||''}
                 </div>
                 ${(()=>{
                   const handSpan=l.batterHand?`<span style="font-size:11px;font-weight:400;opacity:.55;margin-left:3px">${l.batterHand}</span>`:'';
@@ -2132,7 +2133,7 @@ function render(){
               })():'';
               const est=l.lineupEst?`<span class="estbadge" title="Lineup not yet confirmed — batter may not play">⚠ Est. Lineup</span>`:'';
               const streakAlert=streakBadge(l.last5,false);
-              const allAlerts=[streakAlert,thin,rest,est].filter(Boolean).join('');
+              const allAlerts=[thin,rest,est].filter(Boolean).join('');
               return allAlerts?`<div class="bbadges" style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">${allAlerts}</div>`:'';
             })()}
           </div>
@@ -3761,7 +3762,7 @@ function renderNoHit() {
             <div style="display:flex;gap:10px;align-items:center">
               <div style="font-family:var(--disp);font-size:32px;font-weight:700;color:${scoreColor};line-height:1;flex:none;cursor:default" ${nhCircleHover}>${pct100}</div>
               <div style="flex:1;min-width:0">
-                <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">${slotBadge}${teamBadge}${nhBadge}</div>
+                <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">${slotBadge}${teamBadge}${nhBadge}${streakBadge(l.last5,true)||''}</div>
                 ${(()=>{
                   const isUnresolved=l.batterId&&/^\d+$/.test((l.name||'').trim());
                   const nameColor=isUnresolved?'var(--amber)':'inherit';
@@ -3779,7 +3780,7 @@ function renderNoHit() {
               const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;const tip=warn?`${l.bDaysRest}d since last game — likely returning from IL`:`${l.bDaysRest}d since last game`;return `<span class="restbadge${warn?' restbadge-warn':''}" title="${tip}">${l.bDaysRest}d rest</span>`;})():'';
               const est=l.lineupEst?`<span class="estbadge" title="Lineup not yet confirmed — batter may not play">⚠ Est. Lineup</span>`:'';
               const streakAlert=streakBadge(l.last5,true);
-              const allAlerts=[streakAlert,thin,rest,est].filter(Boolean).join('');
+              const allAlerts=[thin,rest,est].filter(Boolean).join('');
               return allAlerts?`<div class="bbadges" style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">${allAlerts}</div>`:'';
             })()}
           </div>
