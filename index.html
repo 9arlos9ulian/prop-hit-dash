@@ -24,7 +24,6 @@
   .form-col{grid-column:1 !important;grid-row:2 !important;width:auto !important;min-width:0;border-left:none !important;border-top:1px solid var(--line) !important;padding-left:0 !important;padding-top:6px !important;margin-top:6px !important}
   .pitcher-col{grid-column:2 !important;grid-row:1 !important;width:auto !important;min-width:0;border-left:1px solid var(--line) !important;padding-left:12px !important;padding-top:0 !important;margin-top:0 !important;align-self:start}
   .game-col{grid-column:2 !important;grid-row:2 !important;width:auto !important;min-width:0;border-left:1px solid var(--line) !important;border-top:1px solid var(--line) !important;padding-left:12px !important;padding-top:6px !important;margin-top:6px !important}
-  .bet-col{grid-column:1 / -1 !important;grid-row:3 !important;width:auto !important;border-left:none !important;border-top:1px solid var(--line) !important;padding-left:0 !important;padding-top:8px !important;margin-top:8px !important;flex-direction:row !important;align-items:center;justify-content:space-between}
   @media(min-width:1100px){
     #pool,#nohit-pool{padding:4px}
     #pool .row,#nohit-pool .row{position:relative;border-bottom:none;border-radius:10px;background:var(--surf);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.28)}
@@ -150,7 +149,8 @@
   /* pool rows */
   .pool{padding:6px 4px;display:grid;grid-template-columns:repeat(auto-fill,minmax(490px,1fr));gap:8px}
   .empty{padding:26px 16px;text-align:center;color:var(--sage);font-size:11px;font-family:var(--mono)}
-  .row{padding:12px 15px;border-bottom:1px solid var(--line);overflow:hidden}
+  .row{padding:12px 15px;border-bottom:1px solid var(--line);overflow:hidden;display:flex;flex-direction:column}
+  .card-footer{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
   .row:last-child{border-bottom:none}
   .rtop{display:flex;align-items:center;gap:10px;min-width:0}
   .slot{font-family:var(--mono);font-size:9px;color:var(--sage);min-width:18px;text-align:center;border:1px solid var(--line);border-radius:4px;padding:1px 5px;flex:none;line-height:1.5;text-transform:uppercase;letter-spacing:.3px}
@@ -2107,7 +2107,7 @@ function render(){
       : `onmouseenter="showModelTooltip(this.closest('.row'),${l.id})" onmouseleave="hideModelTooltip(this.closest('.row'))"`;
     return _divider+`<div class="row${l.hasHit?' row-done':missed?' row-missed':''}${isRadioactive?' row-cold-glow':''}${(!l.hasHit&&!missed&&!ppd&&l.inSlip)?' row-in-slip':''}${ppd?' row-in-slip':''}">
       <div class="rtop">
-        <div class="bcard-inner" style="flex:1;min-width:0;display:grid;grid-template-columns:1fr 220px;grid-template-rows:auto auto auto;gap:0">
+        <div class="bcard-inner" style="flex:1;min-width:0;display:grid;grid-template-columns:1fr 220px;grid-template-rows:auto auto;gap:0">
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px;display:flex;flex-direction:column;justify-content:center">
             <div style="display:flex;gap:10px;align-items:center">
@@ -2244,17 +2244,9 @@ function render(){
               ${gameStatusLine}
             </div>`;
           })():''}
-          <div class="bet-col" style="width:110px;border-left:1px solid var(--line);padding-left:12px;flex:none;display:flex;flex-direction:column;justify-content:space-between;gap:6px">
-            ${(l.hit||l.no)?`<div class="bet-prices">
-              <div class="col-hdr">Bet</div>
-              ${l.hit?`<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:2px"><span style="color:var(--sage)">HIT</span><span style="color:var(--chalk)">${Number(l.hit)>0?'+':''}${Number(l.hit).toFixed(0)}</span></div>`:''}
-              ${l.no?`<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:6px"><span style="color:var(--sage)">NO</span><span style="color:var(--chalk)">${Number(l.no)>0?'+':''}${Number(l.no).toFixed(0)}</span></div>`:''}
-              ${edge!=null?`<div class="emeter" title="${pillTxt}"><div class="emid"></div><div class="efill" style="${eside}"></div></div><div style="font-family:var(--mono);font-size:9px;color:${ecol};margin-top:3px">${pillTxt}</div>`:''}
-            </div>`:''}
-            ${(!l.hasHit&&!missed&&!ppd)?`<button onclick="toggle(${l.id})" style="${!l.hit&&!l.no?'width:100%':'width:100%'};font-family:var(--mono);font-size:11px;padding:5px 0;border-radius:6px;border:1px solid ${l.inSlip?'rgba(111,207,142,.5)':'var(--line)'};background:${l.inSlip?'rgba(111,207,142,.12)':'transparent'};color:${l.inSlip?'var(--good)':'var(--sage)'};cursor:pointer;transition:all .15s" onmouseover="if(!${l.inSlip})this.style.borderColor='var(--amber)',this.style.color='var(--amber)'" onmouseout="this.style.borderColor='${l.inSlip?'rgba(111,207,142,.5)':'var(--line)'};this.style.color='${l.inSlip?'var(--good)':'var(--sage)'}">${l.inSlip?'✓ In slip':(!l.hit&&!l.no?'+ Add to slip':'+ Add')}</button>`:''}
-          </div>
         </div>
       </div>
+      ${(!l.hasHit&&!missed&&!ppd)?`<div class="card-footer"><button onclick="toggle(${l.id})" style="width:100%;font-family:var(--mono);font-size:11px;padding:6px 0;border-radius:6px;border:1px solid ${l.inSlip?'rgba(111,207,142,.5)':'var(--line)'};background:${l.inSlip?'rgba(111,207,142,.12)':'transparent'};color:${l.inSlip?'var(--good)':'var(--sage)'};cursor:pointer;transition:all .15s" onmouseover="if(!${l.inSlip})this.style.borderColor='var(--amber)',this.style.color='var(--amber)'" onmouseout="this.style.borderColor='${l.inSlip?'rgba(111,207,142,.5)':'var(--line)'};this.style.color='${l.inSlip?'var(--good)':'var(--sage)'}">${l.inSlip?'✓ In slip':'+ Add to slip'}</button></div>`:''}
     </div>`;
   }).join('');
   injectWeather(orderedLegs);
@@ -3753,7 +3745,7 @@ function renderNoHit() {
       : `onmouseenter="showModelTooltip(this.closest('.row'),${l.id})" onmouseleave="hideModelTooltip(this.closest('.row'))"`;
     return _divider+`<div class="row${nhWin?' row-nohit-win':nhLoss?' row-missed':''}${tm>5?' row-cold-glow-red':''}${(!nhSettled&&!nhPpd&&inSlip)?' row-in-slip':''}${nhPpd?' row-in-slip':''}">
       <div class="rtop">
-        <div class="bcard-inner" style="flex:1;min-width:0;display:grid;grid-template-columns:1fr 220px;grid-template-rows:auto auto auto;gap:0">
+        <div class="bcard-inner" style="flex:1;min-width:0;display:grid;grid-template-columns:1fr 220px;grid-template-rows:auto auto;gap:0">
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px;display:flex;flex-direction:column;justify-content:center">
             <div style="display:flex;gap:10px;align-items:center">
@@ -3789,16 +3781,9 @@ function renderNoHit() {
           </div>
           ${pitcherHtml}
           ${gameHtml}
-          <div class="bet-col" style="width:110px;border-left:1px solid var(--line);padding-left:12px;flex:none;display:flex;flex-direction:column;justify-content:space-between;gap:6px">
-            ${l.no?`<div class="bet-prices">
-              <div class="col-hdr">Bet</div>
-              <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:6px"><span style="color:var(--sage)">NO HIT</span><span style="color:var(--chalk)">${Number(l.no)>0?'+':''}${Number(l.no).toFixed(0)}</span></div>
-              ${noEdge!=null?`<div class="emeter" title="${pillTxt}"><div class="emid"></div><div class="efill" style="${eside}"></div></div><div style="font-family:var(--mono);font-size:9px;color:${ecol};margin-top:3px">${pillTxt}</div>`:''}
-            </div>`:''}
-            ${(!nhSettled&&!nhPpd)?`<button onclick="toggle(${l.id})" style="width:100%;font-family:var(--mono);font-size:11px;padding:5px 0;border-radius:6px;border:1px solid ${inSlip?'rgba(111,207,142,.5)':'var(--line)'};background:${inSlip?'rgba(111,207,142,.12)':'transparent'};color:${inSlip?'var(--good)':'var(--sage)'};cursor:pointer;transition:all .15s" onmouseover="if(!${inSlip})this.style.borderColor='var(--amber)',this.style.color='var(--amber)'" onmouseout="this.style.borderColor='${inSlip?'rgba(111,207,142,.5)':'var(--line)'};this.style.color='${inSlip?'var(--good)':'var(--sage)'}">${inSlip?'✓ In slip':(!l.no?'+ Add to slip':'+ Add')}</button>`:''}
-          </div>
         </div>
       </div>
+      ${(!nhSettled&&!nhPpd)?`<div class="card-footer"><button onclick="toggle(${l.id})" style="width:100%;font-family:var(--mono);font-size:11px;padding:6px 0;border-radius:6px;border:1px solid ${inSlip?'rgba(111,207,142,.5)':'var(--line)'};background:${inSlip?'rgba(111,207,142,.12)':'transparent'};color:${inSlip?'var(--good)':'var(--sage)'};cursor:pointer;transition:all .15s" onmouseover="if(!${inSlip})this.style.borderColor='var(--amber)',this.style.color='var(--amber)'" onmouseout="this.style.borderColor='${inSlip?'rgba(111,207,142,.5)':'var(--line)'};this.style.color='${inSlip?'var(--good)':'var(--sage)'}">${inSlip?'✓ In slip':'+ Add to slip'}</button></div>`:''}
     </div>`;
   }).join('');
   injectWeather(candidates);
