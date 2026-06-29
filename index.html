@@ -69,9 +69,13 @@
     .slotbtns::-webkit-scrollbar{display:none}
     #lineup-filter-row{flex-wrap:nowrap !important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px}
     #lineup-filter-row::-webkit-scrollbar{display:none}
-    /* score circle: align to top of card */
-    .rtop{align-items:flex-start !important}
-    .scorecircle{margin-top:4px}
+    /* card: full-width stack, hide circle, show score inline */
+    .rtop{flex-direction:column !important;align-items:stretch !important;gap:0 !important}
+    .rtop>.scorecircle{display:none !important}
+    .score-mobile{display:inline-block !important}
+    .binner{padding-right:0 !important;align-self:stretch !important}
+    /* bet-col: full width, show add button right-aligned */
+    .bet-col{justify-content:flex-end !important}
     /* mobile info bar: pitcher + matchup, only on mobile */
     .mobile-info-bar{display:flex !important;flex-wrap:wrap;align-items:center;gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;color:var(--sage)}
 
@@ -2104,6 +2108,7 @@ function render(){
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px;align-self:center">
             <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
+              <span class="score-mobile" style="display:none;font-family:var(--disp);font-size:15px;font-weight:600;color:${scoreColor};min-width:28px">${scoreVal}</span>
               <span class="slot" style="flex:none">${l.slot||'–'}</span>
               ${l.team?`<span class="teamtag" style="font-size:10px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}
               ${hitBadge}
@@ -3759,7 +3764,7 @@ function renderNoHit() {
         <div class="bcard-inner" style="flex:1;min-width:0;display:flex;gap:0">
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px">
-            <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">${slotBadge}${teamBadge}${nhBadge}</div>
+            <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px"><span class="score-mobile" style="display:none;font-family:var(--disp);font-size:15px;font-weight:600;color:${scoreColor};min-width:28px">${pct100}</span>${slotBadge}${teamBadge}${nhBadge}</div>
             ${(()=>{
               const isUnresolved=l.batterId&&/^\d+$/.test((l.name||'').trim());
               const nameColor=isUnresolved?'var(--amber)':'inherit';
