@@ -26,7 +26,7 @@
   .game-col{grid-column:2 !important;grid-row:2 !important;width:auto !important;min-width:0;border-left:1px solid var(--line) !important;border-top:1px solid var(--line) !important;padding-left:12px !important;padding-top:6px !important;margin-top:6px !important}
   .bet-col{grid-column:1 / -1 !important;grid-row:3 !important;width:auto !important;border-left:none !important;border-top:1px solid var(--line) !important;padding-left:0 !important;padding-top:8px !important;margin-top:8px !important;flex-direction:row !important;align-items:center;justify-content:space-between}
   @media(min-width:1100px){
-    #pool,#nohit-pool{display:flex;flex-direction:column;gap:8px;padding:4px}
+    #pool,#nohit-pool{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px}
     #pool .row,#nohit-pool .row{position:relative;border-bottom:none;border-radius:10px;background:var(--surf);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.28)}
     #pool .row:hover,#nohit-pool .row:hover{box-shadow:0 6px 24px rgba(0,0,0,.38),0 0 0 1px rgba(76,175,125,.08)}
     #nohit-pool .row:hover{box-shadow:0 6px 24px rgba(0,0,0,.38),0 0 0 1px rgba(192,57,43,.1)}
@@ -62,6 +62,8 @@
     .game-col{padding-left:10px !important}
     .col-hdr{font-size:8px !important}
     .bet-col .no-prices-label{display:none !important}
+    .bet-prices{display:none !important}
+    .bet-col button{width:100% !important}
 
     /* pool filter: first row wraps, search full width */
     .poolbar-row{flex-wrap:wrap !important;gap:5px;padding:7px 10px}
@@ -2240,7 +2242,7 @@ function render(){
             </div>`;
           })():''}
           <div class="bet-col" style="width:110px;border-left:1px solid var(--line);padding-left:12px;flex:none;display:flex;flex-direction:column;justify-content:space-between;gap:6px">
-            ${(l.hit||l.no)?`<div>
+            ${(l.hit||l.no)?`<div class="bet-prices">
               <div class="col-hdr">Bet</div>
               ${l.hit?`<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:2px"><span style="color:var(--sage)">HIT</span><span style="color:var(--chalk)">${Number(l.hit)>0?'+':''}${Number(l.hit).toFixed(0)}</span></div>`:''}
               ${l.no?`<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:6px"><span style="color:var(--sage)">NO</span><span style="color:var(--chalk)">${Number(l.no)>0?'+':''}${Number(l.no).toFixed(0)}</span></div>`:''}
@@ -3785,7 +3787,7 @@ function renderNoHit() {
           ${pitcherHtml}
           ${gameHtml}
           <div class="bet-col" style="width:110px;border-left:1px solid var(--line);padding-left:12px;flex:none;display:flex;flex-direction:column;justify-content:space-between;gap:6px">
-            ${l.no?`<div>
+            ${l.no?`<div class="bet-prices">
               <div class="col-hdr">Bet</div>
               <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:6px"><span style="color:var(--sage)">NO HIT</span><span style="color:var(--chalk)">${Number(l.no)>0?'+':''}${Number(l.no).toFixed(0)}</span></div>
               ${noEdge!=null?`<div class="emeter" title="${pillTxt}"><div class="emid"></div><div class="efill" style="${eside}"></div></div><div style="font-family:var(--mono);font-size:9px;color:${ecol};margin-top:3px">${pillTxt}</div>`:''}
