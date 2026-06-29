@@ -67,6 +67,11 @@
     /* slot buttons: horizontal scroll, never wrap */
     .slotbtns{flex-wrap:nowrap !important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
     .slotbtns::-webkit-scrollbar{display:none}
+    #lineup-filter-row{flex-wrap:nowrap !important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px}
+    #lineup-filter-row::-webkit-scrollbar{display:none}
+    /* score circle: align to top of card */
+    .rtop{align-items:flex-start !important}
+    .scorecircle{margin-top:4px}
 
     /* history table: horizontal scroll */
     .htable-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -989,7 +994,7 @@
             <button id="hideSettledBtn" class="ghost fchip" onclick="filterHideSettled=!filterHideSettled;this.classList.toggle('amber',filterHideSettled);render()" title="Hide batters whose game has ended">✓ Hide Final</button>
             <button id="confirmedBtn" class="ghost fchip" onclick="filterConfirmed=!filterConfirmed;this.classList.toggle('amber',filterConfirmed);render()" title="Hide estimated lineups — only show batters from confirmed, posted lineups">✓ Confirmed</button>
           </div>
-          <div class="poolbar-row" style="flex-wrap:wrap">
+          <div class="poolbar-row" id="lineup-filter-row" style="flex-wrap:wrap">
             <span class="fchip-lbl">Lineup</span>
             <button id="slot-btn-0" class="fchip amber" onclick="setSlotFilter(0)" title="All batting slots">All</button>
             <button id="slot-btn-1" class="fchip ghost" onclick="setSlotFilter(1)" title="Leadoff">1</button>
