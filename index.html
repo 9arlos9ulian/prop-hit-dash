@@ -150,6 +150,10 @@
   .row{padding:12px 15px;overflow:hidden;display:flex;flex-direction:column;border-radius:10px;background:var(--surf);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.28)}
   .row:hover{box-shadow:0 6px 24px rgba(0,0,0,.38)}
   .card-footer{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
+  .slip-btn{width:100%;font-family:var(--mono);font-size:11px;padding:6px 0;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--sage);cursor:pointer;transition:border-color .15s,color .15s}
+  .slip-btn:hover{border-color:var(--amber);color:var(--amber)}
+  .slip-btn.in-slip{border-color:rgba(111,207,142,.5);background:rgba(111,207,142,.12);color:var(--good)}
+  .slip-btn.in-slip:hover{border-color:var(--good);color:var(--good)}
   .row:last-child{border-bottom:none}
   .rtop{display:flex;align-items:center;gap:10px;min-width:0}
   .slot{font-family:var(--mono);font-size:9px;color:var(--sage);min-width:18px;text-align:center;border:1px solid var(--line);border-radius:4px;padding:1px 5px;flex:none;line-height:1.5;text-transform:uppercase;letter-spacing:.3px}
@@ -2245,7 +2249,7 @@ function render(){
           })():''}
         </div>
       </div>
-      ${(!l.hasHit&&!missed&&!ppd)?`<div class="card-footer"><button onclick="toggle(${l.id})" style="width:100%;font-family:var(--mono);font-size:11px;padding:6px 0;border-radius:6px;border:1px solid ${l.inSlip?'rgba(111,207,142,.5)':'var(--line)'};background:${l.inSlip?'rgba(111,207,142,.12)':'transparent'};color:${l.inSlip?'var(--good)':'var(--sage)'};cursor:pointer;transition:all .15s" onmouseover="if(!${l.inSlip})this.style.borderColor='var(--amber)',this.style.color='var(--amber)'" onmouseout="this.style.borderColor='${l.inSlip?'rgba(111,207,142,.5)':'var(--line)'};this.style.color='${l.inSlip?'var(--good)':'var(--sage)'}">${l.inSlip?'✓ In slip':'+ Add to slip'}</button></div>`:''}
+      ${(!l.hasHit&&!missed&&!ppd)?`<div class="card-footer"><button onclick="toggle(${l.id})" class="slip-btn${l.inSlip?' in-slip':''}">${l.inSlip?'✓ In slip':'+ Add to slip'}</button></div>`:''}
     </div>`;
   }).join('');
   injectWeather(orderedLegs);
@@ -3782,7 +3786,7 @@ function renderNoHit() {
           ${gameHtml}
         </div>
       </div>
-      ${(!nhSettled&&!nhPpd)?`<div class="card-footer"><button onclick="toggle(${l.id})" style="width:100%;font-family:var(--mono);font-size:11px;padding:6px 0;border-radius:6px;border:1px solid ${inSlip?'rgba(111,207,142,.5)':'var(--line)'};background:${inSlip?'rgba(111,207,142,.12)':'transparent'};color:${inSlip?'var(--good)':'var(--sage)'};cursor:pointer;transition:all .15s" onmouseover="if(!${inSlip})this.style.borderColor='var(--amber)',this.style.color='var(--amber)'" onmouseout="this.style.borderColor='${inSlip?'rgba(111,207,142,.5)':'var(--line)'};this.style.color='${inSlip?'var(--good)':'var(--sage)'}">${inSlip?'✓ In slip':'+ Add to slip'}</button></div>`:''}
+      ${(!nhSettled&&!nhPpd)?`<div class="card-footer"><button onclick="toggle(${l.id})" class="slip-btn${inSlip?' in-slip':''}">${inSlip?'✓ In slip':'+ Add to slip'}</button></div>`:''}
     </div>`;
   }).join('');
   injectWeather(candidates);
