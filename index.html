@@ -2100,36 +2100,40 @@ function render(){
         <div class="bcard-inner" style="flex:1;min-width:0;display:flex;gap:0">
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px">
-            <div style="font-family:var(--disp);font-size:32px;font-weight:700;color:${scoreColor};line-height:1;margin-bottom:5px;cursor:default" ${circleHover}>${scoreVal}</div>
-            <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
-              <span class="slot" style="flex:none">${l.slot||'–'}</span>
-              ${l.team?`<span class="teamtag" style="font-size:10px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}
-              ${hitBadge}
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="font-family:var(--disp);font-size:32px;font-weight:700;color:${scoreColor};line-height:1;flex:none;cursor:default" ${circleHover}>${scoreVal}</div>
+              <div style="flex:1;min-width:0">
+                <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
+                  <span class="slot" style="flex:none">${l.slot||'–'}</span>
+                  ${l.team?`<span class="teamtag" style="font-size:10px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}
+                  ${hitBadge}
+                </div>
+                ${(()=>{
+                  const handSpan=l.batterHand?`<span style="font-size:11px;font-weight:400;opacity:.55;margin-left:3px">${l.batterHand}</span>`:'';
+                  const isUnresolved=l.batterId&&/^\d+$/.test((l.name||'').trim());
+                  const nameColor=isUnresolved?'var(--amber)':'inherit';
+                  const nameStyle=isUnresolved?'font-style:italic':'';
+                  const nameNode=l.batterId
+                    ?`<a href="https://baseballsavant.mlb.com/savant-player/${l.batterId}" target="_blank" rel="noopener" title="View on Baseball Savant" style="color:${nameColor};${nameStyle}text-decoration:none;border-bottom:1px solid rgba(255,255,255,.15)" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='rgba(255,255,255,.15)'">${esc(l.name)}${handSpan}</a>`
+                    :`<span style="color:${nameColor};${nameStyle}">${esc(l.name)}${handSpan}</span>`;
+                  const idHint=isUnresolved&&l.batterId?`<span style="font-family:var(--mono);font-size:9px;color:var(--amber);opacity:.7" title="Name not resolved — ID is correct">ID ${l.batterId}</span>`:'';
+                  return `<div style="font-family:var(--disp);font-size:16px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:baseline;gap:5px">${nameNode}${idHint}</div>`;
+                })()}
+                ${streakRowHtml(l.last5, false, true)}
+                ${(()=>{
+                  const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history — probability less reliable">${l.bNGames}g thin</span>`:'';
+                  const rest=l.bDaysRest>=8?(()=>{
+                    const warn=l.bDaysRest>=15;
+                    const tip=warn?`${l.bDaysRest}d since last game — likely returning from IL`:`${l.bDaysRest}d since last game`;
+                    return `<span class="restbadge${warn?' restbadge-warn':''}" title="${tip}">${l.bDaysRest}d rest</span>`;
+                  })():'';
+                  const est=l.lineupEst?`<span class="estbadge" title="Lineup not yet confirmed — batter may not play">⚠ Est. Lineup</span>`:'';
+                  if(!thin&&!rest&&!est) return '';
+                  return `<div class="bbadges" style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${thin}${rest}${est}</div>`;
+                })()}
+                ${liveInningAbHtml(l)}
+              </div>
             </div>
-            ${(()=>{
-              const handSpan=l.batterHand?`<span style="font-size:11px;font-weight:400;opacity:.55;margin-left:3px">${l.batterHand}</span>`:'';
-              const isUnresolved=l.batterId&&/^\d+$/.test((l.name||'').trim());
-              const nameColor=isUnresolved?'var(--amber)':'inherit';
-              const nameStyle=isUnresolved?'font-style:italic':'';
-              const nameNode=l.batterId
-                ?`<a href="https://baseballsavant.mlb.com/savant-player/${l.batterId}" target="_blank" rel="noopener" title="View on Baseball Savant" style="color:${nameColor};${nameStyle}text-decoration:none;border-bottom:1px solid rgba(255,255,255,.15)" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='rgba(255,255,255,.15)'">${esc(l.name)}${handSpan}</a>`
-                :`<span style="color:${nameColor};${nameStyle}">${esc(l.name)}${handSpan}</span>`;
-              const idHint=isUnresolved&&l.batterId?`<span style="font-family:var(--mono);font-size:9px;color:var(--amber);opacity:.7" title="Name not resolved — ID is correct">ID ${l.batterId}</span>`:'';
-              return `<div style="font-family:var(--disp);font-size:16px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:baseline;gap:5px">${nameNode}${idHint}</div>`;
-            })()}
-            ${streakRowHtml(l.last5, false, true)}
-            ${(()=>{
-              const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history — probability less reliable">${l.bNGames}g thin</span>`:'';
-              const rest=l.bDaysRest>=8?(()=>{
-                const warn=l.bDaysRest>=15;
-                const tip=warn?`${l.bDaysRest}d since last game — likely returning from IL`:`${l.bDaysRest}d since last game`;
-                return `<span class="restbadge${warn?' restbadge-warn':''}" title="${tip}">${l.bDaysRest}d rest</span>`;
-              })():'';
-              const est=l.lineupEst?`<span class="estbadge" title="Lineup not yet confirmed — batter may not play">⚠ Est. Lineup</span>`:'';
-              if(!thin&&!rest&&!est) return '';
-              return `<div class="bbadges" style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${thin}${rest}${est}</div>`;
-            })()}
-            ${liveInningAbHtml(l)}
           </div>
           <!-- FORM -->
           ${(()=>{
@@ -3754,25 +3758,29 @@ function renderNoHit() {
         <div class="bcard-inner" style="flex:1;min-width:0;display:flex;gap:0">
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px">
-            <div style="font-family:var(--disp);font-size:32px;font-weight:700;color:${scoreColor};line-height:1;margin-bottom:5px;cursor:default" ${nhCircleHover}>${pct100}</div>
-            <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">${slotBadge}${teamBadge}${nhBadge}</div>
-            ${(()=>{
-              const isUnresolved=l.batterId&&/^\d+$/.test((l.name||'').trim());
-              const nameColor=isUnresolved?'var(--amber)':'inherit';
-              const nameStyle=isUnresolved?'font-style:italic':'';
-              const nameNode=l.batterId?`<a href="https://baseballsavant.mlb.com/savant-player/${l.batterId}" target="_blank" rel="noopener" style="color:${nameColor};${nameStyle}text-decoration:none;border-bottom:1px solid rgba(255,255,255,.15)" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='rgba(255,255,255,.15)'">${esc(l.name)}${handSpanNh}</a>`:`<span style="color:${nameColor};${nameStyle}">${esc(l.name)}${handSpanNh}</span>`;
-              const idHint=isUnresolved&&l.batterId?`<span style="font-family:var(--mono);font-size:9px;color:var(--amber);opacity:.7" title="Name not resolved — ID is correct">ID ${l.batterId}</span>`:'';
-              return `<div style="font-family:var(--disp);font-size:16px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:baseline;gap:5px">${nameNode}${idHint}</div>`;
-            })()}
-            ${streakRowHtml(l.last5, true, true)}
-            ${(()=>{
-              const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history — probability less reliable">${l.bNGames}g thin</span>`:'';
-              const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;const tip=warn?`${l.bDaysRest}d since last game — likely returning from IL`:`${l.bDaysRest}d since last game`;return `<span class="restbadge${warn?' restbadge-warn':''}" title="${tip}">${l.bDaysRest}d rest</span>`;})():'';
-              const est=l.lineupEst?`<span class="estbadge" title="Lineup not yet confirmed — batter may not play">⚠ Est. Lineup</span>`:'';
-              if(!thin&&!rest&&!est) return '';
-              return `<div class="bbadges" style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${thin}${rest}${est}</div>`;
-            })()}
-            ${liveInningAbHtml(l)}
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="font-family:var(--disp);font-size:32px;font-weight:700;color:${scoreColor};line-height:1;flex:none;cursor:default" ${nhCircleHover}>${pct100}</div>
+              <div style="flex:1;min-width:0">
+                <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">${slotBadge}${teamBadge}${nhBadge}</div>
+                ${(()=>{
+                  const isUnresolved=l.batterId&&/^\d+$/.test((l.name||'').trim());
+                  const nameColor=isUnresolved?'var(--amber)':'inherit';
+                  const nameStyle=isUnresolved?'font-style:italic':'';
+                  const nameNode=l.batterId?`<a href="https://baseballsavant.mlb.com/savant-player/${l.batterId}" target="_blank" rel="noopener" style="color:${nameColor};${nameStyle}text-decoration:none;border-bottom:1px solid rgba(255,255,255,.15)" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='rgba(255,255,255,.15)'">${esc(l.name)}${handSpanNh}</a>`:`<span style="color:${nameColor};${nameStyle}">${esc(l.name)}${handSpanNh}</span>`;
+                  const idHint=isUnresolved&&l.batterId?`<span style="font-family:var(--mono);font-size:9px;color:var(--amber);opacity:.7" title="Name not resolved — ID is correct">ID ${l.batterId}</span>`:'';
+                  return `<div style="font-family:var(--disp);font-size:16px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:baseline;gap:5px">${nameNode}${idHint}</div>`;
+                })()}
+                ${streakRowHtml(l.last5, true, true)}
+                ${(()=>{
+                  const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history — probability less reliable">${l.bNGames}g thin</span>`:'';
+                  const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;const tip=warn?`${l.bDaysRest}d since last game — likely returning from IL`:`${l.bDaysRest}d since last game`;return `<span class="restbadge${warn?' restbadge-warn':''}" title="${tip}">${l.bDaysRest}d rest</span>`;})():'';
+                  const est=l.lineupEst?`<span class="estbadge" title="Lineup not yet confirmed — batter may not play">⚠ Est. Lineup</span>`:'';
+                  if(!thin&&!rest&&!est) return '';
+                  return `<div class="bbadges" style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${thin}${rest}${est}</div>`;
+                })()}
+                ${liveInningAbHtml(l)}
+              </div>
+            </div>
           </div>
           <!-- FORM (no-hit) -->
           <div class="form-col" style="width:190px;border-left:1px solid var(--line);padding-left:12px;flex:none">
