@@ -26,7 +26,7 @@
   .game-col{grid-column:2 !important;grid-row:2 !important;width:auto !important;min-width:0;border-left:1px solid var(--line) !important;border-top:1px solid var(--line) !important;padding-left:12px !important;padding-top:6px !important;margin-top:6px !important}
   .bet-col{grid-column:1 / -1 !important;grid-row:3 !important;width:auto !important;border-left:none !important;border-top:1px solid var(--line) !important;padding-left:0 !important;padding-top:8px !important;margin-top:8px !important;flex-direction:row !important;align-items:center;justify-content:space-between}
   @media(min-width:1100px){
-    #pool,#nohit-pool{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px}
+    #pool,#nohit-pool{padding:4px}
     #pool .row,#nohit-pool .row{position:relative;border-bottom:none;border-radius:10px;background:var(--surf);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.28)}
     #pool .row:hover,#nohit-pool .row:hover{box-shadow:0 6px 24px rgba(0,0,0,.38),0 0 0 1px rgba(76,175,125,.08)}
     #nohit-pool .row:hover{box-shadow:0 6px 24px rgba(0,0,0,.38),0 0 0 1px rgba(192,57,43,.1)}
@@ -53,6 +53,8 @@
     #slate-grid{grid-template-columns:1fr !important}
     .slate-teams{flex-direction:column !important}
 
+    /* pool: single column on mobile */
+    #pool,#nohit-pool{grid-template-columns:1fr !important}
     /* card: narrow right column on mobile */
     .batter-main{padding-right:0 !important}
     .bcard-inner{grid-template-columns:1fr 138px !important}
@@ -146,7 +148,7 @@
   @keyframes charliepulse{0%,100%{box-shadow:0 0 8px rgba(167,139,250,.2)}50%{box-shadow:0 0 18px rgba(167,139,250,.45)}}
   button.ghost{background:none;color:var(--sage)}
   /* pool rows */
-  .pool{padding:6px 0}
+  .pool{padding:6px 4px;display:grid;grid-template-columns:repeat(auto-fill,minmax(520px,1fr));gap:8px}
   .empty{padding:26px 16px;text-align:center;color:var(--sage);font-size:11px;font-family:var(--mono)}
   .row{padding:12px 15px;border-bottom:1px solid var(--line);overflow:hidden}
   .row:last-child{border-bottom:none}
@@ -3618,7 +3620,7 @@ function renderNoHit() {
 
   pool.innerHTML = candidates.map((l, idx) => {
     const _divider = (idx === nhDividerIdx && nhSettledC.length && nhActive.length)
-      ? `<div style="display:flex;align-items:center;gap:8px;margin:6px 0 2px;opacity:.4;font-size:10px;color:var(--sage);font-family:var(--mono);letter-spacing:1px"><div style="flex:1;height:1px;background:var(--line)"></div>SETTLED<div style="flex:1;height:1px;background:var(--line)"></div></div>`
+      ? `<div style="display:flex;align-items:center;gap:8px;margin:6px 0 2px;opacity:.4;font-size:10px;color:var(--sage);font-family:var(--mono);letter-spacing:1px;grid-column:1/-1"><div style="flex:1;height:1px;background:var(--line)"></div>SETTLED<div style="flex:1;height:1px;background:var(--line)"></div></div>`
       : '';
     const noP   = 1 - (l.p||0);
     const pct100 = (noP * 100).toFixed(0);
