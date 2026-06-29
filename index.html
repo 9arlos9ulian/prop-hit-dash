@@ -26,8 +26,6 @@
   .game-col{grid-column:2 !important;grid-row:2 !important;width:auto !important;min-width:0;border-left:1px solid var(--line) !important;border-top:1px solid var(--line) !important;padding-left:12px !important;padding-top:6px !important;margin-top:6px !important}
   @media(min-width:1100px){
     #pool,#nohit-pool{padding:4px}
-    #pool .row,#nohit-pool .row{position:relative;border-bottom:none;border-radius:10px;background:var(--surf);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.28)}
-    #pool .row:hover,#nohit-pool .row:hover{box-shadow:0 6px 24px rgba(0,0,0,.38),0 0 0 1px rgba(76,175,125,.08)}
     #nohit-pool .row:hover{box-shadow:0 6px 24px rgba(0,0,0,.38),0 0 0 1px rgba(192,57,43,.1)}
     #pool .row-done,#nohit-pool .row-done{border-color:var(--line)}
   }
@@ -149,7 +147,8 @@
   /* pool rows */
   .pool{padding:6px 4px;display:grid;grid-template-columns:repeat(auto-fill,minmax(490px,1fr));gap:8px}
   .empty{padding:26px 16px;text-align:center;color:var(--sage);font-size:11px;font-family:var(--mono)}
-  .row{padding:12px 15px;border-bottom:1px solid var(--line);overflow:hidden;display:flex;flex-direction:column}
+  .row{padding:12px 15px;overflow:hidden;display:flex;flex-direction:column;border-radius:10px;background:var(--surf);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.28)}
+  .row:hover{box-shadow:0 6px 24px rgba(0,0,0,.38),0 0 0 1px rgba(76,175,125,.08)}
   .card-footer{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
   .row:last-child{border-bottom:none}
   .rtop{display:flex;align-items:center;gap:10px;min-width:0}
