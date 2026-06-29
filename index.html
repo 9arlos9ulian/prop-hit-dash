@@ -74,8 +74,14 @@
     .rtop>.scorecircle{display:none !important}
     .score-mobile{display:inline-block !important}
     .binner{padding-right:0 !important;align-self:stretch !important}
-    /* bet-col: full width, show add button right-aligned */
+    /* stats row: spread across full width */
+    .bstats-row{justify-content:space-between !important;gap:0 !important}
+    .bstats-row>div{flex:1;min-width:0}
+    /* bet-col: full width, add button right-aligned, hide when empty */
     .bet-col{justify-content:flex-end !important}
+    /* ensure card and pool fill full width */
+    .row{padding:10px 12px !important}
+    #pool,#nohit-pool{padding:4px 0 !important}
     /* mobile info bar: pitcher + matchup, only on mobile */
     .mobile-info-bar{display:flex !important;flex-wrap:wrap;align-items:center;gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;color:var(--sage)}
 
@@ -2150,7 +2156,7 @@ function render(){
             const babip=l.bBabip!=null&&!isNaN(l.bBabip)?Number(l.bBabip).toFixed(3).replace(/^0/,''):null;
             const babipColor=babip==null?'var(--chalk)':parseFloat(babip)>=0.350?'var(--amber)':parseFloat(babip)<=0.250?'var(--good)':'var(--chalk)';
             const babipStat=babip?`<div style="text-align:center"><div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)">BABIP</div><div style="font-family:var(--mono);font-size:11px;color:${babipColor}">${babip}</div></div>`:'';
-            const bstatsHtml=(avg||xba||hh||babip)?`<div style="display:flex;gap:10px;margin-top:5px">${bstat('AVG',avg,.300,.230)}${bstat('xBA',xba,.290,.220)}${bstat('HH%',hh,50,30)}${babipStat}</div>`:'';
+            const bstatsHtml=(avg||xba||hh||babip)?`<div class="bstats-row" style="display:flex;gap:10px;margin-top:5px">${bstat('AVG',avg,.300,.230)}${bstat('xBA',xba,.290,.220)}${bstat('HH%',hh,50,30)}${babipStat}</div>`:'';
             const badge=streakBadge(l.last5,false);
             const vsHtml=(()=>{
               if(!l.pitcher) return '';
@@ -3660,7 +3666,7 @@ function renderNoHit() {
       };
       const babipColor=babipNh==null?'var(--chalk)':parseFloat(babipNh)>=0.350?'var(--amber)':parseFloat(babipNh)<=0.250?'var(--good)':'var(--chalk)';
       const babipStat=babipNh?`<div style="text-align:center"><div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)">BABIP</div><div style="font-family:var(--mono);font-size:11px;color:${babipColor}">${babipNh}</div></div>`:'';
-      return `<div style="display:flex;gap:10px;margin-top:5px">${stat('AVG',avg,.300,.230)}${stat('xBA',xba,.290,.220)}${stat('HH%',hh,50,30)}${babipStat}</div>`;
+      return `<div class="bstats-row" style="display:flex;gap:10px;margin-top:5px">${stat('AVG',avg,.300,.230)}${stat('xBA',xba,.290,.220)}${stat('HH%',hh,50,30)}${babipStat}</div>`;
     })();
 
     // BvP line
