@@ -2102,7 +2102,7 @@ function render(){
       : `onmouseenter="showModelTooltip(this.closest('.row'),${l.id})" onmouseleave="hideModelTooltip(this.closest('.row'))"`;
     return _divider+`<div class="row${l.hasHit?' row-done':missed?' row-missed':''}${isRadioactive?' row-cold-glow':''}${(!l.hasHit&&!missed&&!ppd&&l.inSlip)?' row-in-slip':''}${ppd?' row-in-slip':''}">
       <div class="rtop">
-        <div class="bcard-inner" style="flex:1;min-width:0;display:flex;gap:0">
+        <div class="bcard-inner" style="flex:1;min-width:0;display:grid;grid-template-columns:1fr 220px;grid-template-rows:auto auto auto;gap:0">
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px;display:flex;flex-direction:column;justify-content:center">
             <div style="display:flex;gap:10px;align-items:center">
@@ -3748,7 +3748,7 @@ function renderNoHit() {
       : `onmouseenter="showModelTooltip(this.closest('.row'),${l.id})" onmouseleave="hideModelTooltip(this.closest('.row'))"`;
     return _divider+`<div class="row${nhWin?' row-nohit-win':nhLoss?' row-missed':''}${tm>5?' row-cold-glow-red':''}${(!nhSettled&&!nhPpd&&inSlip)?' row-in-slip':''}${nhPpd?' row-in-slip':''}">
       <div class="rtop">
-        <div class="bcard-inner" style="flex:1;min-width:0;display:flex;gap:0">
+        <div class="bcard-inner" style="flex:1;min-width:0;display:grid;grid-template-columns:1fr 220px;grid-template-rows:auto auto auto;gap:0">
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px;display:flex;flex-direction:column;justify-content:center">
             <div style="display:flex;gap:10px;align-items:center">
