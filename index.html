@@ -45,21 +45,19 @@
     #slate-grid{grid-template-columns:1fr !important}
     .slate-teams{flex-direction:column !important}
 
-    /* batter rows: hide pitcher + game columns */
-    .pitcher-col,.game-col{display:none !important}
+    /* batter rows: all columns visible, wrapping layout */
     .batter-main{padding-right:0 !important}
-
-    /* bcard-inner: stack form below batter on mobile */
-    .bcard-inner{flex-direction:column !important;gap:0 !important}
+    .bcard-inner{flex-wrap:wrap !important;gap:0 !important}
+    .binner{flex:0 0 100% !important;padding-right:0 !important;align-self:stretch !important;min-width:0}
+    .binner [style*="font-size:16px"]{font-size:14px !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .form-col{width:100% !important;border-left:none !important;border-top:1px solid var(--line);padding-left:0 !important;padding-top:6px !important;margin-top:6px;flex:none !important}
-    /* hide col headers (FORM / BET labels) */
-    .col-hdr{display:none !important}
-    /* bet col: show only + Add button, hide no-prices text */
+    /* pitcher + game cols: side by side below form */
+    .pitcher-col{flex:1 !important;width:auto !important;min-width:0;border-left:none !important;border-top:1px solid var(--line) !important;padding-left:0 !important;padding-top:8px !important;margin-top:6px !important}
+    .game-col{flex:1 !important;width:auto !important;min-width:0;border-left:1px solid var(--line) !important;border-top:1px solid var(--line) !important;padding-left:10px !important;padding-top:8px !important;margin-top:6px !important}
+    .col-hdr{font-size:8px !important}
+    /* bet col */
     .bet-col{width:100% !important;border-left:none !important;border-top:1px solid var(--line);padding-left:0 !important;padding-top:6px !important;margin-top:4px;flex:none !important;flex-direction:row !important;align-items:center;justify-content:flex-end}
     .bet-col .no-prices-label{display:none !important}
-    /* batter name: prevent mid-word break */
-    .binner{min-width:0}
-    .binner [style*="font-size:16px"]{font-size:14px !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
     /* pool filter: first row wraps, search full width */
     .poolbar-row{flex-wrap:wrap !important;gap:5px;padding:7px 10px}
@@ -69,21 +67,14 @@
     .slotbtns::-webkit-scrollbar{display:none}
     #lineup-filter-row{flex-wrap:nowrap !important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px}
     #lineup-filter-row::-webkit-scrollbar{display:none}
-    /* card: full-width stack, hide circle, show score inline */
-    .rtop{flex-direction:column !important;align-items:stretch !important;gap:0 !important}
-    .rtop>.scorecircle{display:none !important}
-    .score-mobile{display:inline-block !important}
-    .binner{padding-right:0 !important;align-self:stretch !important}
     /* stats row: spread across full width */
     .bstats-row{justify-content:space-between !important;gap:0 !important}
     .bstats-row>div{flex:1;min-width:0}
-    /* bet-col: full width, add button right-aligned, hide when empty */
-    .bet-col{justify-content:flex-end !important}
     /* ensure card and pool fill full width */
     .row{padding:10px 12px !important}
     #pool,#nohit-pool{padding:4px 0 !important}
-    /* mobile info bar: pitcher + matchup, only on mobile */
-    .mobile-info-bar{display:flex !important;flex-wrap:wrap;align-items:center;gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;color:var(--sage)}
+    /* mobile info bar: hidden (pitcher/game cols visible on mobile) */
+    .mobile-info-bar{display:none !important}
 
     /* history table: horizontal scroll */
     .htable-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -2107,14 +2098,11 @@ function render(){
       : `onmouseenter="showModelTooltip(this.closest('.row'),${l.id})" onmouseleave="hideModelTooltip(this.closest('.row'))"`;
     return _divider+`<div class="row${l.hasHit?' row-done':missed?' row-missed':''}${isRadioactive?' row-cold-glow':''}${(!l.hasHit&&!missed&&!ppd&&l.inSlip)?' row-in-slip':''}${ppd?' row-in-slip':''}">
       <div class="rtop">
-        <div class="scorecircle${(l.hasHit||missed)?' scorecircle-done':''}" style="--sc:${scoreColor}" ${circleHover}>
-          <span class="scoreval" style="pointer-events:none">${scoreVal}</span>
-        </div>
         <div class="bcard-inner" style="flex:1;min-width:0;display:flex;gap:0">
           <!-- BATTER -->
-          <div class="binner" style="flex:1;min-width:0;padding-right:10px;align-self:center">
+          <div class="binner" style="flex:1;min-width:0;padding-right:10px">
+            <div style="font-family:var(--disp);font-size:32px;font-weight:700;color:${scoreColor};line-height:1;margin-bottom:5px;cursor:default" ${circleHover}>${scoreVal}</div>
             <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
-              <span class="score-mobile" style="display:none;font-family:var(--disp);font-size:15px;font-weight:600;color:${scoreColor};min-width:28px">${scoreVal}</span>
               <span class="slot" style="flex:none">${l.slot||'–'}</span>
               ${l.team?`<span class="teamtag" style="font-size:10px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}
               ${hitBadge}
@@ -3764,13 +3752,11 @@ function renderNoHit() {
       : `onmouseenter="showModelTooltip(this.closest('.row'),${l.id})" onmouseleave="hideModelTooltip(this.closest('.row'))"`;
     return _divider+`<div class="row${nhWin?' row-nohit-win':nhLoss?' row-missed':''}${tm>5?' row-cold-glow-red':''}${(!nhSettled&&!nhPpd&&inSlip)?' row-in-slip':''}${nhPpd?' row-in-slip':''}">
       <div class="rtop">
-        <div class="scorecircle${nhSettled?' scorecircle-done':''}" style="--sc:${scoreColor}" ${nhCircleHover}>
-          <span class="scoreval" style="font-family:var(--disp);font-size:20px;font-weight:400;color:var(--sc,var(--sage));line-height:1;pointer-events:none">${pct100}</span>
-        </div>
         <div class="bcard-inner" style="flex:1;min-width:0;display:flex;gap:0">
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px">
-            <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px"><span class="score-mobile" style="display:none;font-family:var(--disp);font-size:15px;font-weight:600;color:${scoreColor};min-width:28px">${pct100}</span>${slotBadge}${teamBadge}${nhBadge}</div>
+            <div style="font-family:var(--disp);font-size:32px;font-weight:700;color:${scoreColor};line-height:1;margin-bottom:5px;cursor:default" ${nhCircleHover}>${pct100}</div>
+            <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">${slotBadge}${teamBadge}${nhBadge}</div>
             ${(()=>{
               const isUnresolved=l.batterId&&/^\d+$/.test((l.name||'').trim());
               const nameColor=isUnresolved?'var(--amber)':'inherit';
