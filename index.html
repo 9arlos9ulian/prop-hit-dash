@@ -30,9 +30,11 @@
     /* layout */
     .wrap{padding:14px 10px 80px}
     /* header */
-    .site-header{padding:14px 0 10px}
-    .site-header h1{font-size:26px}
+    .site-header{padding:10px 0 8px}
+    .site-header h1{font-size:22px}
     .header-badge{font-size:9px;padding:2px 7px}
+    /* hide desktop-only header links */
+    .header-about-link{display:none !important}
 
     /* tabs: scrollable row, no wrap */
     .tabs{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;gap:2px;scrollbar-width:none}
@@ -43,35 +45,50 @@
     #slate-grid{grid-template-columns:1fr !important}
     .slate-teams{flex-direction:column !important}
 
-    /* batter rows: hide pitcher + game columns on small screens, keep batter info */
+    /* batter rows: hide pitcher + game columns */
     .pitcher-col,.game-col{display:none !important}
     .batter-main{padding-right:0 !important}
 
-    /* pool filter bars */
+    /* bcard-inner: stack form below batter on mobile */
+    .bcard-inner{flex-direction:column !important;gap:0 !important}
+    .form-col{width:100% !important;border-left:none !important;border-top:1px solid var(--line);padding-left:0 !important;padding-top:6px !important;margin-top:6px;flex:none !important}
+    /* hide col headers (FORM / BET labels) */
+    .col-hdr{display:none !important}
+    /* bet col: show only + Add button, hide no-prices text */
+    .bet-col{width:100% !important;border-left:none !important;border-top:1px solid var(--line);padding-left:0 !important;padding-top:6px !important;margin-top:4px;flex:none !important;flex-direction:row !important;align-items:center;justify-content:flex-end}
+    .bet-col .no-prices-label{display:none !important}
+    /* batter name: prevent mid-word break */
+    .binner{min-width:0}
+    .binner [style*="font-size:16px"]{font-size:14px !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    /* pool filter: first row wraps, search full width */
     .poolbar-row{flex-wrap:wrap !important;gap:5px;padding:7px 10px}
     .poolbar-row input[type=text]{width:100% !important;min-width:0}
+    /* slot buttons: horizontal scroll, never wrap */
+    .slotbtns{flex-wrap:nowrap !important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+    .slotbtns::-webkit-scrollbar{display:none}
 
     /* history table: horizontal scroll */
     .htable-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .htable-wrap.scrollable{max-height:520px;overflow-y:auto}
-  .htable-wrap.scrollable thead th{position:sticky;top:0;z-index:2;background:var(--raised)}
-  tr.date-sep td{background:var(--raised);padding:6px 14px;border-top:1px solid var(--line);position:sticky;top:34px;z-index:1}
-  .date-chip{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:0;background:var(--field);border:1px solid var(--line);border-radius:6px;padding:3px 10px;min-width:38px}
-  .date-chip-day{font-family:var(--disp);font-size:18px;font-weight:400;line-height:1;color:var(--chalk)}
-  .date-chip-mon{font-family:var(--mono);font-size:8px;letter-spacing:.8px;color:var(--sage);opacity:.7}
+    .htable-wrap.scrollable{max-height:520px;overflow-y:auto}
+    .htable-wrap.scrollable thead th{position:sticky;top:0;z-index:2;background:var(--raised)}
+    tr.date-sep td{background:var(--raised);padding:6px 14px;border-top:1px solid var(--line);position:sticky;top:34px;z-index:1}
+    .date-chip{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:0;background:var(--field);border:1px solid var(--line);border-radius:6px;padding:3px 10px;min-width:38px}
+    .date-chip-day{font-family:var(--disp);font-size:18px;font-weight:400;line-height:1;color:var(--chalk)}
+    .date-chip-mon{font-family:var(--mono);font-size:8px;letter-spacing:.8px;color:var(--sage);opacity:.7}
     .hstatgrid{grid-template-columns:repeat(3,1fr)}
     .hfiltbar{gap:6px;padding:8px 10px}
     .hfiltbar select{font-size:11px;padding:4px 6px}
 
-    /* history + no-hit pool rows */
+    /* history + pool rows */
     .rtop{align-items:flex-start;gap:8px}
-    .scorecircle{width:52px !important;height:52px !important;min-width:52px !important}
-    .scoreval{font-size:16px !important}
+    .scorecircle{width:48px !important;height:48px !important;min-width:48px !important}
+    .scoreval{font-size:15px !important}
 
     /* about tab */
     #tab-about{max-width:100%}
 
-    /* slip toggle fab */
+    /* slip fab */
     .slip-toggle{bottom:16px;right:16px}
 
     /* card padding */
@@ -2075,7 +2092,7 @@ function render(){
         <div class="scorecircle${(l.hasHit||missed)?' scorecircle-done':''}" style="--sc:${scoreColor}" ${circleHover}>
           <span class="scoreval" style="pointer-events:none">${scoreVal}</span>
         </div>
-        <div style="flex:1;min-width:0;display:flex;gap:0">
+        <div class="bcard-inner" style="flex:1;min-width:0;display:flex;gap:0">
           <!-- BATTER -->
           <div class="binner" style="flex:1;min-width:0;padding-right:10px;align-self:center">
             <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
@@ -2209,12 +2226,12 @@ function render(){
               ${gameStatusLine}
             </div>`;
           })():''}
-          <div style="width:110px;border-left:1px solid var(--line);padding-left:12px;flex:none;display:flex;flex-direction:column;justify-content:space-between;gap:6px">
+          <div class="bet-col" style="width:110px;border-left:1px solid var(--line);padding-left:12px;flex:none;display:flex;flex-direction:column;justify-content:space-between;gap:6px">
             <div>
               <div class="col-hdr">Bet</div>
               ${l.hit?`<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:2px"><span style="color:var(--sage)">HIT</span><span style="color:var(--chalk)">${Number(l.hit)>0?'+':''}${Number(l.hit).toFixed(0)}</span></div>`:''}
               ${l.no?`<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:6px"><span style="color:var(--sage)">NO</span><span style="color:var(--chalk)">${Number(l.no)>0?'+':''}${Number(l.no).toFixed(0)}</span></div>`:''}
-              ${!l.hit&&!l.no?`<div style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-bottom:6px">no prices</div>`:''}
+              ${!l.hit&&!l.no?`<div class="no-prices-label" style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-bottom:6px">no prices</div>`:''}
               ${edge!=null?`<div class="emeter" title="${pillTxt}"><div class="emid"></div><div class="efill" style="${eside}"></div></div><div style="font-family:var(--mono);font-size:9px;color:${ecol};margin-top:3px">${pillTxt}</div>`:''}
             </div>
             ${(!l.hasHit&&!missed&&!ppd)?`<button onclick="toggle(${l.id})" style="width:100%;font-family:var(--mono);font-size:11px;padding:5px 0;border-radius:6px;border:1px solid ${l.inSlip?'rgba(111,207,142,.5)':'var(--line)'};background:${l.inSlip?'rgba(111,207,142,.12)':'transparent'};color:${l.inSlip?'var(--good)':'var(--sage)'};cursor:pointer;transition:all .15s" onmouseover="if(!${l.inSlip})this.style.borderColor='var(--amber)',this.style.color='var(--amber)'" onmouseout="this.style.borderColor='${l.inSlip?'rgba(111,207,142,.5)':'var(--line)'};this.style.color='${l.inSlip?'var(--good)':'var(--sage)'}">${l.inSlip?'✓ In slip':'+ Add'}</button>`:''}
@@ -3753,7 +3770,7 @@ function renderNoHit() {
           </div>
           ${pitcherHtml}
           ${gameHtml}
-          <div style="width:110px;border-left:1px solid var(--line);padding-left:12px;flex:none;display:flex;flex-direction:column;justify-content:space-between;gap:6px">
+          <div class="bet-col" style="width:110px;border-left:1px solid var(--line);padding-left:12px;flex:none;display:flex;flex-direction:column;justify-content:space-between;gap:6px">
             <div>
               <div class="col-hdr">Bet</div>
               ${l.no?`<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;margin-bottom:6px"><span style="color:var(--sage)">NO HIT</span><span style="color:var(--chalk)">${Number(l.no)>0?'+':''}${Number(l.no).toFixed(0)}</span></div>`:`<div style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-bottom:6px">no prices</div>`}
