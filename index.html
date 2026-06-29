@@ -4204,29 +4204,32 @@ function renderSlotChart() {
     </div>`;
 }
 
-// auto-load when served from local server
-if(location.hostname==='127.0.0.1'){
-  fetch('/csv').then(r=>r.ok?r.text():null).then(text=>{
-    if(!text) return;
-    const fresh=parseCSV(text);
-    if(fresh.length){
-      _mergeFresh(fresh);
-      try{localStorage.setItem('dugout_csv',text);localStorage.setItem('dugout_csv_ts',Date.now());}catch(e){}
-      updateSavedBadge();
-      toggleImportPanel(false);
-      populateGameDropdown();
-      renderActiveTab();
-    }
-  }).catch(()=>{});
-  // periodic CSV refresh — picks up lineup confirmations and has_hit settlements (every 3 min)
-  setInterval(() => {
+// periodic CSV refresh — works on local server and GitHub Pages
+{
+  const isLocal = location.hostname==='127.0.0.1'||location.hostname==='localhost';
+  const csvUrl  = isLocal ? '/csv' : 'tonight_p_hit.csv';
+
+  if(location.hostname==='127.0.0.1'){
     fetch('/csv').then(r=>r.ok?r.text():null).then(text=>{
+      if(!text) return;
+      const fresh=parseCSV(text);
+      if(fresh.length){
+        _mergeFresh(fresh);
+        try{localStorage.setItem('dugout_csv',text);localStorage.setItem('dugout_csv_ts',Date.now());}catch(e){}
+        updateSavedBadge();
+        toggleImportPanel(false);
+        populateGameDropdown();
+        renderActiveTab();
+      }
+    }).catch(()=>{});
+  }
+
+  setInterval(() => {
+    fetch(csvUrl+'?t='+Date.now()).then(r=>r.ok?r.text():null).then(text=>{
       if(!text) return;
       const fresh = parseCSV(text);
       if(!fresh.length) return;
-      // lock any new legs' odds before merging, never overwrite existing locks
       _lockOdds(fresh);
-      // merge only mutable fields so user slip selections are preserved
       const byId = new Map(fresh.map(l=>[l.name+'|'+l.matchup, l]));
       legs.forEach(l => {
         const upd = byId.get(l.name+'|'+l.matchup);
