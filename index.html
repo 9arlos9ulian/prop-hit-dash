@@ -4738,7 +4738,14 @@ function renderNhHistory(resetPage) {
 
       // If the CSV is from a different date than today (stale online), fetch that date's
       // schedule so legs get correct Final states even without a local server.
-      const csvDates = [...new Set(legs.map(l=>l.gameDate).filter(Boolean))];
+      // gameDate in CSV is DD/MM — convert to YYYY-MM-DD for statsapi
+      function csvDateToISO(d) {
+        if(!d) return '';
+        const p = d.split('/');
+        if(p.length===2) return `${new Date().getFullYear()}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+        return d; // already ISO
+      }
+      const csvDates = [...new Set(legs.map(l=>csvDateToISO(l.gameDate)).filter(Boolean))];
       const staleDates = csvDates.filter(d => d && d !== today);
       if(staleDates.length) {
         staleDates.forEach(async staleDate => {
