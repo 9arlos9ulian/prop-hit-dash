@@ -108,6 +108,11 @@
     .card h2{padding:10px 12px;font-size:10px}
   }
   /* ── slip drawer ── */
+  #debug-fab{position:fixed;bottom:24px;left:24px;z-index:200;background:var(--raised);border:1px solid var(--line);border-radius:20px;padding:8px 14px;display:flex;align-items:center;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,.5);font-family:var(--mono);font-size:10px;color:var(--sage);pointer-events:none;opacity:.7;letter-spacing:.02em}
+  #debug-fab .dbg-dot{width:6px;height:6px;border-radius:50%;background:var(--sage);flex-shrink:0}
+  #debug-fab .dbg-dot.live{background:var(--good);box-shadow:0 0 6px var(--good)}
+  #debug-fab .dbg-dot.stale{background:var(--bad)}
+  @media(max-width:480px){#debug-fab{left:12px;bottom:16px;font-size:9px}}
   #slip-fab{position:fixed;bottom:24px;right:24px;z-index:200;background:var(--raised);border:1px solid var(--line);border-radius:20px;padding:8px 16px 8px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.5);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .2s;font-family:var(--disp);font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)}
   #slip-fab:hover{border-color:var(--amber);color:var(--chalk)}
   #slip-fab.drawer-open{transform:translateY(8px);opacity:0;pointer-events:none}
@@ -928,6 +933,11 @@
   <!-- stat-line hover tooltip -->
 
   <!-- SLIP FAB + DRAWER (global, outside any tab container) -->
+  <div id="debug-fab">
+    <div class="dbg-dot" id="dbg-dot"></div>
+    <span id="dbg-label">loading…</span>
+  </div>
+
   <div id="slip-fab" onclick="toggleSlip()">
     <span id="slip-fab-label">Slip</span>
     <span id="slip-fab-count"></span>
@@ -1665,6 +1675,7 @@ function updateSavedBadge(){
     if(!isToday){
       dsLabel.innerHTML=`<span style="color:var(--bad)">⚠ Data from ${d.toLocaleDateString([],{month:'short',day:'numeric'})} — reload for today</span>`;
       dsDot.classList.add('stale');
+      updateDebugFab();
       dsbar.style.display='flex';
       importPanel.style.display='';
       return;
@@ -1672,9 +1683,14 @@ function updateSavedBadge(){
     const now=Date.now();
     const ageMin=Math.round((now-ts)/60000);
     const timeStr=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    dsLabel.innerHTML=`<b>${legs.length} batters</b> &nbsp;·&nbsp; Updated ${timeStr}${ageMin<120?' &nbsp;<span style="opacity:.5;font-size:10px">('+ageMin+'m ago)</span>':''}`;
+    const csvDate = [...new Set(legs.map(l=>l.gameDate).filter(Boolean))].join(', ') || '—';
+    const src = _onServer ? 'local server' : 'github pages';
+    const csvDate = [...new Set(legs.map(l=>l.gameDate).filter(Boolean))].join(', ') || '—';
+    const src = _onServer ? 'local server' : 'github pages';
+    dsLabel.innerHTML=`<b>${legs.length} batters</b> &nbsp;·&nbsp; <span style="color:var(--sage);opacity:.7">slate ${csvDate}</span> &nbsp;·&nbsp; Updated ${timeStr}${ageMin<120?' &nbsp;<span style="opacity:.5;font-size:10px">('+ageMin+'m ago)</span>':''} &nbsp;<span style="font-size:9px;opacity:.4;font-family:var(--mono)">[${src}]</span>`;
     dsDot.classList.toggle('stale', ageMin>240);
     dsbar.style.display='none';
+    updateDebugFab();
     importPanel.style.display='none';
     const importCard=document.getElementById('importCard');
     if(importCard) importCard.style.display='none';
@@ -3872,6 +3888,23 @@ function populateDateFilter() {
   const dates = [...new Set(historyRows.map(r => r.date))].sort().reverse();
   sel.innerHTML = '<option value="">All dates</option>' +
     dates.map(d => `<option value="${d}"${d===current?' selected':''}>${d}</option>`).join('');
+}
+
+function updateDebugFab() {
+  const dot = document.getElementById('dbg-dot');
+  const lbl = document.getElementById('dbg-label');
+  if(!dot || !lbl) return;
+  const csvDates = [...new Set(legs.map(l=>l.gameDate).filter(Boolean))];
+  const dateStr = csvDates.length ? csvDates.join(', ') : '—';
+  const src = _onServer ? 'local' : 'github pages';
+  const ts = Number(localStorage.getItem('dugout_csv_ts')||0);
+  const ageMin = ts ? Math.round((Date.now()-ts)/60000) : null;
+  const ageStr = ageMin!=null ? (ageMin<60 ? ageMin+'m ago' : Math.round(ageMin/60)+'h ago') : '';
+  const today = new Date().toLocaleDateString('en-CA');
+  const csvISO = csvDates.map(d=>{ const p=d.split('/'); return p.length===2?`${new Date().getFullYear()}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`:d; });
+  const isStale = csvISO.length && !csvISO.includes(today);
+  dot.className = 'dbg-dot' + (isStale ? ' stale' : legs.length ? ' live' : '');
+  lbl.textContent = `slate ${dateStr} · ${src}${ageStr?' · '+ageStr:''}`;
 }
 
 function toggleCard(id) {
