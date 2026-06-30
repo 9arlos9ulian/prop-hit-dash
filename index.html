@@ -3,7 +3,7 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
   :root{
-    --field:#0F1B13; --surf:#19271E; --raised:#1F3326; --chalk:#ECEAE0;
+    --field:#0F1B13; --surf:#19271E; --raised:#1F3326; --chalk:#E2D5A8;
     --sage:#8AA193; --line:#2C4533; --good:#6FCF8E; --bad:#D2693E; --amber:#E7B84B;
     --disp:'Oswald',sans-serif; --mono:'DM Mono',monospace; --body:'Inter',sans-serif;
   }
@@ -145,9 +145,9 @@
   @keyframes charliepulse{0%,100%{box-shadow:0 0 8px rgba(167,139,250,.2)}50%{box-shadow:0 0 18px rgba(167,139,250,.45)}}
   button.ghost{background:none;color:var(--sage)}
   /* pool rows */
-  .pool{padding:6px 4px;display:grid;grid-template-columns:repeat(auto-fill,minmax(490px,1fr));gap:8px}
+  .pool{padding:6px 4px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
   .empty{padding:26px 16px;text-align:center;color:var(--sage);font-size:11px;font-family:var(--mono)}
-  .row{padding:12px 15px;overflow:hidden;display:flex;flex-direction:column;border-radius:10px;background:var(--surf);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.28)}
+  .row{padding:12px 15px;overflow:hidden;display:flex;flex-direction:column;border-radius:10px;background:var(--surf);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.28);position:relative}
   .row:hover{box-shadow:0 6px 24px rgba(0,0,0,.38)}
   .card-footer{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
   .slip-btn{width:100%;font-family:var(--mono);font-size:11px;padding:6px 0;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--sage);cursor:pointer;transition:border-color .15s,color .15s}
@@ -497,7 +497,7 @@
         <button id="emailToggleBtn" class="header-about-link" onclick="toggleEmailNotify()" title="Send email with current slate data">Send Email</button>
       </div>
     </div>
-    <div class="header-sub">Hit probability · market de-vig · parlay builder · CLV tracking</div>
+    <div class="header-sub">Hit probability · parlay builder · result tracking</div>
   </div>
 
   <div id="mlb-ticker"><div id="ticker-track"><span class="sc-card"><span class="sc-inn sc-inn-pre">Loading…</span></span></div></div>
@@ -542,7 +542,7 @@
     <div class="grid slip-hidden" id="nhGrid">
       <!-- LEFT: pool -->
       <div>
-        <div class="card" style="margin-bottom:16px">
+        <div class="card" style="margin-bottom:16px;background:transparent;border:none;padding:0;border-radius:0">
           <div class="poolbar">
             <div class="poolbar-row" style="flex-wrap:wrap">
               <span class="fchip-lbl">Game</span>
@@ -653,9 +653,9 @@
           <thead><tr>
             <th>Date</th><th>Name</th><th>Team</th><th>Matchup</th>
             <th class="r">Slot</th><th class="r">Model %</th>
-            <th class="r">Odds</th><th class="r">Edge</th><th class="r">Result</th><th class="r">Diff</th>
+            <th class="r">Result</th><th class="r">Diff</th>
           </tr></thead>
-          <tbody id="h-tbody"><tr><td colspan="10" style="text-align:center;padding:24px;color:var(--sage)">Loading picks_log.csv…</td></tr></tbody>
+          <tbody id="h-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--sage)">Loading picks_log.csv…</td></tr></tbody>
         </table>
       </div>
       <div id="h-pager" style="display:none;align-items:center;justify-content:center;gap:12px;padding:12px 15px;border-top:1px solid var(--line)"></div>
@@ -943,26 +943,14 @@
               <div style="font-family:var(--disp);font-size:22px;font-weight:400;color:var(--chalk)" id="sTrue">—</div>
             </div>
             <div style="flex:1;min-width:80px">
-              <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">Parlay odds</div>
-              <div style="font-family:var(--mono);font-size:18px;color:var(--amber)" id="parlayOdds">—</div>
-            </div>
-            <div style="flex:1;min-width:80px">
               <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">To win</div>
               <div style="font-family:var(--mono);font-size:18px;color:var(--good)" id="parlayPayout">—</div>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-            <div style="flex:1">
-              <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">Stake ($)</div>
-              <input id="stakeInput" class="bank" placeholder="25" style="width:100%;font-size:14px" oninput="updateSaveBtn()">
-            </div>
-            <div style="flex:1">
-              <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">Override odds</div>
-              <input id="oddsInput" class="bank" placeholder="+350" style="width:100%;font-size:14px" oninput="updateSaveBtn()" title="Leave blank to use Kalshi prices">
-            </div>
+          <div style="margin-top:4px">
+            <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">Stake ($)</div>
+            <input id="stakeInput" class="bank" placeholder="25" style="width:100%;font-size:14px" oninput="updateSaveBtn()">
           </div>
-          <div id="oddsSource" style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-top:4px;text-align:right"></div>
-          <div id="kellySuggest" style="display:none;font-family:var(--mono);font-size:9px;margin-top:6px;padding:5px 8px;border-radius:4px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-align:center"></div>
           <button class="amber" id="saveBtn" onclick="saveBet()" disabled style="width:100%;margin-top:8px;opacity:.4">Save bet</button>
         </div>
       </div>
@@ -2188,7 +2176,9 @@ function render(){
             </div>`;
           })()}
           <!-- PITCHER -->
-          ${l.pitcher?(()=>{
+          ${(()=>{
+          if(!l.pitcher) return `<div class="pitcher-col" style="border-left:1px solid var(--line);padding-left:12px;flex:none"><div class="col-hdr">Pitcher</div><div style="font-family:var(--mono);font-size:10px;color:var(--sage);opacity:.5;margin-top:4px;font-style:italic">Not announced</div></div>`;
+          return (()=>{
             const grade=l.pGrade?`<span class="pgrade pgrade-${l.pGrade}" title="Pitcher rating ${l.pRating!=null?l.pRating.toFixed(0):''}/100">${l.pGrade}</span>`:'';
             const hhPitcher='';
             const pThin=l.pNGames>0&&l.pNGames<10?`<span class="thinbadge" title="Only ${l.pNGames} appearances in model window — grade may not be reliable">${l.pNGames}g thin</span>`:'';
@@ -2223,7 +2213,7 @@ function render(){
               ${statsRow}
               ${pitchMatchupHtml(l)}
             </div>`;
-          })():''}
+          })()})()}
           <!-- GAME INFO -->
           ${l.matchup?(()=>{
             const _mlbTvUrl = l.gamePk ? `https://www.mlb.com/tv/g${l.gamePk}` : '';
@@ -2270,13 +2260,6 @@ function render(){
     });
     legsEl.innerHTML=[...gameMap.entries()].map(([game,gLegs])=>{
       const legRows=gLegs.map(l=>{
-        // edge display: compare model prob vs implied market prob
-        const mktDec = l.hit ? amToDec(l.hit) : null;
-        const mktP   = mktDec ? 1/mktDec : null;
-        const edge   = mktP ? +(l.p - mktP).toFixed(3) : null;
-        const edgeTag = edge != null
-          ? `<span style="font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:3px;${edge>0?'color:#4ade80;background:rgba(74,222,128,.1)':'color:#f87171;background:rgba(248,113,113,.1)'}">${edge>0?'+':''}${Math.round(edge*100)}%</span>`
-          : '';
         // live status
         const gpk = l.gamePk ? String(l.gamePk) : null;
         const bid = l.batterId ? String(l.batterId) : null;
@@ -2310,7 +2293,6 @@ function render(){
             ${nameLink}
             ${slipInningHtml}
           </div>
-          ${edgeTag}
           <span class="lp">${pct(l.p)}</span>
           ${slipStatusEl}
           <button class="x" onclick="toggle(${l.id})">×</button>
@@ -2432,55 +2414,19 @@ function stopLivePolling(){
 }
 
 function _parlayDec(sel){
-  // Use Kalshi yes_cents if available, else model p as implied prob
-  return sel.reduce((acc, l)=>{
-    const p = l.yesCents!=null && l.yesCents>0 ? l.yesCents/100 : (l.p||0.6);
-    return acc * (1/p);
-  }, 1);
+  return sel.reduce((acc, l) => acc * (1 / (l.p || 0.6)), 1);
 }
 
 function updateSaveBtn(){
   const sel=legs.filter(l=>l.inSlip);
   const stake=parseFloat(document.getElementById('stakeInput').value)||0;
-  const overrideRaw=document.getElementById('oddsInput').value.trim();
-  const override=amToDec(overrideRaw);
+  const useDec = sel.length ? _parlayDec(sel) : null;
+  const payout = (useDec && stake) ? +(stake*(useDec-1)).toFixed(2) : null;
 
-  // calculate auto odds
-  const autoDec = sel.length ? _parlayDec(sel) : null;
-  const useDec  = override || autoDec;
-  const amOdds  = useDec ? decToAm(useDec) : null;
-  const payout  = (useDec && stake) ? +(stake*(useDec-1)).toFixed(2) : null;
-
-  // count how many legs have Kalshi prices
-  const priced  = sel.filter(l=>l.yesCents!=null&&l.yesCents>0).length;
-
-  document.getElementById('parlayOdds').textContent  = amOdds!=null ? fmtAm(amOdds) : '—';
   document.getElementById('parlayPayout').textContent = payout!=null&&stake ? '$'+payout.toFixed(2) : '—';
-  document.getElementById('oddsSource').textContent   = sel.length
-    ? (override ? 'using manual override' : priced===sel.length ? 'kalshi prices' : priced>0 ? `kalshi (${priced}/${sel.length} legs) + model` : 'model probabilities')
-    : '';
-
-  // Kelly stake suggestion
-  const kellyEl = document.getElementById('kellySuggest');
-  if(kellyEl && useDec && sel.length) {
-    const trueP = sel.reduce((a,l)=>a*(l.p>0&&l.p<=1?l.p:1),1);
-    const b = useDec - 1;
-    const rawKelly = (trueP * b - (1-trueP)) / b;
-    const fracKelly = Math.max(0, rawKelly * kelly);
-    if(fracKelly > 0) {
-      kellyEl.textContent = `Kelly suggests ${(fracKelly*100).toFixed(1)}% of bankroll (¼ Kelly)`;
-      kellyEl.style.color = fracKelly > 0.05 ? 'var(--amber)' : 'var(--sage)';
-    } else {
-      kellyEl.textContent = 'Kelly: no edge — skip this bet';
-      kellyEl.style.color = 'var(--bad)';
-    }
-    kellyEl.style.display = '';
-  } else if(kellyEl) {
-    kellyEl.style.display = 'none';
-  }
 
   const btn=document.getElementById('saveBtn');
-  const ok=sel.length>0 && stake>0 && useDec!=null;
+  const ok=sel.length>0 && stake>0;
   btn.disabled=!ok;
   btn.style.opacity=ok?'1':'0.4';
 }
@@ -2488,8 +2434,7 @@ function updateSaveBtn(){
 function saveBet(){
   const sel=legs.filter(l=>l.inSlip);
   const stake=parseFloat(document.getElementById('stakeInput').value);
-  const overrideRaw=document.getElementById('oddsInput').value.trim();
-  const payDec=amToDec(overrideRaw)||_parlayDec(sel);
+  const payDec=_parlayDec(sel);
   if(!sel.length||!stake||!payDec) return;
   const amOdds=decToAm(payDec);
   const payout=+(stake*(payDec-1)).toFixed(2);
@@ -2505,7 +2450,6 @@ function saveBet(){
   persistBets(); renderSavedBets();
   legs.forEach(l=>l.inSlip=false);
   document.getElementById('stakeInput').value='';
-  document.getElementById('oddsInput').value='';
   updateSaveBtn(); render();
 }
 
@@ -3677,7 +3621,7 @@ function renderNoHit() {
 
     // pitcher section
     const pitcherHtml = (() => {
-      if(!l.pitcher) return '';
+      if(!l.pitcher) return `<div class="pitcher-col" style="border-left:1px solid var(--line);padding-left:12px;flex:none"><div class="col-hdr">Pitcher</div><div style="font-family:var(--mono);font-size:10px;color:var(--sage);opacity:.5;margin-top:4px;font-style:italic">Not announced</div></div>`;
       const grade = l.pGrade ? `<span class="pgrade pgrade-${l.pGrade}" title="Pitcher rating ${l.pRating!=null?l.pRating.toFixed(0):''}/100">${l.pGrade}</span>` : '';
       const cswV  = l.pCsw!=null ? (l.pCsw*100) : null;
       const kbbV  = l.pKbb;
@@ -3850,7 +3794,7 @@ function parseLogCSV(text) {
       slot:     c[iSlot]    || '',
       p:        parseFloat(c[iP]) || 0,
       odds:     c[iHitOdds] || '',
-      actual:   (c[iActual]||'').trim(),
+      actual:   (()=>{const v=(c[iActual]||'').trim();const today=new Date().toLocaleDateString('en-CA');const d=(c[iDate]||'').trim();return(v==='0'&&d===today)?'':v;})(),
     };
   }).filter(r => r.name)
     .reduce((acc, r) => {
@@ -3878,7 +3822,7 @@ function loadHistory() {
         `${historyRows.length} rows · ${historyRows.filter(r=>r.actual==='1'||r.actual==='0').length} settled`;
     } catch(err) {
       document.getElementById('h-tbody').innerHTML=
-        `<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--bad)">Render error: ${esc(String(err))}</td></tr>`;
+        `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--bad)">Render error: ${esc(String(err))}</td></tr>`;
       document.getElementById('h-notice').textContent = 'Error rendering — check console';
       console.error('renderHistory error:', err);
     }
@@ -3891,12 +3835,12 @@ function loadHistory() {
       .catch(err => {
         const saved = localStorage.getItem('dugout_log_csv');
         if(saved) { tryRender(saved); document.getElementById('h-notice').textContent='From cache (server fetch failed: '+err.message+')'; }
-        else { document.getElementById('h-tbody').innerHTML='<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--sage)">picks_log.csv not found ('+err.message+'). Run live_slate.py to generate it, or import below.</td></tr>'; }
+        else { document.getElementById('h-tbody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--sage)">picks_log.csv not found ('+err.message+'). Run live_slate.py to generate it, or import below.</td></tr>'; }
       });
   } else {
     const saved = localStorage.getItem('dugout_log_csv');
     if(saved) { tryRender(saved); document.getElementById('h-notice').textContent='Loaded from cache.'; }
-    else { document.getElementById('h-tbody').innerHTML='<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--sage)">Open via the local server (python server.py) to auto-load, or import the file below.</td></tr>'; }
+    else { document.getElementById('h-tbody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--sage)">Open via the local server (python server.py) to auto-load, or import the file below.</td></tr>'; }
   }
 }
 
@@ -4110,7 +4054,7 @@ function renderHistory(resetPage) {
 
   const tbody = document.getElementById('h-tbody');
   if(!rows.length) {
-    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--sage)">No rows match the current filter.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--sage)">No rows match the current filter.</td></tr>';
     document.getElementById('h-pager').style.display='none';
     return;
   }
@@ -4137,17 +4081,12 @@ function renderHistory(resetPage) {
     const d = (!isHit&&!isMiss) ? null : (isHit?1:0) - r.p;
     const diffTxt = d==null?'—':(d>=0?'+':'')+((d*100).toFixed(1));
     const diffCls = d==null?'':d>0?'diff-pos':'diff-neg';
-    const oddsStr = r.odds&&r.odds!=='nan'&&r.odds!=='NaN'&&r.odds!=='' ? r.odds : '—';
-    const bm = benchmark(r.odds, '');
-    const edge = bm ? r.p - bm.fair : null;
-    const edgeTxt = edge!=null ? (edge>=0?'+':'')+((edge*100).toFixed(1))+'pp' : '—';
-    const edgeCls = edge==null?'':edge>0.03?'diff-pos':edge<-0.03?'diff-neg':'';
     const rowBg = isHit ? 'background:rgba(111,207,142,.07)' : isMiss ? 'background:rgba(210,105,62,.07)' : '';
     const dateSep = r.date !== lastDate ? (()=>{
       const parts = r.date.split('-'); // YYYY-MM-DD
       const d = parts[2] ? parseInt(parts[2]) : r.date;
       const mon = parts[1] ? new Date(r.date+'T12:00:00').toLocaleString('en-US',{month:'short'}).toUpperCase() : '';
-      return `<tr class="date-sep"><td colspan="10"><span class="date-chip"><span class="date-chip-day">${d}</span><span class="date-chip-mon">${mon}</span></span></td></tr>`;
+      return `<tr class="date-sep"><td colspan="8"><span class="date-chip"><span class="date-chip-day">${d}</span><span class="date-chip-mon">${mon}</span></span></td></tr>`;
     })() : '';
     lastDate = r.date;
     return `${dateSep}<tr style="${rowBg}">
@@ -4157,8 +4096,6 @@ function renderHistory(resetPage) {
       <td style="color:var(--sage)">${esc(r.matchup)}</td>
       <td class="r">${r.slot||'—'}</td>
       <td class="r" style="color:var(--amber)">${(r.p*100).toFixed(1)}%</td>
-      <td class="r">${oddsStr}</td>
-      <td class="r ${edgeCls}">${edgeTxt}</td>
       <td class="r ${resCls}">${resTxt}</td>
       <td class="r ${diffCls}">${diffTxt}</td>
     </tr>`;
