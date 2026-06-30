@@ -681,6 +681,11 @@
     <div class="card card-collapsible" style="margin-top:14px" id="h-daily-card">
       <h2 onclick="toggleCard('h-daily-card')">Daily Scorecard <span id="h-daily-meta" style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0"></span></h2>
       <div class="htable-wrap"><div id="h-daily-body"><div class="empty">No settled data yet.</div></div></div>
+      <div id="h-daily-pager" style="display:none;justify-content:center;align-items:center;gap:10px;padding:10px 15px 14px;border-top:1px solid var(--line);margin-top:4px;font-family:var(--mono);font-size:11px;color:var(--sage)">
+        <button onclick="hDailyPage(-1)" style="background:var(--raised);border:1px solid var(--line);color:var(--chalk);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;line-height:1">‹</button>
+        <span id="h-daily-pager-label"></span>
+        <button onclick="hDailyPage(1)" style="background:var(--raised);border:1px solid var(--line);color:var(--chalk);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;line-height:1">›</button>
+      </div>
     </div>
 
     <div class="card card-collapsible" style="margin-top:14px" id="h-team-card">
@@ -746,6 +751,11 @@
     <div class="card" style="margin-top:14px">
       <h2>Daily Scorecard <span id="nh-h-daily-meta" style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0"></span></h2>
       <div class="htable-wrap"><div id="nh-h-daily-body"><div class="empty">No settled data yet.</div></div></div>
+      <div id="nh-h-daily-pager" style="display:none;justify-content:center;align-items:center;gap:10px;padding:10px 15px 14px;border-top:1px solid var(--line);margin-top:4px;font-family:var(--mono);font-size:11px;color:var(--sage)">
+        <button onclick="nhDailyPage(-1)" style="background:var(--raised);border:1px solid var(--line);color:var(--chalk);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;line-height:1">‹</button>
+        <span id="nh-h-daily-pager-label"></span>
+        <button onclick="nhDailyPage(1)" style="background:var(--raised);border:1px solid var(--line);color:var(--chalk);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;line-height:1">›</button>
+      </div>
     </div>
     <div class="card" style="margin-top:14px">
       <h2>Calibration <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">amber = predicted · green = actual win rate</span></h2>
@@ -3260,8 +3270,8 @@ function renderGames() {
         const nameStyle = hit ? 'text-decoration:line-through;opacity:.4' : 'opacity:.75';
         const hitCheck = hit ? `<span style="font-family:var(--mono);font-size:9px;color:var(--good);flex:none">✓</span>` : '';
         return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0${hit?';opacity:.55':''}">
-          <div style="width:28px;height:3px;border-radius:2px;background:${dotCol(l.p)};opacity:.8;box-shadow:0 0 4px ${dotCol(l.p)}55;flex:none"></div>
-          ${l.batterId?`<a href="https://baseballsavant.mlb.com/savant-player/${l.batterId}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:10px;color:var(--chalk);${nameStyle};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-decoration-line:${hit?'line-through':'none'};border-bottom:${hit?'none':'1px solid transparent'}" ${hit?'':' onmouseover="this.style.borderBottomColor=\'var(--amber)\';this.style.opacity=\'1\'" onmouseout="this.style.borderBottomColor=\'transparent\';this.style.opacity=\'.75\'"'}>${esc(l.name.split(' ').slice(-1)[0])}</a>`:`<span style="font-family:var(--mono);font-size:10px;color:var(--chalk);${nameStyle};text-decoration-line:${hit?'line-through':'none'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(l.name.split(' ').slice(-1)[0])}</span>`}
+
+          ${l.batterId?`<a href="https://baseballsavant.mlb.com/savant-player/${l.batterId}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:10px;color:var(--chalk);${nameStyle};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-decoration-line:${hit?'line-through':'none'};border-bottom:${hit?'none':'1px solid transparent'}" ${hit?'':' onmouseover="this.style.borderBottomColor=\'var(--amber)\';this.style.opacity=\'1\'" onmouseout="this.style.borderBottomColor=\'transparent\';this.style.opacity=\'.75\'"'}>${l.slot?l.slot+'. ':''}${esc(l.name.split(' ').slice(-1)[0])}</a>`:`<span style="font-family:var(--mono);font-size:10px;color:var(--chalk);${nameStyle};text-decoration-line:${hit?'line-through':'none'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${l.slot?l.slot+'. ':''}${esc(l.name.split(' ').slice(-1)[0])}</span>`}
           ${hitCheck}
           <span style="font-family:var(--mono);font-size:10px;color:${dotCol(l.p)};flex:none">${(l.p*100).toFixed(0)}%</span>
         </div>`;
@@ -3280,9 +3290,9 @@ function renderGames() {
       return `<div style="flex:1;min-width:0;padding:14px 14px 12px;display:flex;flex-direction:column;gap:10px;${colBgStyle}">
         <!-- team header -->
         <div style="display:flex;align-items:center;gap:8px">
+          ${stats.estLineup?`<span title="Estimated lineup — not yet confirmed" style="font-family:var(--mono);font-size:8px;color:var(--amber);border:1px solid rgba(231,184,75,.35);border-radius:3px;padding:1px 5px">Est</span>`:''}
           ${teamUrl(team)?`<a href="${teamUrl(team)}" target="_blank" rel="noopener" style="font-family:var(--disp);font-size:15px;font-weight:400;color:var(--chalk);letter-spacing:.5px;text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(team)}</a>`:`<span style="font-family:var(--disp);font-size:15px;font-weight:400;color:var(--chalk);letter-spacing:.5px">${esc(team)}</span>`}
-          ${isHome?'<span style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.5;border:1px solid var(--line);border-radius:3px;padding:1px 4px">HOME</span>':''}
-          ${stats.estLineup?`<span title="Estimated lineup — not yet confirmed" style="font-size:11px;opacity:.6">⚠</span>`:''}
+          ${(window._teamBadge&&window._teamBadge[team])||''}
           <span style="flex:1"></span>
           <span style="font-family:var(--disp);font-size:15px;font-weight:400;color:${gc};line-height:1;text-shadow:0 0 12px ${gc}55">${pct}%</span>
         </div>
@@ -3301,9 +3311,9 @@ function renderGames() {
         <!-- pitcher + streaks -->
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:8px">
           ${pitcherName ? `<span style="font-family:var(--mono);font-size:9px;color:var(--sage)">vs</span>
+          ${stats.pitcherGrade?`<span style="font-family:var(--mono);font-size:9px;font-weight:600;border-radius:3px;padding:1px 5px;white-space:nowrap;flex:none;color:${pgCol};background:${pgBg};border:1px solid ${pgCol}55">${stats.pitcherGrade}</span>`:''}
           <a href="${pitcherUrl(stats.pitcher,stats.pitcherId)}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:10px;color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(pitcherName)}</a>
-          ${handTag}
-          ${stats.pitcherGrade?`<span style="font-family:var(--mono);font-size:9px;font-weight:600;border-radius:3px;padding:1px 5px;white-space:nowrap;flex:none;color:${pgCol};background:${pgBg};border:1px solid ${pgCol}55">${stats.pitcherGrade}</span>`:''}` : ''}
+          ${handTag}` : ''}
           <span style="flex:1"></span>
           ${streakBadges}
         </div>
@@ -3839,6 +3849,23 @@ function loadHistory() {
     try {
       historyRows = parseLogCSV(text);
       try { localStorage.setItem('dugout_log_csv', text); } catch(e) {}
+      // compute team badge once — flat map team → '▲'|'▼'|''
+      const _tb = {};
+      historyRows.filter(r=>r.actual==='1'||r.actual==='0').forEach(r=>{
+        if(!r.team) return;
+        if(!_tb[r.team]) _tb[r.team]={n:0,exp:0,act:0};
+        _tb[r.team].n++; _tb[r.team].exp+=r.p; _tb[r.team].act+=r.actual==='1'?1:0;
+      });
+      window._teamBadge = {};
+      Object.entries(_tb).forEach(([t,v])=>{
+        if(v.n<30){ window._teamBadge[t]=''; return; }
+        const ratio = v.exp>0 ? v.act/v.exp : 1;
+        window._teamBadge[t] = ratio>=1.06
+          ? '<span style="font-family:var(--mono);font-size:8px;color:var(--good);border:1px solid rgba(111,207,142,.35);border-radius:3px;padding:1px 5px">▲</span>'
+          : ratio<=0.94
+          ? '<span style="font-family:var(--mono);font-size:8px;color:var(--bad);border:1px solid rgba(210,105,62,.35);border-radius:3px;padding:1px 5px">▼</span>'
+          : '';
+      });
       populateDateFilter();
       renderHistory();
       try { renderPickHistory(); } catch(e) {}
@@ -3971,20 +3998,30 @@ function renderHistory(resetPage) {
   const byDay = {};
   settled.forEach(r => { if(!byDay[r.date]) byDay[r.date]=[]; byDay[r.date].push(r); });
   const dailyDates = Object.keys(byDay).sort().reverse();
-  if(!dailyDates.length) {
-    document.getElementById('h-daily-body').innerHTML='<div class="empty">No settled data yet.</div>';
-  } else {
-    document.getElementById('h-daily-meta').textContent = dailyDates.length + ' days';
+  const DAILY_PER_PAGE = 10;
+  window._hDailyDates = dailyDates;
+  window._hDailyByDay = byDay;
+  window._hDailyPage = 0;
+  function renderHDaily() {
+    const dates = window._hDailyDates;
+    const byDay = window._hDailyByDay;
+    const page = window._hDailyPage;
+    const total = dates.length;
+    const totalPages = Math.ceil(total / DAILY_PER_PAGE);
+    const pager = document.getElementById('h-daily-pager');
+    if(!total) {
+      document.getElementById('h-daily-body').innerHTML='<div class="empty">No settled data yet.</div>';
+      pager.style.display='none'; return;
+    }
+    document.getElementById('h-daily-meta').textContent = total + ' days';
+    const slice = dates.slice(page*DAILY_PER_PAGE, (page+1)*DAILY_PER_PAGE);
     document.getElementById('h-daily-body').innerHTML = `<table class="hlog"><thead><tr>
       <th>Date</th><th class="r">Picks</th><th class="r">Hits</th>
       <th class="r">Actual %</th><th class="r">Model avg</th><th class="r">Diff</th><th class="r">Brier</th><th>Signal</th>
-    </tr></thead><tbody>${dailyDates.map(d => {
+    </tr></thead><tbody>${slice.map(d => {
       const ds = byDay[d];
-      const n = ds.length;
-      const h = ds.filter(r=>r.actual==='1').length;
-      const ap = ds.reduce((s,r)=>s+r.p,0)/n;
-      const ar = h/n;
-      const df = ar - ap;
+      const n = ds.length, h = ds.filter(r=>r.actual==='1').length;
+      const ap = ds.reduce((s,r)=>s+r.p,0)/n, ar = h/n, df = ar-ap;
       const br = ds.reduce((s,r)=>s+Math.pow(r.p-(r.actual==='1'?1:0),2),0)/n;
       const dfStr = (df>=0?'+':'')+pct(df);
       const lbl = Math.abs(df)<0.04?'on track':df>0?'under-predicted':'over-predicted';
@@ -3998,7 +4035,18 @@ function renderHistory(resetPage) {
         <td style="font-size:11px;color:var(--sage)">${lbl}</td>
       </tr>`;
     }).join('')}</tbody></table>`;
+    if(totalPages > 1) {
+      pager.style.display='flex';
+      document.getElementById('h-daily-pager-label').textContent = `${page+1} / ${totalPages}`;
+    } else { pager.style.display='none'; }
   }
+  window.hDailyPage = function(dir) {
+    const total = window._hDailyDates.length;
+    const totalPages = Math.ceil(total / DAILY_PER_PAGE);
+    window._hDailyPage = Math.max(0, Math.min(totalPages-1, window._hDailyPage + dir));
+    renderHDaily();
+  };
+  renderHDaily();
 
   // ── calibration buckets ──────────────────────────────────────────────────
   const buckets = [
@@ -4065,10 +4113,7 @@ function renderHistory(resetPage) {
     if(!teams.length){ teamEl.innerHTML='<div class="empty">No settled data yet.</div>'; return; }
     const CALIB_THRESHOLD = 30;
     const pct1 = v => (v*100).toFixed(1)+'%';
-    const readyCount = teams.filter(t => t.games.size >= CALIB_THRESHOLD).length;
-    const readyNote = readyCount ? `<span style="font-family:var(--mono);font-size:10px;color:var(--good);margin-left:8px">⚡ ${readyCount} team${readyCount>1?'s':''} ready for calibration</span>` : '';
-    teamEl.innerHTML = `<div style="padding:8px 15px 0;display:flex;align-items:center">${readyNote}</div>
-    <table class="hlog"><thead><tr>
+    teamEl.innerHTML = `<table class="hlog"><thead><tr>
       <th>Team</th><th class="r">Games</th><th class="r">Batters</th>
       <th class="r">Exp Hits</th><th class="r">Act Hits</th><th class="r">Delta</th>
       <th class="r">Hit Rate</th><th class="r">Exp Rate</th><th class="r" title="act/exp ratio — apply as multiplier once ≥30 games">Cal ×</th>
@@ -4083,10 +4128,8 @@ function renderHistory(resetPage) {
       const calCell = ready && calRatio !== null
         ? `<span style="color:${calRatio>=1?'var(--good)':calRatio>=0.9?'var(--amber)':'var(--bad)'};font-weight:700">${calRatio.toFixed(3)}</span>`
         : `<span style="color:var(--sage);opacity:.4">${t.games.size}/${CALIB_THRESHOLD}</span>`;
-      const rowStyle = ready ? 'background:rgba(231,184,75,.04)' : '';
-      return `<tr style="${rowStyle}">
-        <td style="font-family:var(--mono);font-weight:600">${t.team}${ready?` <span style="font-family:var(--mono);font-size:8px;color:var(--good);border:1px solid rgba(111,207,142,.3);border-radius:3px;padding:0 3px;vertical-align:middle">✓</span>`:''}
-        </td>
+      return `<tr>
+        <td style="font-family:var(--mono);font-weight:600">${t.team}</td>
         <td class="r" style="color:${ready?'var(--chalk)':'var(--sage)'}">${t.games.size}</td>
         <td class="r" style="color:var(--sage)">${t.n}</td>
         <td class="r" style="color:var(--amber)">${t.exp.toFixed(1)}</td>
@@ -4443,14 +4486,27 @@ function renderNhHistory(resetPage) {
   const byDay = {};
   settled.forEach(r => { if(!byDay[r.date]) byDay[r.date]=[]; byDay[r.date].push(r); });
   const dailyDates = Object.keys(byDay).sort().reverse();
-  if(!dailyDates.length) {
-    document.getElementById('nh-h-daily-body').innerHTML='<div class="empty">No settled data yet.</div>';
-  } else {
-    document.getElementById('nh-h-daily-meta').textContent = dailyDates.length + ' days';
+  const NH_DAILY_PER_PAGE = 10;
+  window._nhDailyDates = dailyDates;
+  window._nhDailyByDay = byDay;
+  window._nhDailyPage = 0;
+  function renderNhDaily() {
+    const dates = window._nhDailyDates;
+    const byDay = window._nhDailyByDay;
+    const page = window._nhDailyPage;
+    const total = dates.length;
+    const totalPages = Math.ceil(total / NH_DAILY_PER_PAGE);
+    const pager = document.getElementById('nh-h-daily-pager');
+    if(!total) {
+      document.getElementById('nh-h-daily-body').innerHTML='<div class="empty">No settled data yet.</div>';
+      pager.style.display='none'; return;
+    }
+    document.getElementById('nh-h-daily-meta').textContent = total + ' days';
+    const slice = dates.slice(page*NH_DAILY_PER_PAGE, (page+1)*NH_DAILY_PER_PAGE);
     document.getElementById('nh-h-daily-body').innerHTML = `<table class="hlog"><thead><tr>
       <th>Date</th><th class="r">Picks</th><th class="r">Wins</th>
       <th class="r">Win rate</th><th class="r">Model avg</th><th class="r">Diff</th><th class="r">Brier</th>
-    </tr></thead><tbody>${dailyDates.map(d => {
+    </tr></thead><tbody>${slice.map(d => {
       const ds = byDay[d];
       const n = ds.length, w = ds.filter(r=>r.actual==='1').length;
       const ap = ds.reduce((s,r)=>s+r.p,0)/n, ar = w/n, df = ar-ap;
@@ -4464,7 +4520,18 @@ function renderNhHistory(resetPage) {
         <td class="r" style="color:${br<=0.21?'var(--good)':br<=0.24?'var(--amber)':'var(--bad)'}">${br.toFixed(3)}</td>
       </tr>`;
     }).join('')}</tbody></table>`;
+    if(totalPages > 1) {
+      pager.style.display='flex';
+      document.getElementById('nh-h-daily-pager-label').textContent = `${page+1} / ${totalPages}`;
+    } else { pager.style.display='none'; }
   }
+  window.nhDailyPage = function(dir) {
+    const total = window._nhDailyDates.length;
+    const totalPages = Math.ceil(total / NH_DAILY_PER_PAGE);
+    window._nhDailyPage = Math.max(0, Math.min(totalPages-1, window._nhDailyPage + dir));
+    renderNhDaily();
+  };
+  renderNhDaily();
 
   // calibration
   const buckets = [
