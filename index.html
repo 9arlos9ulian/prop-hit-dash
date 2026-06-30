@@ -4735,6 +4735,40 @@ function renderNhHistory(resetPage) {
           else if(score.state === 'Final' && !isFinal(l.gameState)) l.gameState = score.detailedState || 'Final';
         });
       }
+
+      // If the CSV is from a different date than today (stale online), fetch that date's
+      // schedule so legs get correct Final states even without a local server.
+      const csvDates = [...new Set(legs.map(l=>l.gameDate).filter(Boolean))];
+      const staleDates = csvDates.filter(d => d && d !== today);
+      if(staleDates.length) {
+        staleDates.forEach(async staleDate => {
+          try {
+            const sr = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&hydrate=linescore,team&date=${staleDate}`);
+            if(!sr.ok) return;
+            const sd = await sr.json();
+            (sd.dates?.[0]?.games || []).forEach(g => {
+              const gpk = String(g.gamePk);
+              const absState = (g.status?.abstractGameState||'').toLowerCase();
+              const ld = g.linescore || {};
+              _liveLinescore.set(gpk, {
+                inning: ld.currentInning||0, ordinal: ld.currentInningOrdinal||'',
+                half: ld.inningHalf||'', outs: ld.outs||0,
+                isLive: absState==='live', isFinal: absState==='final',
+              });
+              const newState = absState==='final' ? (g.status?.detailedState||'Final') : absState==='live' ? 'In Progress' : '';
+              if(newState) legs.forEach(l => { if(String(l.gamePk)===gpk) l.gameState=newState; });
+            });
+            // matchup fallback for stale legs
+            legs.forEach(l => {
+              if(l.gameDate !== staleDate) return;
+              const ls = _liveLinescore.get(String(l.gamePk));
+              if(ls?.isFinal && !isFinal(l.gameState)) l.gameState = 'Final';
+            });
+            fetchLiveGameData();
+            renderActiveTab();
+          } catch(_){}
+        });
+      }
       renderActiveTab();
 
       // Pre-fetch boxscores for live games so fmt() can read pitcher/batter stats synchronously
