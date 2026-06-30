@@ -2376,7 +2376,13 @@ async function fetchLiveGameData(){
   // mark every batter as hasHit=true before the game starts.
   const gamePks = new Set();
   legs.forEach(l => {
-    if(l.gamePk && (isLive(l.gameState) || isFinal(l.gameState))) gamePks.add(String(l.gamePk));
+    if(!l.gamePk) return;
+    const gpk = String(l.gamePk);
+    const ls = _liveLinescore.get(gpk);
+    // use live linescore state if available (works online where CSV game_state is stale)
+    const live = ls ? ls.isLive : isLive(l.gameState);
+    const final = ls ? ls.isFinal : isFinal(l.gameState);
+    if(live || final) gamePks.add(gpk);
   });
   if(!gamePks.size) return;
 
