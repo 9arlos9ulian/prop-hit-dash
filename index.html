@@ -4260,8 +4260,7 @@ function renderSlotChart() {
     }).catch(()=>{});
   }, 3 * 60 * 1000);
   // populate the date pickers (local server only)
-  if(!_onServer) return;
-  fetch('/slates').then(r=>r.ok?r.json():null).then(dates=>{
+  if(_onServer) fetch('/slates').then(r=>r.ok?r.json():null).then(dates=>{
     if(!dates||!dates.length) return;
     const today=new Date().toLocaleDateString('en-CA');
     const sel=document.getElementById('global-date-picker');
