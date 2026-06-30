@@ -2324,7 +2324,7 @@ function computeParlay(sel){
 let savedBets = [];
 try{ savedBets = JSON.parse(localStorage.getItem('dugout_bets')||'[]'); }catch(e){}
 
-const _onServer = location.protocol==='http:'||location.protocol==='https:';
+const _onServer = location.hostname==='127.0.0.1'||location.hostname==='localhost';
 
 function persistBets(){
   // always write localStorage as fallback
@@ -4226,7 +4226,8 @@ function renderSlotChart() {
       renderActiveTab();
     }).catch(()=>{});
   }, 3 * 60 * 1000);
-  // populate the date pickers
+  // populate the date pickers (local server only)
+  if(!_onServer) return;
   fetch('/slates').then(r=>r.ok?r.json():null).then(dates=>{
     if(!dates||!dates.length) return;
     const today=new Date().toLocaleDateString('en-CA');
