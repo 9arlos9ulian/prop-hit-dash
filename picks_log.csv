@@ -22880,7 +22880,7 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-06-29,824741,678882,Ceddanne Rafaela,BOS,WSH @ BOS,2,0.7232,,,1,
 2026-06-29,824741,807799,Masataka Yoshida,BOS,WSH @ BOS,2,0.7346,,,1,
 2026-06-29,824339,664983,Jake Mccarthy,COL,MIA @ COL,1,0.7141,,,1,
-2026-06-29,824339,650489,Willi Castro,COL,MIA @ COL,2,0.6975,,,1,
+2026-06-29,824339,650489,Willi Castro,COL,MIA @ COL,2,0.6975,,,DNP,
 2026-06-29,824741,677800,Wilyer Abreu,BOS,WSH @ BOS,3,0.6956,,,1,
 2026-06-29,825065,650333,Luis Arráez,SF,SF @ AZ,1,0.6956,,,1,
 2026-06-29,825065,606466,Ketel Marte,AZ,SF @ AZ,1,0.6956,-194.0,223.0,1,66.0
