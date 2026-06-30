@@ -359,6 +359,10 @@
   /* ── card glow ── */
   .card{transition:box-shadow .3s}
   .card:hover{box-shadow:0 0 0 1px rgba(76,175,125,.08),0 8px 32px rgba(0,0,0,.3)}
+  .card-collapsible>h2{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between}
+  .card-collapsible>h2::after{content:'▾';font-size:12px;color:var(--sage);opacity:.6;transition:transform .2s;margin-left:8px;flex-shrink:0}
+  .card-collapsible.collapsed>h2::after{transform:rotate(-90deg)}
+  .card-collapsible.collapsed>*:not(h2){display:none!important}
   .row-cold-glow{box-shadow:0 0 0 1px rgba(111,207,142,.18),0 0 18px rgba(111,207,142,.14),0 0 40px rgba(111,207,142,.08);animation:coldGlowGreen 2.4s ease-in-out infinite}
   .row-cold-glow-red{box-shadow:0 0 0 1px rgba(224,92,92,.18),0 0 18px rgba(224,92,92,.14),0 0 40px rgba(224,92,92,.08);animation:coldGlowRed 2.4s ease-in-out infinite}
   .sc-tracked{border-color:rgba(231,184,75,.35) !important}
@@ -669,24 +673,24 @@
       </div>
     </div>
 
-    <div class="card" style="margin-top:14px" id="h-daily-card">
-      <h2>Daily Scorecard <span id="h-daily-meta" style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0"></span></h2>
+    <div class="card card-collapsible" style="margin-top:14px" id="h-daily-card">
+      <h2 onclick="toggleCard('h-daily-card')">Daily Scorecard <span id="h-daily-meta" style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0"></span></h2>
       <div class="htable-wrap"><div id="h-daily-body"><div class="empty">No settled data yet.</div></div></div>
     </div>
 
-    <div class="card" style="margin-top:14px" id="h-team-card">
-      <h2>Team Performance <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">expected vs actual hits · sorted by delta</span></h2>
+    <div class="card card-collapsible" style="margin-top:14px" id="h-team-card">
+      <h2 onclick="toggleCard('h-team-card')">Team Performance <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">expected vs actual hits · sorted by delta</span></h2>
       <div class="htable-wrap"><div id="h-team-body"><div class="empty">No settled data yet.</div></div></div>
     </div>
 
-    <div class="card" style="margin-top:14px" id="h-cal-card">
-      <h2>Calibration <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">amber = predicted · green = actual</span></h2>
+    <div class="card card-collapsible" style="margin-top:14px" id="h-cal-card">
+      <h2 onclick="toggleCard('h-cal-card')">Calibration <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">amber = predicted · green = actual</span></h2>
       <div id="h-calvis" style="display:flex;align-items:flex-end;gap:8px;padding:12px 15px 0"></div>
       <div class="htable-wrap" style="margin-top:8px"><div id="h-cal-body"><div class="empty">—</div></div></div>
     </div>
 
-    <div class="card" style="margin-top:14px" id="h-slot-card">
-      <h2>By Batting Order <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">actual hit rate · avg model % · settled picks</span></h2>
+    <div class="card card-collapsible" style="margin-top:14px" id="h-slot-card">
+      <h2 onclick="toggleCard('h-slot-card')">By Batting Order <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">actual hit rate · avg model % · settled picks</span></h2>
       <div id="h-slot-chart" style="padding:0 15px 12px"><div class="empty">—</div></div>
     </div>
 
@@ -2120,7 +2124,7 @@ function render(){
                   const idHint=isUnresolved&&l.batterId?`<span style="font-family:var(--mono);font-size:9px;color:var(--amber);opacity:.7" title="Name not resolved — ID is correct">ID ${l.batterId}</span>`:'';
                   return `<div style="font-family:var(--disp);font-size:16px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:baseline;gap:5px">${nameNode}${idHint}</div>`;
                 })()}
-                ${(()=>{const sa=streakBadge(l.last5,false);const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';const est=l.lineupEst?`<span class="estbadge">⚠ Est. Lineup</span>`:'';const alerts=[sa,thin,rest,est].filter(Boolean).join('');const s=(l.last5||'').replace(/[^01]/g,'');if(!s)return alerts?`<div class="bbadges" style="margin-top:7px;display:flex;gap:4px;flex-wrap:wrap">${alerts}</div>`:'';const s10=s.slice(-10);const dots=s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}" title="${c==='1'?'hit':'no hit'}"></span>`).join('');return `<div class="streakrow" style="flex-wrap:wrap"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div>${alerts}</div>`;})()}
+                ${(()=>{const sa=streakBadge(l.last5,false);const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';const est=(l.lineupEst&&!isLive(l.gameState)&&!isFinal(l.gameState))?`<span class="estbadge">⚠ Est. Lineup</span>`:'';const alerts=[sa,thin,rest,est].filter(Boolean).join('');const s=(l.last5||'').replace(/[^01]/g,'');if(!s)return alerts?`<div class="bbadges" style="margin-top:7px;display:flex;gap:4px;flex-wrap:wrap">${alerts}</div>`:'';const s10=s.slice(-10);const dots=s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}" title="${c==='1'?'hit':'no hit'}"></span>`).join('');return `<div class="streakrow" style="flex-wrap:wrap"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div>${alerts}</div>`;})()}
                 ${liveInningAbHtml(l)}
               </div>
             </div>
@@ -2162,7 +2166,7 @@ function render(){
             const mobileBar = (()=>{
               const gradeChip = l.pGrade ? `<span class="pgrade pgrade-${l.pGrade}" style="font-size:9px;padding:1px 4px">${l.pGrade}</span>` : '';
               const pitPart = l.pitcher ? `<span style="color:var(--chalk)">${esc(l.pitcher.split(' ').pop())}</span>${l.pitcherHand?`<span> ${l.pitcherHand}</span>`:''}${gradeChip}` : '';
-              const gameState = isLive(l.gameState) ? `<span style="color:#e05c5c">● LIVE</span>` : isFinal(l.gameState) ? `<span style="opacity:.5">Final</span>` : l.startTime ? `<span style="color:var(--amber)">${esc(l.startTime)}</span>` : '';
+              const gameState = isLive(l.gameState) ? `<span style="color:#e05c5c">● LIVE</span>` : isFinal(l.gameState) ? `<span style="color:var(--sage);opacity:.7;font-family:var(--mono);font-size:9px;letter-spacing:.04em">FINAL</span>` : l.startTime ? `<span style="color:var(--amber)">${esc(l.startTime)}</span>` : '';
               const matchPart = l.matchup ? `<span style="color:var(--chalk);opacity:.7">${esc(l.matchup)}</span>` : '';
               if(!pitPart && !matchPart) return '';
               return `<div class="mobile-info-bar">${pitPart}${pitPart&&matchPart?'<span style="opacity:.3">·</span>':''}${matchPart}${gameState?'<span style="opacity:.3">·</span>':''}${gameState}</div>`;
@@ -3079,7 +3083,7 @@ function switchTab(name, btn) {
   if(btn) btn.classList.add('active');
   document.body.classList.toggle('nohit-mode', name==='nohit');
   updateSlipCount();
-  if(name==='history') loadHistory();
+  if(name==='history') { initCollapsibleCards(); loadHistory(); }
   if(name==='nhhistory') loadNhHistory();
   if(name==='nohit') renderNoHit();
   if(name==='dugout' || name==='nohit' || name==='bets') startLivePolling(); else stopLivePolling();
@@ -3707,7 +3711,7 @@ function renderNoHit() {
                   const idHint=isUnresolved&&l.batterId?`<span style="font-family:var(--mono);font-size:9px;color:var(--amber);opacity:.7" title="Name not resolved — ID is correct">ID ${l.batterId}</span>`:'';
                   return `<div style="font-family:var(--disp);font-size:16px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:baseline;gap:5px">${nameNode}${idHint}</div>`;
                 })()}
-                ${(()=>{const sa=streakBadge(l.last5,true);const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';const est=l.lineupEst?`<span class="estbadge">⚠ Est. Lineup</span>`:'';const alerts=[sa,thin,rest,est].filter(Boolean).join('');const s=(l.last5||'').replace(/[^01]/g,'');if(!s)return alerts?`<div class="bbadges" style="margin-top:7px;display:flex;gap:4px;flex-wrap:wrap">${alerts}</div>`:'';const s10=s.slice(-10);const dots=s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}"></span>`).join('');return `<div class="streakrow" style="flex-wrap:wrap"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div>${alerts}</div>`;})()}
+                ${(()=>{const sa=streakBadge(l.last5,true);const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';const est=(l.lineupEst&&!isLive(l.gameState)&&!isFinal(l.gameState))?`<span class="estbadge">⚠ Est. Lineup</span>`:'';const alerts=[sa,thin,rest,est].filter(Boolean).join('');const s=(l.last5||'').replace(/[^01]/g,'');if(!s)return alerts?`<div class="bbadges" style="margin-top:7px;display:flex;gap:4px;flex-wrap:wrap">${alerts}</div>`:'';const s10=s.slice(-10);const dots=s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}"></span>`).join('');return `<div class="streakrow" style="flex-wrap:wrap"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div>${alerts}</div>`;})()}
                 ${liveInningAbHtml(l)}
               </div>
             </div>
@@ -3720,7 +3724,7 @@ function renderNoHit() {
             ${(()=>{
               const gradeChip = l.pGrade ? `<span class="pgrade pgrade-${l.pGrade}" style="font-size:9px;padding:1px 4px">${l.pGrade}</span>` : '';
               const pitPart = l.pitcher ? `<span style="color:var(--chalk)">${esc(l.pitcher.split(' ').pop())}</span>${l.pitcherHand?`<span> ${l.pitcherHand}</span>`:''}${gradeChip}` : '';
-              const gameState = isLive(l.gameState) ? `<span style="color:#e05c5c">● LIVE</span>` : isFinal(l.gameState) ? `<span style="opacity:.5">Final</span>` : l.startTime ? `<span style="color:var(--amber)">${esc(l.startTime)}</span>` : '';
+              const gameState = isLive(l.gameState) ? `<span style="color:#e05c5c">● LIVE</span>` : isFinal(l.gameState) ? `<span style="color:var(--sage);opacity:.7;font-family:var(--mono);font-size:9px;letter-spacing:.04em">FINAL</span>` : l.startTime ? `<span style="color:var(--amber)">${esc(l.startTime)}</span>` : '';
               const matchPart = l.matchup ? `<span style="color:var(--chalk);opacity:.7">${esc(l.matchup)}</span>` : '';
               if(!pitPart && !matchPart) return '';
               return `<div class="mobile-info-bar">${pitPart}${pitPart&&matchPart?'<span style="opacity:.3">·</span>':''}${matchPart}${gameState?'<span style="opacity:.3">·</span>':''}${gameState}</div>`;
@@ -3862,6 +3866,18 @@ function populateDateFilter() {
   const dates = [...new Set(historyRows.map(r => r.date))].sort().reverse();
   sel.innerHTML = '<option value="">All dates</option>' +
     dates.map(d => `<option value="${d}"${d===current?' selected':''}>${d}</option>`).join('');
+}
+
+function toggleCard(id) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.toggle('collapsed');
+  try { localStorage.setItem('card_collapsed_'+id, el.classList.contains('collapsed')?'1':'0'); } catch(e){}
+}
+function initCollapsibleCards() {
+  ['h-daily-card','h-team-card','h-cal-card','h-slot-card'].forEach(id => {
+    try { if(localStorage.getItem('card_collapsed_'+id)==='1') document.getElementById(id)?.classList.add('collapsed'); } catch(e){}
+  });
 }
 
 function renderHistory(resetPage) {
