@@ -370,10 +370,13 @@
   .card-collapsible.collapsed>*:not(h2){display:none!important}
   .row-cold-glow{box-shadow:0 0 0 1px rgba(111,207,142,.18),0 0 18px rgba(111,207,142,.14),0 0 40px rgba(111,207,142,.08);animation:coldGlowGreen 2.4s ease-in-out infinite}
   .row-cold-glow-red{box-shadow:0 0 0 1px rgba(224,92,92,.18),0 0 18px rgba(224,92,92,.14),0 0 40px rgba(224,92,92,.08);animation:coldGlowRed 2.4s ease-in-out infinite}
+  .row-cold-glow-blue{box-shadow:0 0 0 1px rgba(103,232,249,.18),0 0 18px rgba(103,232,249,.14),0 0 40px rgba(103,232,249,.08);animation:coldGlowBlue 2.4s ease-in-out infinite}
+  .row-hot-glow{box-shadow:0 0 0 1px rgba(224,92,92,.18),0 0 18px rgba(224,92,92,.14),0 0 40px rgba(224,92,92,.08);animation:coldGlowRed 2.4s ease-in-out infinite}
   .sc-tracked{border-color:rgba(231,184,75,.35) !important}
   .sc-at-bat{animation:scAtBat 2s ease-in-out infinite}
   @keyframes coldGlowGreen{0%,100%{box-shadow:0 0 0 1px rgba(111,207,142,.15),0 0 14px rgba(111,207,142,.10)}50%{box-shadow:0 0 0 1px rgba(111,207,142,.30),0 0 28px rgba(111,207,142,.22),0 0 50px rgba(111,207,142,.10)}}
   @keyframes coldGlowRed{0%,100%{box-shadow:0 0 0 1px rgba(224,92,92,.15),0 0 14px rgba(224,92,92,.10)}50%{box-shadow:0 0 0 1px rgba(224,92,92,.30),0 0 28px rgba(224,92,92,.22),0 0 50px rgba(224,92,92,.10)}}
+  @keyframes coldGlowBlue{0%,100%{box-shadow:0 0 0 1px rgba(103,232,249,.15),0 0 14px rgba(103,232,249,.10)}50%{box-shadow:0 0 0 1px rgba(103,232,249,.30),0 0 28px rgba(103,232,249,.22),0 0 50px rgba(103,232,249,.10)}}
   @keyframes scAtBat{0%,100%{box-shadow:0 0 0 1px rgba(231,184,75,.25),0 0 14px rgba(231,184,75,.15)}50%{box-shadow:0 0 0 1px rgba(231,184,75,.55),0 0 28px rgba(231,184,75,.30)}}
 
   /* ── tab glow ── */
@@ -2055,12 +2058,12 @@ function streakBadge(last5, forNoHit){
   const hits=s10.split('').filter(c=>c==='1').length;
   if(forNoHit){
     const cls=trailMiss>=5?'streakbadge streakbadge-5plus':trailMiss===4?'streakbadge streakbadge-4':trailMiss===3?'streakbadge streakbadge-3':trailMiss===2?'streakbadge streakbadge-2':'';
-    return trailMiss>5?`<span class="${cls}" style="color:#67e8f9;background:rgba(103,232,249,.08);border-color:rgba(103,232,249,.3)" title="${trailMiss} consecutive hitless games — radioactively cold">${trailMiss}g COLD</span>`
-         :trailHit>5?`<span class="coldwarn" title="${trailHit} consecutive hits — bad for no-hit">${trailHit}g HOT</span>`:'';
+    return trailMiss>5?`<span class="${cls}" style="color:#67e8f9;background:rgba(103,232,249,.08);border-color:rgba(103,232,249,.3);animation:coldGlowBlue 2.4s ease-in-out infinite,coldpulse 2.4s ease-in-out infinite" title="${trailMiss} consecutive hitless games — radioactively cold">${trailMiss}G COLD</span>`
+         :trailHit>5?`<span class="coldwarn" style="animation:coldGlowRed 2.4s ease-in-out infinite,coldpulse 2.4s ease-in-out infinite" title="${trailHit} consecutive hits — bad for no-hit">${trailHit}G HOT</span>`:'';
   } else {
     const cls=trailHit>=5?'streakbadge streakbadge-5plus':trailHit===4?'streakbadge streakbadge-4':trailHit===3?'streakbadge streakbadge-3':trailHit===2?'streakbadge streakbadge-2':'';
-    return trailHit>5?`<span class="${cls}" title="${trailHit} consecutive hits">${trailHit}g HOT</span>`
-         :trailMiss>5?`<span class="coldwarn" title="Hitless in last ${trailMiss} games">${trailMiss}g COLD</span>`
+    return trailHit>5?`<span class="${cls}" style="animation:coldGlowRed 2.4s ease-in-out infinite,coldpulse 2.4s ease-in-out infinite" title="${trailHit} consecutive hits">${trailHit}G HOT</span>`
+         :trailMiss>5?`<span class="coldwarn" title="Hitless in last ${trailMiss} games">${trailMiss}G COLD</span>`
          :hits>=7?'<span class="hotbadge">HOT</span>':'';
   }
 }
@@ -2119,12 +2122,14 @@ function render(){
     const scoreColor=l.p>=0.70?'var(--good)':l.p>=0.55?'var(--amber)':'var(--sage)';
     const _s=(l.last5||'').replace(/[^01]/g,'');
     let _tm=0; for(let i=_s.length-1;i>=0;i--){if(_s[i]==='0')_tm++;else break;}
+    let _th=0; for(let i=_s.length-1;i>=0;i--){if(_s[i]==='1')_th++;else break;}
     const isRadioactive=_tm>5;
+    const isHot=_th>=7;
     const settled = (l.hasHit||missed||ppd) && l.gamePk && l.batterId;
     const circleHover = settled
       ? `data-gpk="${l.gamePk}" data-bid="${l.batterId}" data-nm="${esc(l.name||'')}" onmouseenter="showCardOverlay(this.closest('.row'),this.dataset.gpk,this.dataset.bid,this.dataset.nm)" onmouseleave="hideCardOverlay(this.closest('.row'))"`
       : `onmouseenter="showModelTooltip(this.closest('.row'),${l.id})" onmouseleave="hideModelTooltip(this.closest('.row'))"`;
-    return _divider+`<div class="row${l.hasHit?' row-done':missed?' row-missed':''}${isRadioactive?' row-cold-glow':''}${(!l.hasHit&&!missed&&!ppd&&l.inSlip)?' row-in-slip':''}${ppd?' row-in-slip':''}">
+    return _divider+`<div class="row${l.hasHit?' row-done':missed?' row-missed':''}${isRadioactive?' row-cold-glow':isHot?' row-hot-glow':''}${(!l.hasHit&&!missed&&!ppd&&l.inSlip)?' row-in-slip':''}${ppd?' row-in-slip':''}"${l.batterId?` id="batter-${l.batterId}"`:''}">
       <div class="rtop">
         <div class="bcard-inner" style="flex:1;min-width:0;display:grid;grid-template-columns:1fr 220px;grid-template-rows:auto auto;gap:0">
           <!-- BATTER -->
@@ -2148,7 +2153,7 @@ function render(){
                   const idHint=isUnresolved&&l.batterId?`<span style="font-family:var(--mono);font-size:9px;color:var(--amber);opacity:.7" title="Name not resolved — ID is correct">ID ${l.batterId}</span>`:'';
                   return `<div style="font-family:var(--disp);font-size:16px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:baseline;gap:5px">${nameNode}${idHint}</div>`;
                 })()}
-                ${(()=>{const sa=streakBadge(l.last5,false);const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';const est=(l.lineupEst&&!isLive(l.gameState)&&!isFinal(l.gameState))?`<span class="estbadge">⚠ Est. Lineup</span>`:'';const alerts=[sa,thin,rest,est].filter(Boolean).join('');const s=(l.last5||'').replace(/[^01]/g,'');if(!s)return alerts?`<div class="bbadges" style="margin-top:7px;display:flex;gap:4px;flex-wrap:wrap">${alerts}</div>`:'';const s10=s.slice(-10);const dots=s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}" title="${c==='1'?'hit':'no hit'}"></span>`).join('');return `<div class="streakrow" style="flex-wrap:wrap"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div>${alerts}</div>`;})()}
+                ${(()=>{const sa=streakBadge(l.last5,false);const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';const est=(l.lineupEst&&!isLive(l.gameState)&&!isFinal(l.gameState))?`<span class="estbadge">⚠ EST</span>`:'';const badges=[sa,thin,rest,est].filter(Boolean).join('');const badgesRow=badges?`<div class="bbadges" style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${badges}</div>`:'';const s=(l.last5||'').replace(/[^01]/g,'');if(!s)return badgesRow;const s10=s.slice(-10);const dots=s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}" title="${c==='1'?'hit':'no hit'}"></span>`).join('');return `<div class="streakrow"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div></div>${badgesRow}`;})()}
                 ${liveInningAbHtml(l)}
               </div>
             </div>
@@ -2361,12 +2366,12 @@ function persistBets(){
 }
 
 function _loadBetsFromServer(){
-  if(!_onServer) return;
-  fetch('/bets')
+  const url = _onServer ? '/bets' : './bets.json?t='+Date.now();
+  fetch(url)
     .then(r=>r.ok?r.json():null)
     .then(data=>{
       if(!Array.isArray(data)||!data.length) return;
-      // server wins over localStorage (server is source of truth)
+      // server / published file wins over localStorage
       savedBets = data;
       try{ localStorage.setItem('dugout_bets', JSON.stringify(savedBets)); }catch(e){}
       renderSavedBets();
@@ -2784,8 +2789,9 @@ function _betCardHtml(b){
       hdrRight += `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.4;margin-left:5px">Final</span>`;
     }
 
-    const matchupLink = gpkGroup
-      ? `<a href="https://www.mlb.com/gameday/${gpkGroup}" target="_blank" style="font-family:var(--mono);font-size:9px;color:var(--sage);letter-spacing:.3px;text-decoration:none" onmouseover="this.style.color='var(--chalk)'" onmouseout="this.style.color='var(--sage)'">${esc(matchup)}</a>`
+    const _mlbUrl = gpkGroup ? (lsGroup?.isLive ? `https://www.mlb.com/tv/g${gpkGroup}` : `https://www.mlb.com/gameday/${gpkGroup}`) : null;
+    const matchupLink = _mlbUrl
+      ? `<a href="${_mlbUrl}" target="_blank" style="font-family:var(--mono);font-size:9px;color:${lsGroup?.isLive?'#e05c5c':'var(--sage)'};letter-spacing:.3px;text-decoration:none" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${lsGroup?.isLive?'● ':''} ${esc(matchup)}</a>`
       : `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);letter-spacing:.3px">${esc(matchup)}</span>`;
 
     const notLastGroup = gi < groups.size - 1;
@@ -3100,6 +3106,14 @@ function renderActiveTab() {
   else render();
 }
 function renderBoth(){ render(); renderNoHit(); }
+function goToBatter(batterId) {
+  const tabBtn = document.querySelector('.tab[onclick*="dugout"]');
+  switchTab('dugout', tabBtn);
+  setTimeout(() => {
+    const el = document.getElementById('batter-'+batterId);
+    if(el) { el.scrollIntoView({behavior:'smooth', block:'center'}); el.style.transition='background .3s'; el.style.background='rgba(231,184,75,.15)'; setTimeout(()=>el.style.background='',1200); }
+  }, 100);
+}
 function switchTab(name, btn) {
   currentTab = name;
   document.getElementById('tab-dugout').style.display    = name==='dugout'    ? '' : 'none';
@@ -3271,7 +3285,7 @@ function renderGames() {
         const hitCheck = hit ? `<span style="font-family:var(--mono);font-size:9px;color:var(--good);flex:none">✓</span>` : '';
         return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0${hit?';opacity:.55':''}">
 
-          ${l.batterId?`<a href="https://baseballsavant.mlb.com/savant-player/${l.batterId}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:10px;color:var(--chalk);${nameStyle};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-decoration-line:${hit?'line-through':'none'};border-bottom:${hit?'none':'1px solid transparent'}" ${hit?'':' onmouseover="this.style.borderBottomColor=\'var(--amber)\';this.style.opacity=\'1\'" onmouseout="this.style.borderBottomColor=\'transparent\';this.style.opacity=\'.75\'"'}>${l.slot?l.slot+'. ':''}${esc(l.name.split(' ').slice(-1)[0])}</a>`:`<span style="font-family:var(--mono);font-size:10px;color:var(--chalk);${nameStyle};text-decoration-line:${hit?'line-through':'none'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${l.slot?l.slot+'. ':''}${esc(l.name.split(' ').slice(-1)[0])}</span>`}
+          ${l.batterId?`<a href="#" onclick="event.preventDefault();goToBatter(${l.batterId})" style="font-family:var(--mono);font-size:10px;color:var(--chalk);${nameStyle};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-decoration-line:${hit?'line-through':'none'};border-bottom:${hit?'none':'1px solid transparent'}" ${hit?'':' onmouseover="this.style.borderBottomColor=\'var(--amber)\';this.style.opacity=\'1\'" onmouseout="this.style.borderBottomColor=\'transparent\';this.style.opacity=\'.75\'"'}>${l.slot?l.slot+'. ':''}${esc(l.name.split(' ').slice(-1)[0])}</a>`:`<span style="font-family:var(--mono);font-size:10px;color:var(--chalk);${nameStyle};text-decoration-line:${hit?'line-through':'none'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${l.slot?l.slot+'. ':''}${esc(l.name.split(' ').slice(-1)[0])}</span>`}
           ${hitCheck}
           <span style="font-family:var(--mono);font-size:10px;color:${dotCol(l.p)};flex:none">${(l.p*100).toFixed(0)}%</span>
         </div>`;
@@ -3724,7 +3738,7 @@ function renderNoHit() {
     const nhCircleHover = nhSettled
       ? `data-gpk="${l.gamePk}" data-bid="${l.batterId}" data-nm="${esc(l.name||'')}" onmouseenter="showCardOverlay(this.closest('.row'),this.dataset.gpk,this.dataset.bid,this.dataset.nm)" onmouseleave="hideCardOverlay(this.closest('.row'))"`
       : `onmouseenter="showModelTooltip(this.closest('.row'),${l.id})" onmouseleave="hideModelTooltip(this.closest('.row'))"`;
-    return _divider+`<div class="row${nhWin?' row-nohit-win':nhLoss?' row-missed':''}${tm>5?' row-cold-glow-red':''}${(!nhSettled&&!nhPpd&&inSlip)?' row-in-slip':''}${nhPpd?' row-in-slip':''}">
+    return _divider+`<div class="row${nhWin?' row-nohit-win':nhLoss?' row-missed':''}${tm>5?' row-cold-glow-blue':''}${(!nhSettled&&!nhPpd&&inSlip)?' row-in-slip':''}${nhPpd?' row-in-slip':''}">
       <div class="rtop">
         <div class="bcard-inner" style="flex:1;min-width:0;display:grid;grid-template-columns:1fr 220px;grid-template-rows:auto auto;gap:0">
           <!-- BATTER -->
@@ -3741,7 +3755,7 @@ function renderNoHit() {
                   const idHint=isUnresolved&&l.batterId?`<span style="font-family:var(--mono);font-size:9px;color:var(--amber);opacity:.7" title="Name not resolved — ID is correct">ID ${l.batterId}</span>`:'';
                   return `<div style="font-family:var(--disp);font-size:16px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:baseline;gap:5px">${nameNode}${idHint}</div>`;
                 })()}
-                ${(()=>{const sa=streakBadge(l.last5,true);const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';const est=(l.lineupEst&&!isLive(l.gameState)&&!isFinal(l.gameState))?`<span class="estbadge">⚠ Est. Lineup</span>`:'';const alerts=[sa,thin,rest,est].filter(Boolean).join('');const s=(l.last5||'').replace(/[^01]/g,'');if(!s)return alerts?`<div class="bbadges" style="margin-top:7px;display:flex;gap:4px;flex-wrap:wrap">${alerts}</div>`:'';const s10=s.slice(-10);const dots=s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}"></span>`).join('');return `<div class="streakrow" style="flex-wrap:wrap"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div>${alerts}</div>`;})()}
+                ${(()=>{const sa=streakBadge(l.last5,true);const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';const est=(l.lineupEst&&!isLive(l.gameState)&&!isFinal(l.gameState))?`<span class="estbadge">⚠ EST</span>`:'';const alerts=[sa,thin,rest,est].filter(Boolean).join('');const s=(l.last5||'').replace(/[^01]/g,'');if(!s)return alerts?`<div class="bbadges" style="margin-top:7px;display:flex;gap:4px;flex-wrap:wrap">${alerts}</div>`:'';const s10=s.slice(-10);const dots=s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}"></span>`).join('');return `<div class="streakrow" style="flex-wrap:wrap"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div>${alerts}</div>`;})()}
                 ${liveInningAbHtml(l)}
               </div>
             </div>
