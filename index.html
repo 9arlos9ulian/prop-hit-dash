@@ -1685,8 +1685,6 @@ function updateSavedBadge(){
     const timeStr=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     const csvDate = [...new Set(legs.map(l=>l.gameDate).filter(Boolean))].join(', ') || '—';
     const src = _onServer ? 'local server' : 'github pages';
-    const csvDate = [...new Set(legs.map(l=>l.gameDate).filter(Boolean))].join(', ') || '—';
-    const src = _onServer ? 'local server' : 'github pages';
     dsLabel.innerHTML=`<b>${legs.length} batters</b> &nbsp;·&nbsp; <span style="color:var(--sage);opacity:.7">slate ${csvDate}</span> &nbsp;·&nbsp; Updated ${timeStr}${ageMin<120?' &nbsp;<span style="opacity:.5;font-size:10px">('+ageMin+'m ago)</span>':''} &nbsp;<span style="font-size:9px;opacity:.4;font-family:var(--mono)">[${src}]</span>`;
     dsDot.classList.toggle('stale', ageMin>240);
     dsbar.style.display='none';
