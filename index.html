@@ -25,9 +25,8 @@
   .pitcher-col{grid-column:2 !important;grid-row:1 !important;width:auto !important;min-width:0;border-left:1px solid var(--line) !important;padding-left:12px !important;padding-top:0 !important;margin-top:0 !important;align-self:start}
   .game-col{grid-column:2 !important;grid-row:2 !important;width:auto !important;min-width:0;border-left:1px solid var(--line) !important;border-top:1px solid var(--line) !important;padding-left:12px !important;padding-top:6px !important;margin-top:6px !important}
   @media(min-width:1100px){
-    #pool,#nohit-pool{padding:4px}
-    #nohit-pool .row:hover{box-shadow:0 6px 24px rgba(0,0,0,.38),0 0 0 1px rgba(192,57,43,.1)}
-    #pool .row-done,#nohit-pool .row-done{border-color:var(--line)}
+    #pool{padding:4px}
+    #pool .row-done{border-color:var(--line)}
   }
 
 
@@ -51,7 +50,7 @@
     .slate-teams{flex-direction:column !important}
 
     /* pool: single column on mobile */
-    #pool,#nohit-pool{grid-template-columns:1fr !important}
+    #pool{grid-template-columns:1fr !important}
     /* card: narrow right column on mobile */
     .batter-main{padding-right:0 !important}
     .bcard-inner{grid-template-columns:1fr 138px !important}
@@ -77,7 +76,7 @@
     .bstats-row>div{flex:1;min-width:0}
     /* ensure card and pool fill full width */
     .row{padding:10px 12px !important}
-    #pool,#nohit-pool{padding:4px 0 !important}
+    #pool{padding:4px 0 !important}
     /* mobile info bar: hidden (pitcher/game cols visible on mobile) */
     .mobile-info-bar{display:none !important}
 
@@ -200,7 +199,6 @@
   .row-in-slip{opacity:.35;pointer-events:none;filter:grayscale(.4)}
   .col-hdr{display:none}
   .bet-prices{display:none}
-  .row-nohit-win{opacity:.7;border-left:3px solid rgba(111,207,142,.35) !important;background:rgba(111,207,142,.03) !important}
   /* streak dots */
   .streakrow{display:flex;align-items:center;gap:5px;margin-top:7px}
   .sdots{display:flex;gap:3px;align-items:center}
@@ -418,6 +416,23 @@
     box-shadow:0 4px 20px rgba(0,0,0,.5);
   }
 
+  /* ── global header search ── */
+  .global-search-dropdown{
+    position:absolute;top:calc(100% + 4px);right:0;left:0;
+    z-index:50;min-width:240px;
+    background:rgba(10,14,12,.98);
+    border:1px solid var(--line);border-radius:8px;
+    padding:4px;
+    animation:fadeInOv .12s ease;
+    backdrop-filter:blur(6px);
+    box-shadow:0 8px 28px rgba(0,0,0,.55);
+    max-height:320px;overflow-y:auto;
+  }
+  .global-search-result{
+    display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;
+  }
+  .global-search-result:hover{background:rgba(255,255,255,.06)}
+
   /* ── score circle pulse when active ── */
   .scorecircle:not(.scorecircle-done){
     box-shadow:0 0 0 0 rgba(76,175,125,.0);
@@ -454,29 +469,6 @@
   .tick-dot{width:6px;height:6px;border-radius:50%;background:#e05c5c;flex:none;animation:livepulse 1.2s ease-in-out infinite}
   @keyframes livepulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-  /* ── no-hit mode theme ── */
-  body.nohit-mode .bg-gradient{
-    background:
-      radial-gradient(ellipse 65% 50% at 15% 25%,rgba(192,57,43,.08) 0%,transparent 70%),
-      radial-gradient(ellipse 50% 60% at 85% 75%,rgba(160,40,30,.06) 0%,transparent 70%),
-      radial-gradient(ellipse 40% 35% at 55% 5%,rgba(224,92,92,.04) 0%,transparent 60%);
-  }
-  body.nohit-mode .tabs .tab.active{box-shadow:0 -2px 12px rgba(192,57,43,.1) inset}
-  body.nohit-mode .tabs .tab.active::after{background:linear-gradient(90deg,transparent,rgba(192,57,43,.55),transparent)}
-  body.nohit-mode .header-badge{color:#e05c5c;background:rgba(224,92,92,.1);border-color:rgba(224,92,92,.25);box-shadow:0 0 10px rgba(224,92,92,.15)}
-  body.nohit-mode .ds-dot{background:#e05c5c}
-  body.nohit-mode #mlb-ticker{border-color:rgba(192,57,43,.3);background:rgba(60,15,15,.4)}
-  #title-hit{transition:text-decoration-color .3s}
-  body.nohit-mode #title-hit{text-decoration:line-through;text-decoration-color:#e05c5c;text-decoration-thickness:3px}
-  #tab-nohit .pbar>div{background:linear-gradient(90deg,#7B1010,#e05c5c)}
-  #tab-nohit .card:hover{box-shadow:0 0 0 1px rgba(192,57,43,.1),0 8px 32px rgba(0,0,0,.3)}
-  #tab-nohit .scorecircle.sc-picked{border-color:#e05c5c!important;box-shadow:0 0 10px rgba(224,92,92,.25)!important;animation:none}
-  #tab-nohit .scorecircle.sc-picked .scoreval{opacity:.3}
-  #tab-nohit .scorecircle.sc-picked .sc-overlay{opacity:1;color:#e05c5c!important;background:rgba(224,92,92,.12)!important;font-size:17px}
-  #tab-nohit .scorecircle:not(.sc-picked):hover .sc-overlay{background:rgba(192,57,43,.28)!important}
-  #tab-nohit .fchip.amber,#tab-nohit button.amber{border-color:rgba(224,92,92,.5);background:rgba(224,92,92,.1);color:#e05c5c}
-  #tab-nohit .hotbadge{color:#e05c5c;background:rgba(224,92,92,.1);border-color:rgba(224,92,92,.25)}
-  #tab-nohit .coldwarn{color:#f08080}
   /* ── scoreboard standalone ── */
   #mlb-ticker{border:1px solid var(--line);border-radius:8px;margin-bottom:14px}
 
@@ -508,6 +500,13 @@
         <span class="header-badge">LIVE</span>
       </div>
       <div style="display:flex;align-items:baseline;gap:14px;align-self:flex-end">
+        <div id="global-search-wrap" style="position:relative">
+          <input id="global-search" type="text" placeholder="Search batter…" autocomplete="off"
+            oninput="globalSearchInput(this.value)"
+            onkeydown="if(event.key==='Escape')hideGlobalSearchDropdown()"
+            style="background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 10px;font-size:11px;font-family:var(--mono);width:150px;outline:none" />
+          <div id="global-search-dropdown" class="global-search-dropdown" style="display:none"></div>
+        </div>
         <button class="header-about-link" onclick="switchTab('about',null)">README ↗</button>
         <button id="emailToggleBtn" class="header-about-link" onclick="toggleEmailNotify()" title="Send email with current slate data">Send Email</button>
       </div>
@@ -526,9 +525,6 @@
     <select id="global-date-picker" onchange="loadSlateDate(this.value)" style="margin-left:6px;background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:11px;font-family:var(--mono);cursor:pointer;align-self:center;display:none">
       <option value="">📅 Date</option>
     </select>
-    <div class="tabs-spacer"></div>
-    <button class="tab" onclick="switchTab('nohit',this)">No Hit</button>
-    <button class="tab" onclick="switchTab('nhhistory',this)">NH History</button>
   </div>
 
   <!-- SLATE TAB -->
@@ -548,81 +544,6 @@
     </div>
     <div id="slate-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
       <div class="card"><div class="empty">Load a CSV on the Tonight tab first.</div></div>
-    </div>
-  </div>
-
-  <!-- NO HIT TAB -->
-  <div id="tab-nohit" style="display:none;margin-top:18px">
-    <button class="slip-toggle" id="nhSlipToggle" onclick="toggleNhSlip()" title="Show no-hit tracker" style="border-color:rgba(224,92,92,.4);color:#e05c5c">🎯</button>
-    <div class="grid slip-hidden" id="nhGrid">
-      <!-- LEFT: pool -->
-      <div>
-        <div class="card" style="margin-bottom:16px;background:transparent;border:none;padding:0;border-radius:0">
-          <div class="poolbar">
-            <div class="poolbar-row" style="flex-wrap:wrap">
-              <span class="fchip-lbl">Game</span>
-              <select id="nh-game-select" onchange="syncGameFilter(this.value)" style="background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:12px;font-family:var(--mono);cursor:pointer">
-                <option value="">All games</option>
-              </select>
-              <input id="nh-batter-search" type="text" placeholder="Search batter…" oninput="syncSearchFilter(this.value)" style="background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 10px;font-size:12px;font-family:var(--mono);width:140px;outline:none" />
-            </div>
-            <div class="poolbar-row" style="flex-wrap:wrap">
-              <span class="fchip-lbl">Filters</span>
-              <select id="nh-thresh-sel" onchange="nhThresh=parseFloat(this.value);renderNoHit()" style="background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:12px;font-family:var(--mono);cursor:pointer">
-                <option value="0.45">No-hit ≥ 45%</option>
-                <option value="0.40" selected>No-hit ≥ 40%</option>
-                <option value="0.35">No-hit ≥ 35%</option>
-                <option value="0">All</option>
-              </select>
-              <button id="nh-elite-btn" class="ghost fchip" onclick="nhEliteOnly=!nhEliteOnly;this.classList.toggle('amber',nhEliteOnly);renderNoHit()" title="Only show batters facing A or B grade pitchers">⭐ Elite pitcher</button>
-              <button id="nh-cold-btn" class="ghost fchip" onclick="nhColdOnly=!nhColdOnly;this.classList.toggle('amber',nhColdOnly);renderNoHit()" title="Only show batters on a cold streak (≤1 hit in last 10)">❄ Cold only</button>
-              <button id="nh-worstmu-btn" class="ghost fchip" onclick="nhWorstMU=!nhWorstMU;this.classList.toggle('amber',nhWorstMU);renderNoHit()" title="Elite pitcher (A/B) vs weak batter (AVG ≤.240 or xBA ≤.240)">🎯 Worst MU</button>
-              <span id="nh-count" style="font-family:var(--mono);font-size:11px;color:var(--sage);margin-left:auto"></span>
-              <span id="nohit-record" style="display:none;font-family:var(--mono);font-size:11px;padding:2px 9px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--line)"></span>
-            </div>
-          </div>
-        </div>
-        <div class="card" style="background:transparent;border:none;padding:0;border-radius:0">
-          <h2>No-Hit Candidates — sorted by lowest P(hit)</h2>
-          <div class="pool" id="nohit-pool"><div class="empty">Load a CSV on the Tonight tab first.</div></div>
-        </div>
-      </div>
-
-      <!-- RIGHT: slip -->
-      <div id="nhSlipPanel" style="display:none">
-        <div class="card slip">
-          <h2 id="nhSlipHdr">No-Hit slip — 0 legs</h2>
-          <div id="nhLegsEl"><div class="empty">Add legs from the pool.</div></div>
-          <div class="score">
-            <div style="display:flex;align-items:center;gap:12px;padding:10px 0 4px;flex-wrap:wrap">
-              <div style="flex:1;min-width:80px">
-                <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">Model P(no hit)</div>
-                <div style="font-family:var(--disp);font-size:22px;font-weight:400;color:var(--chalk)" id="nhSTrue">—</div>
-              </div>
-              <div style="flex:1;min-width:80px">
-                <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">Parlay odds</div>
-                <div style="font-family:var(--mono);font-size:18px;color:var(--amber)" id="nhParlayOdds">—</div>
-              </div>
-              <div style="flex:1;min-width:80px">
-                <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">To win</div>
-                <div style="font-family:var(--mono);font-size:18px;color:var(--good)" id="nhParlayPayout">—</div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-              <div style="flex:1">
-                <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">Stake ($)</div>
-                <input id="nhStakeInput" class="bank" placeholder="25" style="width:100%;font-size:14px" oninput="updateNhSlip()">
-              </div>
-              <div style="flex:1">
-                <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">Override odds</div>
-                <input id="nhOddsInput" class="bank" placeholder="+350" style="width:100%;font-size:14px" oninput="updateNhSlip()" title="Leave blank to use NO-HIT market prices">
-              </div>
-            </div>
-            <div id="nhOddsSource" style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-top:4px;text-align:right"></div>
-            <button class="amber" id="nhSaveBtn" onclick="saveNhBet()" disabled style="width:100%;margin-top:8px;opacity:.4">Save no-hit bet</button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -713,68 +634,6 @@
   </div>
 
   <!-- NH HISTORY TAB -->
-  <div id="tab-nhhistory" style="display:none;margin-top:18px">
-    <div class="card">
-      <div class="hstatgrid" id="nh-h-stats">
-        <div class="hstat"><div class="hstat-lbl">Settled picks</div><div class="hstat-val" id="nh-h-total" style="color:var(--sage)">—</div></div>
-        <div class="hstat"><div class="hstat-lbl">No-hit win rate</div><div class="hstat-val" id="nh-h-wr" style="color:var(--sage)">—</div></div>
-        <div class="hstat"><div class="hstat-lbl">Avg model %</div><div class="hstat-val" id="nh-h-mp" style="color:var(--amber)">—</div></div>
-        <div class="hstat"><div class="hstat-lbl">Model diff</div><div class="hstat-val" id="nh-h-diff" style="color:var(--sage)">—</div></div>
-        <div class="hstat"><div class="hstat-lbl">Brier score</div><div class="hstat-val" id="nh-h-brier" style="color:var(--sage)" title="Mean squared error vs outcome. Lower = better. Random ≈ 0.25">—</div></div>
-        <div class="hstat"><div class="hstat-lbl">Days logged</div><div class="hstat-val" id="nh-h-days" style="color:var(--sage)">—</div></div>
-      </div>
-      <div class="hfiltbar">
-        <select id="nh-h-date-filter" onchange="renderNhHistory()">
-          <option value="">All dates</option>
-        </select>
-        <select id="nh-h-result-filter" onchange="renderNhHistory()">
-          <option value="">All results</option>
-          <option value="1">Wins (no hit)</option>
-          <option value="0">Losses (got hit)</option>
-          <option value="hi70">Model ≥70%</option>
-        </select>
-        <select id="nh-h-sort" onchange="renderNhHistory()">
-          <option value="date_desc">Date ↓</option>
-          <option value="date_asc">Date ↑</option>
-          <option value="p_desc">Model % ↓</option>
-          <option value="p_asc">Model % ↑</option>
-        </select>
-        <span id="nh-h-count" style="font-family:var(--mono);font-size:11px;color:var(--sage);margin-left:auto"></span>
-      </div>
-      <div class="htable-wrap">
-        <table class="hlog">
-          <thead><tr>
-            <th>Date</th><th>Name</th><th>Team</th><th>Matchup</th>
-            <th class="r">Slot</th><th class="r">Model %</th>
-            <th class="r">Odds</th><th class="r">Result</th>
-          </tr></thead>
-          <tbody id="nh-h-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--sage)">Loading nohit_log.csv…</td></tr></tbody>
-        </table>
-      </div>
-      <div id="nh-h-pager" style="display:none;align-items:center;justify-content:center;gap:12px;padding:12px 15px;border-top:1px solid var(--line)"></div>
-      <div class="hlog-notice" id="nh-h-notice"></div>
-    </div>
-    <div class="card" style="margin-top:14px">
-      <h2>Daily Scorecard <span id="nh-h-daily-meta" style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0"></span></h2>
-      <div class="htable-wrap"><div id="nh-h-daily-body"><div class="empty">No settled data yet.</div></div></div>
-      <div id="nh-h-daily-pager" style="display:none;justify-content:center;align-items:center;gap:10px;padding:10px 15px 14px;border-top:1px solid var(--line);margin-top:4px;font-family:var(--mono);font-size:11px;color:var(--sage)">
-        <button onclick="nhDailyPage(-1)" style="background:var(--raised);border:1px solid var(--line);color:var(--chalk);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;line-height:1">‹</button>
-        <span id="nh-h-daily-pager-label"></span>
-        <button onclick="nhDailyPage(1)" style="background:var(--raised);border:1px solid var(--line);color:var(--chalk);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;line-height:1">›</button>
-      </div>
-    </div>
-    <div class="card" style="margin-top:14px">
-      <h2>Calibration <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">amber = predicted · green = actual win rate</span></h2>
-      <div id="nh-h-calvis" style="display:flex;align-items:flex-end;gap:8px;padding:12px 15px 0"></div>
-      <div class="htable-wrap" style="margin-top:8px"><div id="nh-h-cal-body"><div class="empty">—</div></div></div>
-    </div>
-    <div class="card" style="margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--sage);line-height:1.7">
-      <h2 style="margin-bottom:8px">CSV format — nohit_log.csv</h2>
-      <code style="display:block;background:var(--field);padding:10px 14px;border-radius:6px;font-size:10px;color:var(--chalk)">date,name,team,matchup,slot,p_nohit,no_odds,actual_nohit<br>2026-06-24,Luis Arraez,SD,MIL @ SD,2,0.38,-130,1<br>2026-06-24,Jazz Chisholm,NYY,NYY @ BOS,3,0.31,+110,0</code>
-      <div style="margin-top:8px;opacity:.7">actual_nohit: 1 = batter stayed hitless (win) · 0 = batter got a hit (loss)</div>
-    </div>
-  </div>
-
   <!-- MY PICKS TAB -->
   <!-- ABOUT TAB -->
   <div id="tab-about" style="display:none;margin-top:18px;max-width:780px;font-family:var(--mono)">
@@ -805,10 +664,6 @@
         <div style="display:flex;gap:0;padding:10px 20px;border-bottom:1px solid var(--line);align-items:baseline">
           <div style="width:90px;flex:none;color:var(--amber)">Tonight</div>
           <div style="color:var(--chalk);opacity:.75;line-height:1.7">Full batter pool sorted by hit probability. Shows recent streak, HOT/COLD badge, pitcher matchup, and BvP or career splits. Filter by slot, game, or streak. Build a parlay slip with the bet tracker.</div>
-        </div>
-        <div style="display:flex;gap:0;padding:10px 20px;border-bottom:1px solid var(--line);align-items:baseline">
-          <div style="width:90px;flex:none;color:#67e8f9">No Hit</div>
-          <div style="color:var(--chalk);opacity:.75;line-height:1.7">Inverted view — sorted by highest probability of going hitless. Highlights batters on cold streaks.</div>
         </div>
         <div style="display:flex;gap:0;padding:10px 20px;border-bottom:1px solid var(--line);align-items:baseline">
           <div style="width:90px;flex:none;color:var(--amber)">Slate</div>
@@ -969,11 +824,6 @@
 let legs = [];
 let kelly = 0.25;
 let currentTab = 'dugout';
-let nhEliteOnly = false;
-let nhColdOnly  = false;
-let nhWorstMU   = false;
-let nhThresh    = 0.40;
-let nhSlipIds   = new Set();
 const _bsCache = new Map(); // gamePk -> {players: Map<batterId, batting>}
 // Opening-line odds lock — keyed by "name|matchup|date"; written once, never overwritten.
 // Persisted to localStorage so it survives tab reloads within the same calendar day.
@@ -1315,16 +1165,6 @@ document.addEventListener('click', e => {
   if(drawer && !drawer.contains(e.target) && fab && !fab.contains(e.target)) toggleSlip();
 });
 
-let nhSlipVisible = false;
-function toggleNhSlip(){
-  nhSlipVisible = !nhSlipVisible;
-  document.getElementById('nhSlipPanel').style.display = nhSlipVisible ? '' : 'none';
-  document.getElementById('nhGrid').classList.toggle('slip-hidden', !nhSlipVisible);
-  const btn = document.getElementById('nhSlipToggle');
-  btn.classList.toggle('active', !nhSlipVisible);
-  btn.title = nhSlipVisible ? 'Hide tracker' : 'Show no-hit tracker';
-  btn.textContent = nhSlipVisible ? '🎯' : '📊';
-}
 let filterLiveOnly  = false;
 let filterUpcoming  = false;
 let filterHotOnly     = false;
@@ -1375,33 +1215,25 @@ function populateGameDropdown() {
   const opts = '<option value="">All games</option>' +
     games.map(g => `<option value="${g}">${g}</option>`).join('');
   const s1 = document.getElementById('game-select');
-  const s2 = document.getElementById('nh-game-select');
   if(s1) s1.innerHTML = opts;
-  if(s2) s2.innerHTML = opts;
   filterGame = '';
   filterSearch = '';
   const i1 = document.getElementById('batter-search');
-  const i2 = document.getElementById('nh-batter-search');
   if(i1) i1.value = '';
-  if(i2) i2.value = '';
 }
 
 function syncGameFilter(val) {
   filterGame = val;
   const s1 = document.getElementById('game-select');
-  const s2 = document.getElementById('nh-game-select');
   if(s1) s1.value = val;
-  if(s2) s2.value = val;
-  renderBoth();
+  render();
 }
 
 function syncSearchFilter(val) {
   filterSearch = val.toLowerCase();
   const i1 = document.getElementById('batter-search');
-  const i2 = document.getElementById('nh-batter-search');
   if(i1) i1.value = val;
-  if(i2) i2.value = val;
-  renderBoth();
+  render();
 }
 
 // ---- odds math ----
@@ -1570,7 +1402,7 @@ function loadCSV(){
     updateSavedBadge();
     toggleImportPanel(false);
     populateGameDropdown();
-    renderBoth();
+    render();
     startLivePolling(); // kick off live updates whenever a CSV loads
   }
 }
@@ -1672,15 +1504,14 @@ function updateSavedBadge(){
 }
 function clearSaved(){ try{ localStorage.removeItem('dugout_csv'); localStorage.removeItem('dugout_csv_ts'); }catch(e){} updateSavedBadge(); }
 function mk(name,p,slot,matchup,team){ return {id:++uid,name,p,slot,matchup:matchup||'',team:team||'',pitcher:'',pitcherHand:'',batterHand:'',hit:'',no:'',inSlip:false,grp:'',hasHit:false,startTime:'',gameDate:'',gameState:'',last5:'',lineupEst:false,bvpAb:0,bvpH:0,bvpAvg:0,vsL:null,vsR:null,pRating:null,pGrade:'',pCsw:null,pKbb:null,pHH:null,bHitRate:null,bXba:null,bHH:null,bBabip:null,splitDiff:null,parkFactor:null,bNGames:0,bDaysRest:0,pNGames:0,pDaysRest:0,batterId:'',pitcherId:'',gamePk:'',yesCents:null,isOpener:false,pUseFb:null,pUseBb:null,pUseOs:null,bHrVsFb:null,bHrVsBb:null,bHrVsOs:null,bHrOverall:null,bHitRateVsSp:null,bPaVsSp:0,bHitRateVsRp:null,bPaVsRp:0,bIsRookie:false,pIsRookie:false,subbedOut:false,baseP:null,matchupDelta:null,bAvgAb:null,bGamesPlayed:0}; }
-// Shared by render() and renderNoHit() so the two tabs never drift apart (see feedback_ui_parity memory).
-// Season sparkline — shared by render() and renderNoHit(). Card-expand, not
-// hover, per the roadmap note (so it doesn't compete with the L10 streak dots).
+// Season sparkline. Card-expand, not hover, per the roadmap note (so it
+// doesn't compete with the L10 streak dots).
 const _sparkExpanded = new Set();
 function toggleSpark(key){
   if(!key) return;
   if(_sparkExpanded.has(key)) _sparkExpanded.delete(key);
   else _sparkExpanded.add(key);
-  if(window.currentTab==='nohit') renderNoHit(); else render();
+  render();
 }
 function _sparkKey(l){ return l.batterId || (l.name||'').toLowerCase(); }
 function _seasonSparkData(l){
@@ -1720,16 +1551,15 @@ function seasonSparkPanel(l){
     <div style="font-family:var(--mono);font-size:8px;color:var(--sage);margin-top:2px">${n} settled games · ${seasonRate}% season hit rate · line = trailing 5-game rate</div>
   </div>`;
 }
-function matchupDeltaLine(l, invert){
+function matchupDeltaLine(l){
   if(l.baseP==null||isNaN(l.baseP)||l.matchupDelta==null||isNaN(l.matchupDelta)) return '';
-  const d = invert ? -l.matchupDelta : l.matchupDelta;
+  const d = l.matchupDelta;
   if(Math.abs(d) < 0.005) return '';
-  const base = invert ? 1-l.baseP : l.baseP;
+  const base = l.baseP;
   const col = d>0 ? 'var(--good)' : 'var(--bad)';
   const sign = d>0 ? '+' : '';
   const verb = d>0 ? 'boosted' : 'suppressed';
-  const what = invert ? 'no-hit' : 'hit';
-  return `<div style="font-family:var(--mono);font-size:8px;color:var(--sage);white-space:nowrap;margin-top:1px" title="Base ${what} score (own form, matchup neutralized) ${Math.round(base*100)} — ${verb} by tonight's matchup (pitcher/park/platoon). Simple additive estimate, not a rigorous per-feature attribution.">B${Math.round(base*100)} <span style="color:${col}">${sign}${Math.round(d*100)}</span></div>`;
+  return `<div style="font-family:var(--mono);font-size:8px;color:var(--sage);white-space:nowrap;margin-top:1px" title="Base hit score (own form, matchup neutralized) ${Math.round(base*100)} — ${verb} by tonight's matchup (pitcher/park/platoon). Simple additive estimate, not a rigorous per-feature attribution.">B${Math.round(base*100)} <span style="color:${col}">${sign}${Math.round(d*100)}</span></div>`;
 }
 function kalshiDeltaChip(l){
   if(l.yesCents==null||isNaN(l.yesCents)||l.p==null) return '';
@@ -1810,7 +1640,7 @@ function toggle(id){
   const adding = !l.inSlip;
   const applyToggle = ()=>{
     l.inSlip=!l.inSlip;
-    if(window.currentTab==='nohit') renderNoHit(); else render();
+    render();
     updateSaveBtn();
     const badge = document.getElementById('slip-fab-count');
     if(badge){
@@ -1917,24 +1747,6 @@ function buildBestParlay(){
 
 // ---- render ----
 function esc(s){ return (s+'').replace(/"/g,'&quot;'); }
-
-function streakFormBg(last5, forNoHit){
-  const s=(last5||'').replace(/[^01]/g,'');
-  if(!s) return '';
-  if(forNoHit){
-    // consecutive no-hits at end = cold = good for no-hit prop → blues
-    let trail=0; for(let i=s.length-1;i>=0;i--){if(s[i]==='0')trail++;else break;}
-    if(trail<1) return '';
-    const bg=['','rgba(56,189,248,.06)','rgba(14,165,233,.11)','rgba(2,132,199,.16)','rgba(7,89,133,.20)','rgba(12,74,110,.25)','rgba(103,232,249,.18)'];
-    return `background:${bg[Math.min(trail,6)]}`;
-  } else {
-    // consecutive hits at end = hot = good for hit prop → amber→red
-    let trail=0; for(let i=s.length-1;i>=0;i--){if(s[i]==='1')trail++;else break;}
-    if(trail<1) return '';
-    const bg=['','rgba(251,191,36,.07)','rgba(245,158,11,.13)','rgba(234,88,12,.17)','rgba(220,60,20,.20)','rgba(185,28,28,.23)','rgba(153,27,27,.27)'];
-    return `background:${bg[Math.min(trail,6)]}`;
-  }
-}
 
 function pitchMatchupHtml(l){
   const fb=l.pUseFb, bb=l.pUseBb, os=l.pUseOs;
@@ -2131,31 +1943,17 @@ function wxDesc(code) {
   if(code <= 99) return 'Thunderstorm';
   return '';
 }
-function streakBadge(last5, forNoHit){
+function streakBadge(last5){
   const s=(last5||'').replace(/[^01]/g,'');
   if(!s) return '';
   const s10=s.slice(-10);
   let trailMiss=0; for(let i=s.length-1;i>=0;i--){if(s[i]==='0')trailMiss++;else break;}
   let trailHit=0;  for(let i=s.length-1;i>=0;i--){if(s[i]==='1')trailHit++;else break;}
   const hits=s10.split('').filter(c=>c==='1').length;
-  if(forNoHit){
-    const cls=trailMiss>=5?'streakbadge streakbadge-5plus':trailMiss===4?'streakbadge streakbadge-4':trailMiss===3?'streakbadge streakbadge-3':trailMiss===2?'streakbadge streakbadge-2':'';
-    return trailMiss>5?`<span class="${cls}" style="color:#67e8f9;background:rgba(103,232,249,.08);border-color:rgba(103,232,249,.3);animation:coldGlowBlue 2.4s ease-in-out infinite,coldpulse 2.4s ease-in-out infinite" title="${trailMiss} consecutive hitless games — radioactively cold">${trailMiss}G COLD</span>`
-         :trailHit>5?`<span class="coldwarn" style="animation:coldGlowRed 2.4s ease-in-out infinite,coldpulse 2.4s ease-in-out infinite" title="${trailHit} consecutive hits — bad for no-hit">${trailHit}G HOT</span>`:'';
-  } else {
-    const cls=trailHit>=5?'streakbadge streakbadge-5plus':trailHit===4?'streakbadge streakbadge-4':trailHit===3?'streakbadge streakbadge-3':trailHit===2?'streakbadge streakbadge-2':'';
-    return trailHit>5?`<span class="${cls}" style="animation:coldGlowRed 2.4s ease-in-out infinite,coldpulse 2.4s ease-in-out infinite" title="${trailHit} consecutive hits">${trailHit}G HOT</span>`
-         :trailMiss>5?`<span class="coldwarn" title="Hitless in last ${trailMiss} games">${trailMiss}G COLD</span>`
-         :hits>=7?'<span class="hotbadge">HOT</span>':'';
-  }
-}
-function streakRowHtml(last5, forNoHit, dotsOnly=false){
-  const s=(last5||'').replace(/[^01]/g,'');
-  if(!s) return '';
-  const s10=s.slice(-10);
-  const dots=s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}"${forNoHit?'':` title="${c==='1'?'hit':'no hit'}"`}></span>`).join('');
-  const badge=dotsOnly?'':streakBadge(last5,forNoHit);
-  return `<div class="streakrow"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div>${badge}</div>`;
+  const cls=trailHit>=5?'streakbadge streakbadge-5plus':trailHit===4?'streakbadge streakbadge-4':trailHit===3?'streakbadge streakbadge-3':trailHit===2?'streakbadge streakbadge-2':'';
+  return trailHit>5?`<span class="${cls}" style="animation:coldGlowRed 2.4s ease-in-out infinite,coldpulse 2.4s ease-in-out infinite" title="${trailHit} consecutive hits">${trailHit}G HOT</span>`
+       :trailMiss>5?`<span class="coldwarn" title="Hitless in last ${trailMiss} games">${trailMiss}G COLD</span>`
+       :hits>=7?'<span class="hotbadge">HOT</span>':'';
 }
 function render(){
   updateSaveBtn();
@@ -2246,7 +2044,7 @@ function render(){
                   const idHint=isUnresolved&&l.batterId?`<span style="font-family:var(--mono);font-size:9px;color:var(--amber);opacity:.7" title="Name not resolved — ID is correct">ID ${l.batterId}</span>`:'';
                   return `<div style="font-family:var(--disp);font-size:16px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:baseline;gap:5px">${nameNode}${performanceArrow(l)}${idHint}</div>`;
                 })()}
-                ${(()=>{const sa=streakBadge(l.last5,false);const rook=rookieBadge(l.bIsRookie);const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';const est=(l.lineupEst&&!isLive(l.gameState)&&!isFinal(l.gameState))?`<span class="estbadge">⚠ EST</span>`:'';const badges=[sa,rook,thin,rest,est].filter(Boolean).join('');const badgesRow=badges?`<div class="bbadges" style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${badges}</div>`:'';const sparkBtn=sparkToggleBtn(l);const sparkPanel=seasonSparkPanel(l);const s=(l.last5||'').replace(/[^01]/g,'');if(!s)return badgesRow+sparkBtn+sparkPanel;const s10=s.slice(-10);const dots=s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}" title="${c==='1'?'hit':'no hit'}"></span>`).join('');return `<div class="streakrow"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div>${sparkBtn}</div>${badgesRow}${sparkPanel}`;})()}
+                ${(()=>{const sa=streakBadge(l.last5);const rook=rookieBadge(l.bIsRookie);const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';const est=(l.lineupEst&&!isLive(l.gameState)&&!isFinal(l.gameState))?`<span class="estbadge">⚠ EST</span>`:'';const badges=[sa,rook,thin,rest,est].filter(Boolean).join('');const badgesRow=badges?`<div class="bbadges" style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${badges}</div>`:'';const sparkBtn=sparkToggleBtn(l);const sparkPanel=seasonSparkPanel(l);const s=(l.last5||'').replace(/[^01]/g,'');if(!s)return badgesRow+sparkBtn+sparkPanel;const s10=s.slice(-10);const dots=s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}" title="${c==='1'?'hit':'no hit'}"></span>`).join('');return `<div class="streakrow"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div>${sparkBtn}</div>${badgesRow}${sparkPanel}`;})()}
                 ${liveInningAbHtml(l)}
               </div>
             </div>
@@ -3048,6 +2846,60 @@ function _sectionHtml(id, title, count, bets, opts={}){
     </div>`;
 }
 
+const ARCHIVE_AFTER_DAYS = 30;
+let betsStatusFilter = 'all'; // 'all' | 'won' | 'lost' | 'void'
+window._archiveExpanded = window._archiveExpanded || new Set();
+
+function setBetsStatusFilter(f){
+  betsStatusFilter = f;
+  renderBetsTab();
+}
+
+function _archiveDateToggle(dateKey){
+  if(window._archiveExpanded.has(dateKey)) window._archiveExpanded.delete(dateKey);
+  else window._archiveExpanded.add(dateKey);
+  renderBetsTab();
+}
+
+function _bankrollHistoryPanel(){
+  const BANK_START = 20;
+  const settled = savedBets.filter(b => b.status==='won' || b.status==='lost')
+    .slice().sort((a,b) => _betDate(a).localeCompare(_betDate(b)) || (a.id||0)-(b.id||0));
+  if(settled.length < 2) return '';
+  let running = BANK_START;
+  const data = settled.map(b => { running += b.status==='won' ? (b.payout||0) : -b.stake; return running; });
+
+  const W=600, H=84, pad=6;
+  const lo = Math.min(...data, BANK_START), hi = Math.max(...data, BANK_START);
+  const range = (hi - lo) || 1;
+  const y = v => H - pad - ((v-lo)/range) * (H-2*pad);
+  const n = data.length;
+  const stepX = n>1 ? (W-2*pad)/(n-1) : 0;
+  const pts = data.map((v,i) => `${(pad+i*stepX).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const zeroY = y(BANK_START).toFixed(1);
+  const last = data[data.length-1];
+  const color = last>=BANK_START ? 'var(--good)' : 'var(--bad)';
+
+  return `<div class="card" style="margin-bottom:14px;padding:12px 14px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+      <span style="font-family:var(--disp);font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)">Bankroll history</span>
+      <span style="font-family:var(--mono);font-size:10px;color:${color}">${n} settled bet${n===1?'':'s'}</span>
+    </div>
+    <svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block">
+      <line x1="${pad}" y1="${zeroY}" x2="${W-pad}" y2="${zeroY}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>
+  </div>`;
+}
+
+function _betsStatusFilterChips(){
+  const opts = [['all','All'],['won','Won'],['lost','Lost'],['void','Void']];
+  const btns = opts.map(([val,lbl]) =>
+    `<button class="ghost fchip${betsStatusFilter===val?' amber':''}" onclick="setBetsStatusFilter('${val}')">${lbl}</button>`
+  ).join('');
+  return `<div style="display:flex;gap:6px;margin-bottom:10px">${btns}</div>`;
+}
+
 function renderBetsTab(){
   const cardsEl = document.getElementById('bets-cards');
   const sumEl   = document.getElementById('bets-summary');
@@ -3060,14 +2912,7 @@ function renderBetsTab(){
 
   const todayStr = new Date().toLocaleDateString('en-CA');
 
-  // partition into today vs past by game date
-  const todayBets = savedBets.filter(b => _betDate(b) === todayStr || _betDate(b) === '');
-  const pastBets  = savedBets.filter(b => { const d=_betDate(b); return d && d < todayStr; });
-
-  const todayPending  = todayBets.filter(b=>b.status==='pending');
-  const todaySettled  = todayBets.filter(b=>b.status!=='pending');
-
-  // all-time summary
+  // all-time summary — always computed from the FULL unfiltered set, unaffected by the view filter below
   const allWon   = savedBets.filter(b=>b.status==='won');
   const allLost  = savedBets.filter(b=>b.status==='lost');
   const allVoid  = savedBets.filter(b=>b.status==='void');
@@ -3083,9 +2928,23 @@ function renderBetsTab(){
     <div class="stat"><div class="sl">Bankroll</div><div class="sv" style="font-size:20px;color:${bankColor}">$${bankroll.toFixed(2)}</div><div class="ss">started $${BANK_START.toFixed(2)}</div></div>
     <div class="stat"><div class="sl">All-time P&L</div><div class="sv" style="font-size:20px;color:${net>=0?'var(--good)':'var(--bad)'}">${net>=0?'+':''}$${net.toFixed(2)}</div><div class="ss">${allWon.length}W · ${allLost.length}L${allVoid.length?' · '+allVoid.length+'V':''}</div></div>
     <div class="stat"><div class="sl">In play</div><div class="sv" style="font-size:20px;color:var(--amber)">$${pendingStake.toFixed(2)}</div><div class="ss">${savedBets.filter(b=>b.status==='pending').length} bet${savedBets.filter(b=>b.status==='pending').length===1?'':'s'}</div></div>
-  </div></div>`;
+  </div></div>` + _bankrollHistoryPanel();
 
-  let html = '';
+  // view filter — narrows what's shown in the tiers below, not the summary above
+  const viewBets = betsStatusFilter==='all' ? savedBets : savedBets.filter(b => b.status===betsStatusFilter);
+
+  const archiveCutoff = new Date(); archiveCutoff.setDate(archiveCutoff.getDate() - ARCHIVE_AFTER_DAYS);
+  const archiveCutoffStr = archiveCutoff.toLocaleDateString('en-CA');
+
+  // partition into today / past (last 30 days) / archive (older) by game date
+  const todayBets   = viewBets.filter(b => _betDate(b) === todayStr || _betDate(b) === '');
+  const pastBets     = viewBets.filter(b => { const d=_betDate(b); return d && d < todayStr && d >= archiveCutoffStr; });
+  const archiveBets = viewBets.filter(b => { const d=_betDate(b); return d && d < archiveCutoffStr; });
+
+  const todayPending  = todayBets.filter(b=>b.status==='pending');
+  const todaySettled  = todayBets.filter(b=>b.status!=='pending');
+
+  let html = _betsStatusFilterChips();
 
   // today pending
   if(todayPending.length){
@@ -3107,7 +2966,7 @@ function renderBetsTab(){
       });
   }
 
-  // past bets grouped by date descending
+  // past bets (last 30 days) grouped by date descending
   if(pastBets.length){
     const byDate = new Map();
     pastBets.forEach(b => {
@@ -3148,7 +3007,55 @@ function renderBetsTab(){
     </div>`;
   }
 
-  if(!html) html = `<div class="empty" style="padding:32px 0;text-align:center;color:var(--sage)">No saved bets yet — build a parlay and hit Save bet.</div>`;
+  // archive (30+ days old) — compact one-line-per-date summary, full cards only render when a date is expanded
+  if(archiveBets.length){
+    const byDate = new Map();
+    archiveBets.forEach(b => {
+      const d = _betDate(b) || 'unknown';
+      if(!byDate.has(d)) byDate.set(d, []);
+      byDate.get(d).push(b);
+    });
+    const dates = [...byDate.keys()].sort().reverse();
+
+    const archiveRows = dates.map(d => {
+      const db = byDate.get(d);
+      const dWon  = db.filter(b=>b.status==='won').length;
+      const dLost = db.filter(b=>b.status==='lost').length;
+      const dNet  = db.filter(b=>b.status==='won').reduce((a,b)=>a+(b.payout||0),0)
+                  - db.filter(b=>b.status==='lost').reduce((a,b)=>a+b.stake,0);
+      const label = (() => {
+        const dt = new Date(d+'T12:00:00');
+        return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      })();
+      const expanded = window._archiveExpanded.has(d);
+      const cardsHtml = expanded
+        ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;padding:8px 2px 10px">${db.map(_betCardHtml).join('')}</div>`
+        : '';
+      return `<div style="border-bottom:1px solid var(--line)">
+        <div onclick="_archiveDateToggle('${d}')" style="display:flex;align-items:center;gap:10px;padding:7px 6px;cursor:pointer;user-select:none;font-family:var(--mono);font-size:11px" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background=''">
+          <span style="color:var(--sage);opacity:.5;width:10px">${expanded?'▾':'▸'}</span>
+          <span style="color:var(--chalk);width:90px">${label}</span>
+          <span style="color:var(--sage)">${dWon}W · ${dLost}L</span>
+          <div style="flex:1"></div>
+          <span style="color:${dNet>=0?'var(--good)':'var(--bad)'}">${dNet>=0?'+':''}$${dNet.toFixed(2)}</span>
+        </div>
+        ${cardsHtml}
+      </div>`;
+    }).join('');
+
+    html += `<div style="margin-top:8px">
+      <div onclick="_sectionToggle('bets-archive-group')" style="display:flex;align-items:center;gap:8px;padding:8px 2px;cursor:pointer;user-select:none;border-top:1px solid var(--line)">
+        <span id="bets-archive-group-toggle" style="font-family:var(--mono);font-size:11px;color:var(--sage);width:10px">${_sectionCollapsed('bets-archive-group')?'▸':'▾'}</span>
+        <span style="font-family:var(--disp);font-size:11px;font-weight:400;letter-spacing:.5px;text-transform:uppercase;color:var(--sage)">Archive</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--line)">${archiveBets.length} total · ${dates.length} day${dates.length===1?'':'s'} · ${ARCHIVE_AFTER_DAYS}+ days old</span>
+      </div>
+      <div id="bets-archive-group" style="display:${_sectionCollapsed('bets-archive-group')?'none':''}">${archiveRows}</div>
+    </div>`;
+  }
+
+  if(!todayPending.length && !todaySettled.length && !pastBets.length && !archiveBets.length){
+    html += `<div class="empty" style="padding:32px 0;text-align:center;color:var(--sage)">No bets match this filter.</div>`;
+  }
   cardsEl.innerHTML = html;
 }
 
@@ -3200,11 +3107,9 @@ function renderBetsTab(){
 // ── tab switching ─────────────────────────────────────────────────────────────
 function renderActiveTab() {
   if(currentTab==='slate') renderGames();
-  else if(currentTab==='nohit') renderNoHit();
   else if(currentTab==='bets') renderBetsTab();
   else render();
 }
-function renderBoth(){ render(); renderNoHit(); }
 function goToBatter(batterId) {
   const tabBtn = document.querySelector('.tab[onclick*="dugout"]');
   switchTab('dugout', tabBtn);
@@ -3213,23 +3118,60 @@ function goToBatter(batterId) {
     if(el) { el.scrollIntoView({behavior:'smooth', block:'center'}); el.style.transition='background .3s'; el.style.background='rgba(231,184,75,.15)'; setTimeout(()=>el.style.background='',1200); }
   }, 100);
 }
+
+// ── global header search — quick lookup + preview from any tab ────────────────
+function hideGlobalSearchDropdown(){
+  const dd = document.getElementById('global-search-dropdown');
+  if(dd){ dd.style.display='none'; dd.innerHTML=''; }
+}
+function selectGlobalSearchResult(batterId){
+  hideGlobalSearchDropdown();
+  const input = document.getElementById('global-search');
+  if(input) input.value = '';
+  goToBatter(batterId);
+}
+function _stripAccents(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function globalSearchInput(val){
+  const dd = document.getElementById('global-search-dropdown');
+  if(!dd) return;
+  const q = _stripAccents(val.trim().toLowerCase());
+  if(!q){ hideGlobalSearchDropdown(); return; }
+  const matches = legs.filter(l => l.batterId && _stripAccents((l.name||'').toLowerCase()).includes(q)).slice(0, 8);
+  if(!matches.length){
+    dd.innerHTML = '<div style="padding:8px;font-family:var(--mono);font-size:11px;color:var(--sage)">No matches</div>';
+    dd.style.display = '';
+    return;
+  }
+  dd.innerHTML = matches.map(l => {
+    const score = Math.floor((l.p||0)*100);
+    const scoreColor = l.p>=0.70?'var(--good)':l.p>=0.55?'var(--amber)':'var(--sage)';
+    const avg = l.bHitRate!=null && !isNaN(l.bHitRate) ? Number(l.bHitRate).toFixed(3).replace(/^0/,'') : '—';
+    const team = l.team ? `<span class="teamtag" style="font-size:9px;padding:1px 4px;${teamTagStyle(l.team)}">${esc(l.team)}</span>` : '';
+    return `<div class="global-search-result" onclick="selectGlobalSearchResult('${l.batterId}')">
+      <span style="font-family:var(--disp);font-size:14px;font-weight:600;color:${scoreColor};width:24px;text-align:right;flex:none">${score}</span>
+      ${team}
+      <span style="font-family:var(--mono);font-size:11px;color:var(--chalk);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--sage)">${avg}</span>
+    </div>`;
+  }).join('');
+  dd.style.display = '';
+}
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('global-search-wrap');
+  if(wrap && !wrap.contains(e.target)) hideGlobalSearchDropdown();
+});
 function switchTab(name, btn) {
   currentTab = name;
   document.getElementById('tab-dugout').style.display    = name==='dugout'    ? '' : 'none';
-  document.getElementById('tab-nohit').style.display     = name==='nohit'     ? '' : 'none';
   document.getElementById('tab-slate').style.display     = name==='slate'     ? '' : 'none';
   document.getElementById('tab-history').style.display   = name==='history'   ? '' : 'none';
-  document.getElementById('tab-nhhistory').style.display = name==='nhhistory' ? '' : 'none';
   document.getElementById('tab-about').style.display     = name==='about'     ? '' : 'none';
   document.getElementById('tab-bets').style.display      = name==='bets'      ? '' : 'none';
   document.querySelectorAll('.tabs .tab').forEach(b => b.classList.remove('active'));
   if(btn) btn.classList.add('active');
-  document.body.classList.toggle('nohit-mode', name==='nohit');
   updateSlipCount();
   if(name==='history') { initCollapsibleCards(); loadHistory(); }
-  if(name==='nhhistory') loadNhHistory();
-  if(name==='nohit') renderNoHit();
-  if(name==='dugout' || name==='nohit' || name==='bets') startLivePolling(); else stopLivePolling();
+  if(name==='dugout' || name==='bets') startLivePolling(); else stopLivePolling();
   if(name==='bets') renderBetsTab();
   if(name==='slate') {
     renderGames();
@@ -3578,338 +3520,6 @@ function renderGames() {
     const parts = matchup.split(' @ ');
     fetchSlateScore(gamePk, parts[0]||'', parts[1]||'', linkEl);
   });
-}
-
-// ── no-hit tab ────────────────────────────────────────────────────────────────
-
-function nhToggle(id) {
-  if(nhSlipIds.has(id)) nhSlipIds.delete(id); else nhSlipIds.add(id);
-  renderNoHit();
-}
-
-function updateNhSlip() {
-  const sel = legs.filter(l => nhSlipIds.has(l.id));
-  const trueP = sel.reduce((a,l) => a * (1 - (l.p||0)), 1);
-  document.getElementById('nhSTrue').textContent = sel.length ? pct(trueP) : '—';
-  document.getElementById('nhSTrue').style.color = trueP >= 0.5 ? 'var(--good)' : trueP >= 0.3 ? 'var(--chalk)' : 'var(--bad)';
-
-  // parlay dec: use NO-HIT market odds if available, else model probability
-  const autoDec = sel.length ? sel.reduce((acc, l) => {
-    const noP = 1 - (l.p || 0.45);
-    const noOdds = l.no && l.no !== 'nan' ? amToDec(l.no) : null;
-    return acc * (noOdds || (1 / noP));
-  }, 1) : null;
-
-  const overrideRaw = document.getElementById('nhOddsInput').value.trim();
-  const override = amToDec(overrideRaw);
-  const useDec = override || autoDec;
-  const amOdds = useDec ? decToAm(useDec) : null;
-  const stake = parseFloat(document.getElementById('nhStakeInput').value) || 0;
-  const payout = useDec && stake ? +(stake * (useDec - 1)).toFixed(2) : null;
-
-  const priced = sel.filter(l => l.no && l.no !== 'nan').length;
-  document.getElementById('nhParlayOdds').textContent  = amOdds != null ? fmtAm(amOdds) : '—';
-  document.getElementById('nhParlayPayout').textContent = payout && stake ? '$' + payout.toFixed(2) : '—';
-  document.getElementById('nhOddsSource').textContent  = sel.length
-    ? (override ? 'using manual override' : priced === sel.length ? 'no-hit market prices' : priced > 0 ? `market (${priced}/${sel.length}) + model` : 'model probabilities')
-    : '';
-
-  const btn = document.getElementById('nhSaveBtn');
-  const ok = sel.length > 0 && stake > 0 && useDec != null;
-  btn.disabled = !ok;
-  btn.style.opacity = ok ? '1' : '0.4';
-}
-
-function saveNhBet() {
-  const sel = legs.filter(l => nhSlipIds.has(l.id));
-  const stake = parseFloat(document.getElementById('nhStakeInput').value);
-  const overrideRaw = document.getElementById('nhOddsInput').value.trim();
-  const autoDec = sel.reduce((acc, l) => {
-    const noP = 1 - (l.p || 0.45);
-    const noOdds = l.no && l.no !== 'nan' ? amToDec(l.no) : null;
-    return acc * (noOdds || (1 / noP));
-  }, 1);
-  const payDec = amToDec(overrideRaw) || autoDec;
-  if(!sel.length || !stake || !payDec) return;
-  const amOdds = decToAm(payDec);
-  const payout = +(stake * (payDec - 1)).toFixed(2);
-  const trueP = sel.reduce((a, l) => a * (1 - (l.p || 0)), 1);
-  const bet = {
-    id: Date.now(),
-    saved: new Date().toLocaleString(),
-    stake, odds: amOdds, payout, trueP, status: 'pending',
-    type: 'nohit',
-    legs: sel.map(l => ({ name: l.name, team: l.team, matchup: l.matchup, gameDate: l.gameDate, p: l.p, noOdds: l.no || null }))
-  };
-  savedBets.unshift(bet);
-  persistBets(); renderSavedBets();
-  nhSlipIds.clear();
-  document.getElementById('nhStakeInput').value = '';
-  document.getElementById('nhOddsInput').value = '';
-  renderNoHit();
-}
-
-function renderNoHit() {
-  const pool = document.getElementById('nohit-pool');
-  if(!legs.length){ pool.innerHTML='<div class="empty">Load a CSV on the Tonight tab first.</div>'; return; }
-
-  let candidates = legs.filter(l => {
-    if((1-(l.p||0)) < nhThresh) return false;
-    if(nhEliteOnly && l.pGrade !== 'A' && l.pGrade !== 'B') return false;
-    if(nhWorstMU) {
-      const elitePitcher = l.pGrade === 'A' || l.pGrade === 'B';
-      const weakBatter   = (l.bHitRate != null && l.bHitRate <= 0.240) ||
-                           (l.bXba     != null && l.bXba     <= 0.240);
-      if(!elitePitcher || !weakBatter) return false;
-    }
-    if(nhColdOnly) {
-      const s = (l.last5||'').replace(/[^01]/g,'');
-      const hits = s ? s.split('').filter(c=>c==='1').length : 99;
-      if(hits > 1) return false;
-    }
-    if(filterGame   && l.matchup !== filterGame)                    return false;
-    if(filterSearch && !l.name.toLowerCase().includes(filterSearch)) return false;
-    if(filterTeam   && l.team !== filterTeam)                       return false;
-    return true;
-  });
-  // dedup by batterId (keep lowest p), then by name as fallback
-  const seen = new Map();
-  candidates.forEach(l => {
-    const key = l.batterId || l.name.toLowerCase();
-    if(!seen.has(key) || (l.p||0) < (seen.get(key).p||0)) seen.set(key, l);
-  });
-  const nhActive   = [...seen.values()].filter(l => !isFinal(l.gameState) && !isPostponed(l.gameState)).sort((a,b) => (a.p||0) - (b.p||0));
-  const nhSettledC = [...seen.values()].filter(l =>  isFinal(l.gameState) || isPostponed(l.gameState)).sort((a,b) => (a.p||0) - (b.p||0));
-  candidates = [...nhActive, ...nhSettledC];
-  const nhDividerIdx = nhActive.length;
-
-  document.getElementById('nh-count').textContent = candidates.length + ' candidate' + (candidates.length===1?'':'s');
-
-  // no hit record pill — wins = stayed hitless
-  (()=>{
-    const el = document.getElementById('nohit-record');
-    if(!el) return;
-    const settled = legs.filter(l => isFinal(l.gameState) && !isPostponed(l.gameState));
-    if(!settled.length){ el.style.display='none'; return; }
-    const wins = settled.filter(l => !l.hasHit).length;
-    const pct2 = Math.round(wins/settled.length*100);
-    el.textContent = `${wins}/${settled.length} no-hit · ${pct2}%`;
-    el.style.color = pct2>=65?'var(--good)':pct2>=50?'var(--chalk)':'var(--bad)';
-    el.style.borderColor = pct2>=65?'rgba(111,207,142,.3)':pct2>=50?'var(--line)':'rgba(248,113,113,.3)';
-    el.style.display = '';
-  })();
-
-  if(!candidates.length){
-    pool.innerHTML='<div class="empty">No candidates match the current filters.</div>';
-    return;
-  }
-
-  // slip header
-  const nhSel = legs.filter(l => nhSlipIds.has(l.id));
-  document.getElementById('nhSlipHdr').textContent = 'No-Hit slip — ' + nhSel.length + ' leg' + (nhSel.length===1?'':'s');
-  const nhLegsEl = document.getElementById('nhLegsEl');
-  if(!nhSel.length) {
-    nhLegsEl.innerHTML = '<div class="empty">Add legs from the pool.</div>';
-  } else {
-    const gameMap = new Map();
-    nhSel.forEach(l => { const k=l.matchup||'Other'; if(!gameMap.has(k)) gameMap.set(k,[]); gameMap.get(k).push(l); });
-    nhLegsEl.innerHTML = [...gameMap.entries()].map(([game, gLegs]) => {
-      const legRows = gLegs.map(l => `<div class="leg">
-        ${l.team?`<span class="teamtag" style="${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}
-        <span class="ln">${esc(l.name||'Hitter')}</span>
-        <span class="lp" style="color:var(--bad)">${pct(1-(l.p||0))}</span>
-        <button class="x" onclick="nhToggle(${l.id})">×</button>
-      </div>`).join('');
-      return `<div style="border-bottom:1px solid var(--line)">
-        <div style="padding:5px 15px 4px;font-family:var(--disp);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);background:var(--raised)">${esc(game)}</div>
-        ${legRows}
-      </div>`;
-    }).join('');
-  }
-  updateNhSlip();
-
-  pool.innerHTML = candidates.map((l, idx) => {
-    const _divider = (idx === nhDividerIdx && nhSettledC.length && nhActive.length)
-      ? `<div style="display:flex;align-items:center;gap:8px;margin:6px 0 2px;opacity:.4;font-size:10px;color:var(--sage);font-family:var(--mono);letter-spacing:1px;grid-column:1/-1"><div style="flex:1;height:1px;background:var(--line)"></div>SETTLED<div style="flex:1;height:1px;background:var(--line)"></div></div>`
-      : '';
-    const noP   = 1 - (l.p||0);
-    const pct100 = (noP * 100).toFixed(0);
-    const scoreColor = noP >= 0.60 ? 'var(--bad)' : noP >= 0.50 ? 'var(--amber)' : 'var(--sage)';
-
-    // NO-side edge: model thinks (1-p_hit) chance of no-hit; market implies (1 - fair_yes)
-    const bm = benchmark(l.hit, l.no);
-    const noFair = bm ? 1 - bm.fair : null;
-    const noEdge = noFair != null ? noP - noFair : null;
-    const ecol   = noEdge==null ? 'var(--sage)' : noEdge > 0 ? 'var(--good)' : 'var(--bad)';
-    const ew     = noEdge==null ? 0 : Math.min(Math.abs(noEdge)/0.15,1)*50;
-    const eside  = noEdge==null ? '' : noEdge>0 ? `left:50%;width:${ew}%;background:var(--good)` : `right:50%;width:${ew}%;background:var(--bad)`;
-    const pillTxt = noEdge==null ? 'add prices' : (noEdge>0?'+':'')+(noEdge*100).toFixed(1)+' NO edge';
-    const pillBg  = noEdge==null ? 'var(--field)' : noEdge>0 ? 'rgba(111,207,142,.15)' : 'rgba(210,105,62,.15)';
-
-    // streak
-    const s5 = (l.last5||'').replace(/[^01]/g,'');
-    let tm=0; if(s5){for(let i=s5.length-1;i>=0;i--){if(s5[i]==='0')tm++;else break;}}
-    const streakHtml = streakRowHtml(l.last5, true);
-
-    // batter stats
-    const avg = l.bHitRate!=null ? Number(l.bHitRate).toFixed(3).replace(/^0/,'') : null;
-    const xba = l.bXba!=null    ? Number(l.bXba).toFixed(3).replace(/^0/,'')    : null;
-    const hh  = l.bHH!=null     ? (l.bHH*100).toFixed(0)+'%'                    : null;
-    const babipNh = l.bBabip!=null&&!isNaN(l.bBabip) ? Number(l.bBabip).toFixed(3).replace(/^0/,'') : null;
-    const batterStats = (() => {
-      if(!avg&&!xba&&!hh&&!babipNh) return '';
-      const stat=(lbl,val,hi,lo)=>{
-        const color=val==null?'var(--sage)':parseFloat(val)>=(hi||999)?'var(--good)':parseFloat(val)<=(lo||-999)?'var(--bad)':'var(--chalk)';
-        return `<div style="text-align:center"><div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)">${lbl}</div><div style="font-family:var(--mono);font-size:11px;color:${color}">${val||'—'}</div></div>`;
-      };
-      const babipColor=babipNh==null?'var(--chalk)':parseFloat(babipNh)>=0.350?'var(--amber)':parseFloat(babipNh)<=0.250?'var(--good)':'var(--chalk)';
-      const babipStat=babipNh?`<div style="text-align:center"><div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)">BABIP</div><div style="font-family:var(--mono);font-size:11px;color:${babipColor}">${babipNh}</div></div>`:'';
-      return `<div class="bstats-row" style="display:flex;gap:10px;margin-top:5px">${stat('AVG',avg,.300,.230)}${stat('xBA',xba,.290,.220)}${stat('HH%',hh,50,30)}${babipStat}</div>`;
-    })();
-
-    // BvP line
-    const bvpLine = (() => {
-      if(!l.pitcher) return '';
-      const platoonDeltaNh=l.splitDiff!=null&&Math.abs(l.splitDiff)>=0.005
-        ?`<span style="font-family:var(--mono);font-size:9px;color:${l.splitDiff>0?'var(--good)':'var(--bad)'};margin-left:3px">${l.splitDiff>0?'+':''}${(l.splitDiff*100).toFixed(1)}%</span>`:'';
-      if(!l.bvpAb||l.bvpAb<3){
-        const hand = l.pitcherHand||'R';
-        const splitVal = hand==='L' ? l.vsL : l.vsR;
-        if(splitVal!=null&&!isNaN(splitVal)){
-          const splitAvg = splitVal.toFixed(3).replace(/^0/,'');
-          const splitCol = splitVal>=0.300?'var(--good)':splitVal<=0.220?'#C0392B':'var(--chalk)';
-          const tinyBvpNh=l.bvpAb>0?`<span style="opacity:.4;font-size:8px;margin-left:4px">BvP ${l.bvpAb}AB</span>`:'';
-          return `<div style="font-family:var(--mono);font-size:10px;margin-top:4px;display:flex;align-items:baseline;gap:4px"><span style="color:var(--sage)">vs ${hand}HP</span><span style="color:${splitCol};font-weight:600">${splitAvg}</span>${platoonDeltaNh}${tinyBvpNh}</div>`;
-        }
-        return `<div style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.45;margin-top:4px">BvP — no history</div>`;
-      }
-      const avg2 = l.bvpAvg.toFixed(3).replace(/^0/,'');
-      const color = l.bvpAvg>=0.300?'var(--good)':l.bvpAvg<=0.200?'#C0392B':'var(--chalk)';
-      const sample = l.bvpAb<10 ? `<span style="opacity:.55;font-size:8px">(${l.bvpAb} AB — small)</span>` : `<span style="opacity:.7;font-size:9px">${l.bvpH}-for-${l.bvpAb}</span>`;
-      return `<div style="font-family:var(--mono);font-size:10px;margin-top:4px;display:flex;align-items:baseline;gap:4px"><span style="color:var(--sage)">BvP</span><span style="color:${color};font-weight:600">${avg2}</span>${sample}${platoonDeltaNh}</div>`;
-    })();
-
-    // pitcher section
-    const pitcherHtml = (() => {
-      if(!l.pitcher) return `<div class="pitcher-col" style="border-left:1px solid var(--line);padding-left:12px;flex:none"><div class="col-hdr">Pitcher</div><div style="font-family:var(--mono);font-size:10px;color:var(--sage);opacity:.5;margin-top:4px;font-style:italic">Not announced</div></div>`;
-      const grade = l.pGrade ? `<span class="pgrade pgrade-${l.pGrade}" title="Pitcher rating ${l.pRating!=null?l.pRating.toFixed(0):''}/100">${l.pGrade}</span>` : '';
-      const cswV  = l.pCsw!=null ? (l.pCsw*100) : null;
-      const kbbV  = l.pKbb;
-      const hhV   = l.pHH!=null  ? (l.pHH*100) : null;
-      const pstat=(lbl,val,goodHi,badLo,fmt)=>{
-        const n=parseFloat(val);
-        const color=isNaN(n)?'var(--sage)':n>=goodHi?'var(--good)':n<=badLo?'var(--bad)':'var(--chalk)';
-        return `<div style="text-align:center"><div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)">${lbl}</div><div style="font-family:var(--mono);font-size:11px;color:${color}">${val!=null?fmt(val):'—'}</div></div>`;
-      };
-      const statsRow = l.pRating!=null ? `<div style="display:flex;gap:10px;margin-top:5px">
-        ${pstat('CSW',cswV,30,24,v=>v.toFixed(1)+'%')}
-        ${pstat('K/BB',kbbV,3.0,1.5,v=>Number(v).toFixed(2))}
-        ${pstat('HH%',hhV,null,null,v=>{const c=v>=44?'var(--bad)':v<=30?'var(--good)':'var(--chalk)';return `<span style="color:${c}">${v.toFixed(0)}%</span>`;})}
-      </div>` : '';
-      const opnStyleNh=l.isOpener?'background:rgba(124,58,237,.08);border-left:2px solid #7c3aed88;border-radius:0 6px 6px 0;padding-left:10px;':'border-left:1px solid var(--line);padding-left:12px;';
-      const hhPitcherNh='';
-      const pThinNh=l.pNGames>0&&l.pNGames<10?`<span class="thinbadge" title="Only ${l.pNGames} appearances in model window — grade may not be reliable">${l.pNGames}g thin</span>`:'';
-      const pRestNh=l.pDaysRest>=8?(()=>{const warn=l.pDaysRest>=18;const tip=warn?`${l.pDaysRest}d since last outing — possible IL return`:`${l.pDaysRest}d rest`;return `<span class="restbadge${warn?' restbadge-warn':''}" title="${tip}">${l.pDaysRest}d rest</span>`;})():'';
-      const pSuspNh=(l.pDaysRest>0&&l.pDaysRest<=2)?`<span class="thinbadge restbadge-warn" title="${l.pDaysRest}d rest — short rest suggests bullpen arm or opener, not a traditional starter">⚠ ${l.pDaysRest}d rest</span>`:(l.pNGames>0&&l.pNGames<5?`<span class="thinbadge restbadge-warn" title="Only ${l.pNGames} appearances — role unclear, treat probability with caution">⚠ suspect</span>`:'');
-      const handLetterNh=l.pitcherHand?`<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${l.pitcherHand}</span>`:'';
-      return `<div class="pitcher-col" style="width:160px;${opnStyleNh}flex:none">
-        <div class="col-hdr" style="color:${l.isOpener?'#a78bfa':'var(--sage)'}">${l.isOpener?'Opener':'Pitcher'}</div>
-        <div style="font-family:var(--disp);font-size:12px;font-weight:400;letter-spacing:.3px;text-transform:uppercase;color:var(--chalk);display:flex;align-items:center;gap:4px;flex-wrap:wrap">${grade}<a href="${pitcherUrl(l.pitcher)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(l.pitcher)}</a>${handLetterNh}</div>
-        <div style="margin-top:3px;display:flex;gap:3px;flex-wrap:wrap">${hhPitcherNh}${rookieBadge(l.pIsRookie)}${pSuspNh}${pThinNh}${pRestNh}</div>
-        ${statsRow}
-        ${pitchMatchupHtml(l)}
-      </div>`;
-    })();
-
-    // game col
-    const _nhHomeTeam = (l.matchup||'').split('@').pop().trim().split(' ')[0];
-    const _nhPark = parkInfo(_nhHomeTeam);
-    const _nhWxDate = l.gameDate || new Date().toISOString().slice(0,10);
-    const _nhWxId = `wx-${_nhHomeTeam}-${_nhWxDate.replace(/-/g,'')}`;
-    const gameHtml = l.matchup ? `<div class="game-col" style="width:140px;border-left:1px solid var(--line);padding-left:12px;flex:none">
-      <div class="col-hdr">Game</div>
-      <a href="${gameUrl(l.gameDate,l.gamePk,l.matchup,l.gameState)}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:11px;color:var(--chalk);white-space:nowrap;text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(l.matchup)}</a>
-      ${_nhPark?`<div style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-top:3px;opacity:.8">${esc(_nhPark.name)}${_nhPark.roof?' 🏟':''}${!_nhPark.roof?' ⛳':''}</div>`:''}
-      ${(()=>{if(l.parkFactor==null) return ''; const pf=l.parkFactor; const pfColor=pf>=1.06?'var(--amber)':pf<=0.94?'var(--bad)':'var(--sage)'; return `<div style="font-family:var(--mono);font-size:9px;color:${pfColor};margin-top:2px">PF ${pf.toFixed(2)}</div>`;})()}
-      <div id="${_nhWxId}" style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-top:3px;opacity:.75"></div>
-      ${l.startTime?`<div style="font-family:var(--mono);font-size:9px;color:var(--amber);margin-top:4px">${esc(l.startTime)}</div>`:''}
-      ${isLive(l.gameState)?`<div style="font-family:var(--disp);font-size:9px;color:#e05c5c;margin-top:4px"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e05c5c;vertical-align:middle;margin-right:4px"></span>${l.gamePk?`<a href="https://www.mlb.com/tv/g${l.gamePk}" target="_blank" rel="noopener" style="color:#e05c5c;text-decoration:none" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">MLB.TV</a>`:'LIVE'}</div>`:''}
-      ${isFinal(l.gameState)?`<div style="font-family:var(--disp);font-size:9px;color:var(--sage);margin-top:4px">✓ Final</div>`:''}
-    </div>` : '';
-
-    const handSpanNh=l.batterHand?`<span style="font-size:11px;font-weight:400;opacity:.55;margin-left:3px">${l.batterHand}</span>`:'';
-    const slotBadge = l.slot ? `<span class="slot" style="flex:none">${l.slot}</span>` : '';
-    const teamBadge = l.team ? `<span class="teamtag" style="font-size:10px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>` : '';
-    const inSlip = l.inSlip;
-
-    const noOddsDisplay = (() => {
-      const no = l.no && l.no!=='nan' ? l.no : null;
-      if(!no) return `<span style="font-family:var(--mono);font-size:12px;color:var(--sage)">add prices</span>`;
-      const noFmt = (parseFloat(no)>0?'+':'')+parseFloat(no).toFixed(0);
-      return `<span style="font-family:var(--disp);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)">NO-HIT</span>&nbsp;<span style="font-family:var(--mono);font-size:14px;color:var(--chalk)">${noFmt}</span>`;
-    })();
-
-    const nhFinal = isFinal(l.gameState);
-    const nhPpd  = isPostponed(l.gameState);
-    const nhWin  = (nhFinal||l.subbedOut) && !l.hasHit && !nhPpd;
-    const nhLoss = nhFinal &&  l.hasHit && !nhPpd;
-    const nhBadge = nhPpd  ? '<span class="hist-pending">PPD</span>'
-                  : nhWin  ? '<span class="hitbadge" style="color:var(--good);border-color:rgba(111,207,142,.35)">NO HIT</span>'
-                  : nhLoss ? '<span class="missbadge">GOT HIT</span>' : '';
-    const nhSettled = nhFinal && l.gamePk && l.batterId;
-    const nhCircleHover = nhSettled
-      ? `data-gpk="${l.gamePk}" data-bid="${l.batterId}" data-nm="${esc(l.name||'')}" onmouseenter="showCardOverlay(this.closest('.row'),this.dataset.gpk,this.dataset.bid,this.dataset.nm)" onmouseleave="hideCardOverlay(this.closest('.row'))"`
-      : `onmouseenter="showModelTooltip(this.closest('.row'),${l.id})" onmouseleave="hideModelTooltip(this.closest('.row'))"`;
-    return _divider+`<div class="row${nhWin?' row-nohit-win':nhLoss?' row-missed':''}${tm>5?' row-cold-glow-blue':''}${(!nhSettled&&!nhPpd&&inSlip)?' row-in-slip':''}${nhPpd?' row-in-slip':''}">
-      <div class="rtop">
-        <div class="bcard-inner" style="flex:1;min-width:0;display:grid;grid-template-columns:1fr 220px;grid-template-rows:auto auto;gap:0">
-          <!-- BATTER -->
-          <div class="binner" style="flex:1;min-width:0;padding-right:10px;display:flex;flex-direction:column;justify-content:center">
-            <div style="display:flex;gap:10px;align-items:center">
-              <div style="flex:none;display:flex;flex-direction:column;align-items:center">
-                <div style="font-family:var(--disp);font-size:32px;font-weight:700;color:${scoreColor};line-height:1;cursor:default" ${nhCircleHover}>${pct100}</div>
-                ${matchupDeltaLine(l, true)}
-              </div>
-              <div style="flex:1;min-width:0">
-                <div class="bname-row" style="display:flex;align-items:center;gap:5px;margin-bottom:2px">${slotBadge}${teamBadge}${nhBadge}${kalshiDeltaChip(l)}</div>
-                ${(()=>{
-                  const isUnresolved=l.batterId&&/^\d+$/.test((l.name||'').trim());
-                  const nameColor=isUnresolved?'var(--amber)':'inherit';
-                  const nameStyle=isUnresolved?'font-style:italic':'';
-                  const nameNode=l.batterId?`<a href="https://baseballsavant.mlb.com/savant-player/${l.batterId}" target="_blank" rel="noopener" style="color:${nameColor};${nameStyle}text-decoration:none;border-bottom:1px solid rgba(255,255,255,.15)" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='rgba(255,255,255,.15)'">${esc(l.name)}${handSpanNh}</a>`:`<span style="color:${nameColor};${nameStyle}">${esc(l.name)}${handSpanNh}</span>`;
-                  const idHint=isUnresolved&&l.batterId?`<span style="font-family:var(--mono);font-size:9px;color:var(--amber);opacity:.7" title="Name not resolved — ID is correct">ID ${l.batterId}</span>`:'';
-                  return `<div style="font-family:var(--disp);font-size:16px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:baseline;gap:5px">${nameNode}${performanceArrow(l)}${idHint}</div>`;
-                })()}
-                ${(()=>{const sa=streakBadge(l.last5,true);const rook=rookieBadge(l.bIsRookie);const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';const est=(l.lineupEst&&!isLive(l.gameState)&&!isFinal(l.gameState))?`<span class="estbadge">⚠ EST</span>`:'';const alerts=[sa,rook,thin,rest,est].filter(Boolean).join('');const sparkBtn=sparkToggleBtn(l);const sparkPanel=seasonSparkPanel(l);const s=(l.last5||'').replace(/[^01]/g,'');if(!s)return (alerts?`<div class="bbadges" style="margin-top:7px;display:flex;gap:4px;flex-wrap:wrap">${alerts}</div>`:'')+sparkBtn+sparkPanel;const s10=s.slice(-10);const dots=s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}"></span>`).join('');return `<div class="streakrow" style="flex-wrap:wrap"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div>${alerts}${sparkBtn}</div>${sparkPanel}`;})()}
-                ${liveInningAbHtml(l)}
-              </div>
-            </div>
-          </div>
-          <!-- FORM (no-hit) -->
-          <div class="form-col" style="width:190px;border-left:1px solid var(--line);padding-left:12px;flex:none">
-            <div class="col-hdr">Form</div>
-            ${batterStats}
-            ${bvpLine}
-            ${spRpLine(l)}
-            ${avgAbLine(l)}
-            ${(()=>{
-              const gradeChip = l.pGrade ? `<span class="pgrade pgrade-${l.pGrade}" style="font-size:9px;padding:1px 4px">${l.pGrade}</span>` : '';
-              const pitPart = l.pitcher ? `<a href="${pitcherUrl(l.pitcher)}" target="_blank" rel="noopener" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(l.pitcher.split(' ').pop())}</a>${l.pitcherHand?`<span> ${l.pitcherHand}</span>`:''}${gradeChip}` : '';
-              const gameState = isLive(l.gameState) ? `<span style="color:#e05c5c">● LIVE</span>` : isFinal(l.gameState) ? `<span style="color:var(--sage);opacity:.7;font-family:var(--mono);font-size:9px;letter-spacing:.04em">FINAL</span>` : l.startTime ? `<span style="color:var(--amber)">${esc(l.startTime)}</span>` : '';
-              const matchPart = l.matchup ? `<span style="color:var(--chalk);opacity:.7">${esc(l.matchup)}</span>` : '';
-              if(!pitPart && !matchPart) return '';
-              return `<div class="mobile-info-bar">${pitPart}${pitPart&&matchPart?'<span style="opacity:.3">·</span>':''}${matchPart}${gameState?'<span style="opacity:.3">·</span>':''}${gameState}</div>`;
-            })()}
-          </div>
-          ${pitcherHtml}
-          ${gameHtml}
-        </div>
-      </div>
-      ${(!nhSettled&&!nhPpd)?`<div class="card-footer"><button onclick="toggle(${l.id})" class="slip-btn${inSlip?' in-slip':''}">${inSlip?'✓ In slip':'+ Add to slip'}</button></div>`:''}
-    </div>`;
-  }).join('');
-  injectWeather(candidates);
-
 }
 
 // inject weather into all wx-* placeholders currently in the DOM
@@ -4499,244 +4109,6 @@ function loadSlateDate(date){
   }).catch(()=>alert('Failed to load slate for '+date));
 }
 
-// ── nh history ────────────────────────────────────────────────────────────
-let nhHistoryRows = [];
-let nhHistPage = 0;
-
-function parseNhLogCSV(text) {
-  const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
-  if(lines.length < 2) return [];
-  const head = lines[0].split(',').map(h => h.trim().toLowerCase());
-  const idx = k => head.findIndex(h => h === k);
-  const iDate=idx('date'), iName=idx('name'), iTeam=idx('team'),
-        iMatchup=idx('matchup'), iSlot=idx('slot'),
-        iP=idx('p_no_hit')||idx('p_nohit'),
-        iOdds=idx('no_hit_odds')||idx('no_odds'),
-        iActual=idx('actual_hit')||idx('actual_nohit');
-  return lines.slice(1).map(line => {
-    const c = line.split(',').map(v => v.trim());
-    return {
-      date:    c[iDate]    || '',
-      name:    c[iName]    || '',
-      team:    c[iTeam]    || '',
-      matchup: c[iMatchup] || '',
-      slot:    c[iSlot]    || '',
-      p:       parseFloat(c[iP]) || 0,
-      odds:    c[iOdds]    || '',
-      actual:  (c[iActual]||'').trim(),
-    };
-  }).filter(r => r.name);
-}
-
-function loadNhHistory() {
-  const tryRender = text => {
-    nhHistoryRows = parseNhLogCSV(text);
-    try { localStorage.setItem('dugout_nohit_log_csv', text); } catch(e) {}
-    populateNhDateFilter();
-    renderNhHistory();
-    document.getElementById('nh-h-notice').textContent =
-      `${nhHistoryRows.length} rows loaded from nohit_log.csv`;
-  };
-  if(location.protocol==='http:'||location.protocol==='https:') {
-    fetch('./nohit_log.csv?t='+Date.now())
-      .then(r => { if(!r.ok) throw new Error(r.status); return r.text(); })
-      .then(tryRender)
-      .catch(() => {
-        const saved = localStorage.getItem('dugout_nohit_log_csv');
-        if(saved) { tryRender(saved); document.getElementById('nh-h-notice').textContent='Loaded from cache — run the server to refresh.'; }
-        else { document.getElementById('nh-h-tbody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--sage)">nohit_log.csv not found. See format card below.</td></tr>'; }
-      });
-  } else {
-    const saved = localStorage.getItem('dugout_nohit_log_csv');
-    if(saved) { tryRender(saved); document.getElementById('nh-h-notice').textContent='Loaded from cache.'; }
-    else { document.getElementById('nh-h-tbody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--sage)">Open via the local server to auto-load nohit_log.csv.</td></tr>'; }
-  }
-}
-
-function populateNhDateFilter() {
-  const sel = document.getElementById('nh-h-date-filter');
-  const current = sel.value;
-  const dates = [...new Set(nhHistoryRows.map(r => r.date))].sort().reverse();
-  sel.innerHTML = '<option value="">All dates</option>' +
-    dates.map(d => `<option value="${d}"${d===current?' selected':''}>${d}</option>`).join('');
-}
-
-function renderNhHistory(resetPage) {
-  if(resetPage !== false) nhHistPage = 0;
-  const dateF = document.getElementById('nh-h-date-filter').value;
-  const resF  = document.getElementById('nh-h-result-filter').value;
-  const sortV = document.getElementById('nh-h-sort').value;
-
-  let rows = nhHistoryRows.filter(r => {
-    if(dateF && r.date !== dateF) return false;
-    if(resF === '1' && r.actual !== '1') return false;
-    if(resF === '0' && r.actual !== '0') return false;
-    if(resF === 'hi70' && r.p < 0.70) return false;
-    return true;
-  });
-
-  rows = [...rows].sort((a,b) => {
-    if(sortV === 'date_desc') return b.date.localeCompare(a.date) || b.p - a.p;
-    if(sortV === 'date_asc')  return a.date.localeCompare(b.date) || b.p - a.p;
-    if(sortV === 'p_desc')    return b.p - a.p;
-    if(sortV === 'p_asc')     return a.p - b.p;
-    return 0;
-  });
-
-  const settled = nhHistoryRows.filter(r => r.actual==='1'||r.actual==='0');
-  const wins    = settled.filter(r => r.actual==='1').length;
-  const wr      = settled.length ? wins/settled.length : null;
-  const avgP    = settled.length ? settled.reduce((s,r)=>s+r.p,0)/settled.length : null;
-  const diff    = wr!=null && avgP!=null ? wr - avgP : null;
-  const days    = new Set(settled.map(r=>r.date)).size;
-  const brier   = settled.length ? settled.reduce((s,r)=>s+Math.pow(r.p-(r.actual==='1'?1:0),2),0)/settled.length : null;
-
-  const pct = v => v==null ? '—' : (v*100).toFixed(1)+'%';
-  const col = v => v==null?'var(--sage)':v>0?'var(--good)':v<0?'var(--bad)':'var(--sage)';
-
-  document.getElementById('nh-h-total').textContent = settled.length || '—';
-  document.getElementById('nh-h-total').style.color = 'var(--chalk)';
-  document.getElementById('nh-h-wr').textContent = pct(wr);
-  document.getElementById('nh-h-wr').style.color = wr==null?'var(--sage)':wr>=0.55?'var(--good)':wr>=0.40?'var(--amber)':'var(--bad)';
-  document.getElementById('nh-h-mp').textContent = pct(avgP);
-  document.getElementById('nh-h-diff').textContent = diff==null?'—':(diff>=0?'+':'')+pct(diff);
-  document.getElementById('nh-h-diff').style.color = col(diff);
-  const brEl = document.getElementById('nh-h-brier');
-  brEl.textContent = brier==null?'—':brier.toFixed(4);
-  brEl.style.color = brier==null?'var(--sage)':brier<=0.21?'var(--good)':brier<=0.24?'var(--amber)':'var(--bad)';
-  document.getElementById('nh-h-days').textContent = days || '—';
-  document.getElementById('nh-h-days').style.color = 'var(--chalk)';
-  document.getElementById('nh-h-count').textContent = rows.length + ' rows';
-
-  // table
-  const perPage = HIST_PER_PAGE;
-  const totalPages = Math.ceil(rows.length / perPage);
-  const pageRows = rows.slice(nhHistPage * perPage, (nhHistPage+1) * perPage);
-  document.getElementById('nh-h-tbody').innerHTML = pageRows.length
-    ? pageRows.map(r => {
-        const result = r.actual==='1'
-          ? '<span class="hist-hit">✓ NO HIT</span>'
-          : r.actual==='0'
-            ? '<span class="hist-miss">✗ GOT HIT</span>'
-            : '<span class="hist-pending">—</span>';
-        const oddsFmt = r.odds ? ((parseFloat(r.odds)>0?'+':'')+parseFloat(r.odds).toFixed(0)) : '—';
-        return `<tr>
-          <td>${r.date}</td>
-          <td>${esc(r.name)}</td>
-          <td>${esc(r.team)}</td>
-          <td style="color:var(--sage)">${esc(r.matchup)}</td>
-          <td class="r">${r.slot||'—'}</td>
-          <td class="r" style="color:var(--amber)">${pct(r.p)}</td>
-          <td class="r" style="color:var(--sage)">${oddsFmt}</td>
-          <td class="r">${result}</td>
-        </tr>`;
-      }).join('')
-    : '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--sage)">No rows match.</td></tr>';
-
-  // pager
-  const pagerEl = document.getElementById('nh-h-pager');
-  if(totalPages > 1) {
-    pagerEl.style.display = 'flex';
-    pagerEl.innerHTML = `<button class="ghost" ${nhHistPage===0?'disabled':''} onclick="nhHistPage--;renderNhHistory(false)">‹ Prev</button>
-      <span style="font-family:var(--mono);font-size:11px;color:var(--sage)">${nhHistPage+1} / ${totalPages}</span>
-      <button class="ghost" ${nhHistPage>=totalPages-1?'disabled':''} onclick="nhHistPage++;renderNhHistory(false)">Next ›</button>`;
-  } else { pagerEl.style.display = 'none'; }
-
-  // daily scorecard
-  const byDay = {};
-  settled.forEach(r => { if(!byDay[r.date]) byDay[r.date]=[]; byDay[r.date].push(r); });
-  const dailyDates = Object.keys(byDay).sort().reverse();
-  const NH_DAILY_PER_PAGE = 10;
-  window._nhDailyDates = dailyDates;
-  window._nhDailyByDay = byDay;
-  window._nhDailyPage = 0;
-  function renderNhDaily() {
-    const dates = window._nhDailyDates;
-    const byDay = window._nhDailyByDay;
-    const page = window._nhDailyPage;
-    const total = dates.length;
-    const totalPages = Math.ceil(total / NH_DAILY_PER_PAGE);
-    const pager = document.getElementById('nh-h-daily-pager');
-    if(!total) {
-      document.getElementById('nh-h-daily-body').innerHTML='<div class="empty">No settled data yet.</div>';
-      pager.style.display='none'; return;
-    }
-    document.getElementById('nh-h-daily-meta').textContent = total + ' days';
-    const slice = dates.slice(page*NH_DAILY_PER_PAGE, (page+1)*NH_DAILY_PER_PAGE);
-    document.getElementById('nh-h-daily-body').innerHTML = `<table class="hlog"><thead><tr>
-      <th>Date</th><th class="r">Picks</th><th class="r">Wins</th>
-      <th class="r">Win rate</th><th class="r">Model avg</th><th class="r">Diff</th><th class="r">Brier</th>
-    </tr></thead><tbody>${slice.map(d => {
-      const ds = byDay[d];
-      const n = ds.length, w = ds.filter(r=>r.actual==='1').length;
-      const ap = ds.reduce((s,r)=>s+r.p,0)/n, ar = w/n, df = ar-ap;
-      const br = ds.reduce((s,r)=>s+Math.pow(r.p-(r.actual==='1'?1:0),2),0)/n;
-      const rowBg = ar>=0.55?'background:rgba(111,207,142,.05)':ar<0.35?'background:rgba(210,105,62,.05)':'';
-      return `<tr style="${rowBg}">
-        <td>${d}</td><td class="r">${n}</td><td class="r">${w}</td>
-        <td class="r ${ar>=0.55?'diff-pos':ar<0.35?'diff-neg':''}">${pct(ar)}</td>
-        <td class="r" style="color:var(--amber)">${pct(ap)}</td>
-        <td class="r ${df>0.04?'diff-pos':df<-0.04?'diff-neg':''}">${(df>=0?'+':'')+pct(df)}</td>
-        <td class="r" style="color:${br<=0.21?'var(--good)':br<=0.24?'var(--amber)':'var(--bad)'}">${br.toFixed(3)}</td>
-      </tr>`;
-    }).join('')}</tbody></table>`;
-    if(totalPages > 1) {
-      pager.style.display='flex';
-      document.getElementById('nh-h-daily-pager-label').textContent = `${page+1} / ${totalPages}`;
-    } else { pager.style.display='none'; }
-  }
-  window.nhDailyPage = function(dir) {
-    const total = window._nhDailyDates.length;
-    const totalPages = Math.ceil(total / NH_DAILY_PER_PAGE);
-    window._nhDailyPage = Math.max(0, Math.min(totalPages-1, window._nhDailyPage + dir));
-    renderNhDaily();
-  };
-  renderNhDaily();
-
-  // calibration
-  const buckets = [
-    {lo:0,   hi:0.30, label:'<30%'},
-    {lo:0.30,hi:0.40, label:'30–40'},
-    {lo:0.40,hi:0.50, label:'40–50'},
-    {lo:0.50,hi:0.60, label:'50–60'},
-    {lo:0.60,hi:0.70, label:'60–70'},
-    {lo:0.70,hi:1.01, label:'70%+'},
-  ].map(b => {
-    const bs = settled.filter(r=>r.p>=b.lo&&r.p<b.hi);
-    const bn = bs.length, bw = bs.filter(r=>r.actual==='1').length;
-    const avgPred = bn ? bs.reduce((s,r)=>s+r.p,0)/bn : (b.lo+b.hi)/2;
-    return {...b, n:bn, wins:bw, avgPred, actRate: bn ? bw/bn : null};
-  });
-  document.getElementById('nh-h-calvis').innerHTML = buckets.map(c => {
-    const predH = Math.round(c.avgPred * 76);
-    const actH  = c.actRate!=null ? Math.round(c.actRate * 76) : 0;
-    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0">
-      <div style="width:100%;position:relative;height:76px;display:flex;align-items:flex-end;justify-content:center">
-        <div style="width:60%;height:${predH}px;background:rgba(231,184,75,.35);border-radius:3px 3px 0 0;position:relative">
-          ${c.actRate!=null?`<div style="position:absolute;bottom:0;left:0;width:100%;height:${actH}px;background:rgba(111,207,142,.5);border-radius:3px 3px 0 0"></div>`:''}
-        </div>
-      </div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--sage)">${c.label}</div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--chalk)">${c.n}</div>
-    </div>`;
-  }).join('');
-  document.getElementById('nh-h-cal-body').innerHTML = `<table class="hlog" style="margin-top:0"><thead><tr>
-    <th>Bucket</th><th class="r">Picks</th><th class="r">Wins</th>
-    <th class="r">Win rate</th><th class="r">Pred avg</th><th class="r">Gap</th>
-  </tr></thead><tbody>${buckets.map(c => {
-    if(!c.n) return `<tr><td style="color:var(--amber)">${c.label}</td><td class="r" colspan="5" style="color:var(--sage)">No data</td></tr>`;
-    const gap = c.actRate - c.avgPred;
-    const note = Math.abs(gap)<0.04?'calibrated':gap<0?'overconfident':'underestimated';
-    return `<tr>
-      <td style="color:var(--amber)">${c.label}</td>
-      <td class="r">${c.n}</td><td class="r">${c.wins}</td>
-      <td class="r ${c.actRate>=0.55?'diff-pos':c.actRate<0.35?'diff-neg':''}">${pct(c.actRate)}</td>
-      <td class="r" style="color:var(--amber)">${pct(c.avgPred)}</td>
-      <td class="r ${gap>0.04?'diff-pos':gap<-0.04?'diff-neg':''}">${(gap>=0?'+':'')+pct(gap)} <span style="color:var(--sage);font-size:10px">${note}</span></td>
-    </tr>`;
-  }).join('')}</tbody></table>`;
-}
-
 // ── mlb live ticker ───────────────────────────────────────────────────────
 (function(){
   let _timer = null;
@@ -4963,7 +4335,7 @@ function renderNhHistory(resetPage) {
           batter:  ls.offense?.batter  || null,
         });
       });
-      // Sync live game state + linescore back to leg objects so Tonight/NoHit tabs stay current.
+      // Sync live game state + linescore back to leg objects so the Tonight tab stays current.
       // Only sync when showing today's games — if useYesterday, the matchup strings (e.g. "WSH @ BAL")
       // are identical to today's slate and writing yesterday's Final state into today's legs
       // causes every batter to show ✗ MISS before today's games have started.

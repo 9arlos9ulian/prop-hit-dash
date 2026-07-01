@@ -7,7 +7,7 @@
     "odds": 1106,
     "payout": 27.65,
     "trueP": 0.08292775717766399,
-    "status": "pending",
+    "status": "lost",
     "legs": [
       {
         "name": "Fernando Tat\u00eds",
@@ -21,7 +21,7 @@
         "pitcherHand": "R",
         "batterId": "665487",
         "gamePk": "824660",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "name": "Gavin Sheets",
@@ -35,7 +35,7 @@
         "pitcherHand": "R",
         "batterId": "657757",
         "gamePk": "824660",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Pete Crow-Armstrong",
@@ -49,7 +49,7 @@
         "pitcherHand": "R",
         "batterId": "691718",
         "gamePk": "824660",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Manny Machado",
@@ -63,7 +63,7 @@
         "pitcherHand": "R",
         "batterId": "592518",
         "gamePk": "824660",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Nico Hoerner",
@@ -77,7 +77,7 @@
         "pitcherHand": "R",
         "batterId": "663538",
         "gamePk": "824660",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "name": "Jackson Merrill",
@@ -91,7 +91,7 @@
         "pitcherHand": "R",
         "batterId": "701538",
         "gamePk": "824660",
-        "outcome": null
+        "outcome": "miss"
       }
     ]
   },
