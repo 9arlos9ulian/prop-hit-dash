@@ -1,5 +1,101 @@
 [
   {
+    "id": 1782927159635,
+    "saved": "7/1/2026, 10:32:39 AM",
+    "date": "2026-07-01",
+    "stake": 2.5,
+    "odds": 1106,
+    "payout": 27.65,
+    "trueP": 0.08292775717766399,
+    "status": "pending",
+    "legs": [
+      {
+        "name": "Fernando Tat\u00eds",
+        "team": "SD",
+        "matchup": "SD @ CHC",
+        "gameDate": "01/07",
+        "p": 0.6879834227738592,
+        "yesCents": null,
+        "slot": 1,
+        "pitcher": "Colin Rea",
+        "pitcherHand": "R",
+        "batterId": "665487",
+        "gamePk": "824660",
+        "outcome": null
+      },
+      {
+        "name": "Gavin Sheets",
+        "team": "SD",
+        "matchup": "SD @ CHC",
+        "gameDate": "01/07",
+        "p": 0.6764099578133789,
+        "yesCents": null,
+        "slot": 2,
+        "pitcher": "Colin Rea",
+        "pitcherHand": "R",
+        "batterId": "657757",
+        "gamePk": "824660",
+        "outcome": null
+      },
+      {
+        "name": "Pete Crow-Armstrong",
+        "team": "CHC",
+        "matchup": "SD @ CHC",
+        "gameDate": "01/07",
+        "p": 0.6762592383776712,
+        "yesCents": null,
+        "slot": 1,
+        "pitcher": "Walker Buehler",
+        "pitcherHand": "R",
+        "batterId": "691718",
+        "gamePk": "824660",
+        "outcome": null
+      },
+      {
+        "name": "Manny Machado",
+        "team": "SD",
+        "matchup": "SD @ CHC",
+        "gameDate": "01/07",
+        "p": 0.6471593665221627,
+        "yesCents": null,
+        "slot": 3,
+        "pitcher": "Colin Rea",
+        "pitcherHand": "R",
+        "batterId": "592518",
+        "gamePk": "824660",
+        "outcome": null
+      },
+      {
+        "name": "Nico Hoerner",
+        "team": "CHC",
+        "matchup": "SD @ CHC",
+        "gameDate": "01/07",
+        "p": 0.6421480723374918,
+        "yesCents": null,
+        "slot": 6,
+        "pitcher": "Walker Buehler",
+        "pitcherHand": "R",
+        "batterId": "663538",
+        "gamePk": "824660",
+        "outcome": null
+      },
+      {
+        "name": "Jackson Merrill",
+        "team": "SD",
+        "matchup": "SD @ CHC",
+        "gameDate": "01/07",
+        "p": 0.6340920643531375,
+        "yesCents": null,
+        "slot": 5,
+        "pitcher": "Colin Rea",
+        "pitcherHand": "R",
+        "batterId": "701538",
+        "gamePk": "824660",
+        "outcome": null
+      }
+    ]
+  },
+  {
     "id": 1782863859601,
     "saved": "6/30/2026, 4:57:39 PM",
     "date": "2026-06-30",
@@ -7,7 +103,7 @@
     "odds": 6905,
     "payout": 138.1,
     "trueP": 0.014275348965715223,
-    "status": "pending",
+    "status": "lost",
     "legs": [
       {
         "name": "Liam Hicks",
@@ -21,7 +117,7 @@
         "pitcherHand": "R",
         "batterId": "689414",
         "gamePk": "824338",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Jake Mccarthy",
@@ -35,7 +131,7 @@
         "pitcherHand": "R",
         "batterId": "664983",
         "gamePk": "824338",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "name": "Luis Arr\u00e1ez",
@@ -49,7 +145,7 @@
         "pitcherHand": "R",
         "batterId": "650333",
         "gamePk": "825066",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Griffin Conine",
@@ -63,7 +159,7 @@
         "pitcherHand": "R",
         "batterId": "665052",
         "gamePk": "824338",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Xavier Edwards",
@@ -77,7 +173,7 @@
         "pitcherHand": "R",
         "batterId": "669364",
         "gamePk": "824338",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Brooks Lee",
@@ -91,7 +187,7 @@
         "pitcherHand": "R",
         "batterId": "686797",
         "gamePk": "824175",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Trevor Larnach",
@@ -105,7 +201,7 @@
         "pitcherHand": "R",
         "batterId": "663616",
         "gamePk": "824175",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "name": "Bryce Eldridge",
@@ -119,7 +215,7 @@
         "pitcherHand": "R",
         "batterId": "805811",
         "gamePk": "825066",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "name": "Casey Schmitt",
@@ -133,7 +229,7 @@
         "pitcherHand": "R",
         "batterId": "669477",
         "gamePk": "825066",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "name": "Kody Clemens",
@@ -147,7 +243,7 @@
         "pitcherHand": "R",
         "batterId": "665019",
         "gamePk": "824175",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Kyle Stowers",
@@ -161,7 +257,7 @@
         "pitcherHand": "R",
         "batterId": "669065",
         "gamePk": "824338",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Josh Bell",
@@ -175,7 +271,7 @@
         "pitcherHand": "R",
         "batterId": "605137",
         "gamePk": "824175",
-        "outcome": null
+        "outcome": "hit"
       }
     ]
   }
