@@ -145,6 +145,11 @@
     .pbar-badges{margin-left:auto;flex:none}
     .detail-grid{display:grid;grid-template-columns:auto 1fr 1fr;gap:24px;align-items:start}
   }
+  .row-icon-btn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid var(--line);background:var(--raised);color:var(--sage);cursor:pointer;font-size:10px;flex:none;padding:0;font-family:var(--mono);transition:border-color .15s,color .15s,background .15s}
+  .row-icon-btn:hover{border-color:var(--amber);color:var(--amber)}
+  .row-icon-btn.active{border-color:rgba(178,208,126,.5);background:rgba(178,208,126,.15);color:var(--good)}
+  .row-icon-btn.active:hover{border-color:var(--good);color:var(--good)}
+  @media(max-width:600px){.expand-btn{display:none}}
   .slip-toggle{display:none}
   .card{background:var(--surf);border:1px solid var(--line);border-radius:12px}
   .card h2{font-family:var(--disp);font-size:12px;font-weight:400;letter-spacing:1.5px;text-transform:uppercase;color:var(--sage);margin:0;padding:13px 15px;border-bottom:1px solid var(--line)}
@@ -1186,7 +1191,7 @@ function updateSlipCount(){
   const badge = document.getElementById('slip-fab-count');
   const title = document.getElementById('slip-drawer-title');
   badge.textContent = n;
-  badge.style.display = n > 0 ? '' : 'none';
+  badge.style.display = n > 0 ? 'inline-block' : 'none';
   if(title) title.textContent = 'Bet slip' + (n ? ' · ' + n + ' leg' + (n===1?'':'s') : '');
 }
 
@@ -1739,8 +1744,9 @@ function toggle(id){
   const adding = !l.inSlip;
   const applyToggle = ()=>{
     l.inSlip=!l.inSlip;
-    render();
+    renderActiveTab();
     updateSaveBtn();
+    updateSlipCount();
     const badge = document.getElementById('slip-fab-count');
     if(badge){
       badge.classList.remove('bump');
@@ -3515,6 +3521,7 @@ function renderGames() {
                 csw >= 30 ? ['#67e8f9','rgba(103,232,249,.12)','rgba(103,232,249,.35)','ELITE'] :
                 csw >= 27 ? ['var(--good)','rgba(178,208,126,.1)','rgba(178,208,126,.3)','AVG'] :
                             ['var(--bad)','rgba(231,150,110,.1)','rgba(231,150,110,.3)','WEAK'];
+              if(label==='AVG') return ''; // only flag standout (better/worse) CSW, not the middle of the pack
               return `<span title="CSW ${csw.toFixed(0)}% — ${label}" style="font-family:var(--mono);font-size:9px;color:${col};background:${bg};border:1px solid ${border};border-radius:3px;padding:1px 5px">CSW</span>`;
             })()}
           </div>` : ''}
@@ -3757,12 +3764,8 @@ function renderScores() {
       return arr;
     }
 
-    function sideHtml(side, team, mu, avg) {
+    function sideHtml(side, team, mu) {
       if(!side.length) return `<div style="flex:1;padding:14px;color:var(--sage);font-size:11px;font-family:var(--mono);text-align:center">no lineup</div>`;
-      const avgPct = Math.round((avg||0)*100);
-      const avgGrade = offGrade(avg||0);
-      const avgCol = gradeCol(avgGrade);
-      const avgBarCol = (avg||0)>=0.65?'var(--good)':(avg||0)>=0.58?'var(--amber)':'var(--bad)';
       const pGrade = side[0]?.pGrade || '';
       const pgCol = gradeCol(pGrade || 'C');
       const pgBg  = gradeBg(pGrade  || 'C');
@@ -3814,20 +3817,14 @@ function renderScores() {
           ${isBet?`<span title="In your bet slip" style="font-size:10px;flex:none">🎫</span>`:''}
           <span class="scores-avg-col" style="font-family:var(--mono);font-size:10px;color:var(--sage);flex:none;width:34px;text-align:right">${avgTxt}</span>
           <span class="scores-hab-col" style="font-family:var(--mono);font-size:10px;color:${boxCol};flex:none;width:34px;text-align:right">${boxTxt}</span>
-          <span style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.6;flex:none">${expanded?'▾':'▸'}</span>
+          ${(!l.hasHit&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}
+          ${l.batterId?`<button class="row-icon-btn expand-btn" title="${expanded?'Collapse details':'Expand details'}" onclick="event.stopPropagation();toggleScoresRow('${l.batterId}')">${expanded?'▾':'▸'}</button>`:''}
         </div>
         ${expanded?battingDetailBlock(l):''}`;
       }).join('');
 
       return `<div style="flex:1;min-width:0;${colBg.startsWith('linear')?`background:${colBg}`:`background:${colBg}`}">
         <div style="padding:8px 10px;border-bottom:1px solid var(--line)">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-            <span style="font-family:var(--mono);font-size:9px;color:var(--sage)">avg P(hit)</span>
-            <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${avgCol}">${avgPct}% <span style="opacity:.75">${avgGrade}</span></span>
-          </div>
-          <div style="height:3px;border-radius:2px;background:var(--field);overflow:hidden;margin-top:5px">
-            <div style="height:100%;width:${avgPct}%;background:${avgBarCol};border-radius:2px;box-shadow:0 0 8px ${avgBarCol}66;transition:width .4s"></div>
-          </div>
           ${pitcherName ? `<div class="pitcher-bar">
             <div class="pbar-id">
               <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">vs</span>
@@ -3854,6 +3851,7 @@ function renderScores() {
                 if(pCsw == null) return '';
                 const csw = pCsw * 100;
                 const [col,bg,border,label] = csw>=35?['#a78bfa','rgba(167,139,250,.12)','rgba(167,139,250,.35)','DOMINANT'] : csw>=30?['#67e8f9','rgba(103,232,249,.12)','rgba(103,232,249,.35)','ELITE'] : csw>=27?['var(--good)','rgba(178,208,126,.1)','rgba(178,208,126,.3)','AVG'] : ['var(--bad)','rgba(231,150,110,.1)','rgba(231,150,110,.3)','WEAK'];
+                if(label==='AVG') return '';
                 return `<span title="CSW ${csw.toFixed(0)}% — ${label}" style="font-family:var(--mono);font-size:9px;color:${col};background:${bg};border:1px solid ${border};border-radius:3px;padding:1px 5px">CSW</span>`;
               })()}
             </div>
@@ -3864,21 +3862,36 @@ function renderScores() {
       </div>`;
     }
 
-    function muChip(mu){
+    function muChip(mu, avg){
       if(!mu) return '';
+      const avgPct = Math.round((avg||0)*100);
+      const avgGrade = offGrade(avg||0);
+      const avgCol = gradeCol(avgGrade);
+      const avgBarCol = (avg||0)>=0.65?'var(--good)':(avg||0)>=0.58?'var(--amber)':'var(--bad)';
       const sign = mu.delta >= 0 ? '+' : '';
       const deltaCol = mu.delta >= 2 ? 'var(--good)' : mu.delta <= -2 ? 'var(--bad)' : 'var(--sage)';
-      return `<div style="display:flex;align-items:center;justify-content:center;gap:6px">
-        <span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;color:${mu.col}">${mu.lbl}</span>
-        <span style="font-family:var(--mono);font-size:11px;font-weight:900;color:${deltaCol};background:${deltaCol==='var(--sage)'?'rgba(120,120,130,.1)':deltaCol==='var(--good)'?'rgba(178,208,126,.12)':'rgba(218,110,81,.12)'};border:1px solid ${deltaCol}33;border-radius:5px;padding:0 6px;line-height:18px">${sign}${mu.delta}</span>
-        <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${mu.score}/8</span>
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div style="width:100%;max-width:150px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-family:var(--mono);font-size:9px;color:var(--sage)">avg P(hit)</span>
+            <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:${avgCol}">${avgPct}% <span style="opacity:.75">${avgGrade}</span></span>
+          </div>
+          <div style="height:3px;border-radius:2px;background:var(--field);overflow:hidden;margin-top:4px">
+            <div style="height:100%;width:${avgPct}%;background:${avgBarCol};border-radius:2px;box-shadow:0 0 8px ${avgBarCol}66"></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+          <span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;color:${mu.col}">${mu.lbl}</span>
+          <span style="font-family:var(--mono);font-size:11px;font-weight:900;color:${deltaCol};background:${deltaCol==='var(--sage)'?'rgba(120,120,130,.1)':deltaCol==='var(--good)'?'rgba(178,208,126,.12)':'rgba(218,110,81,.12)'};border:1px solid ${deltaCol}33;border-radius:5px;padding:0 6px;line-height:18px">${sign}${mu.delta}</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${mu.score}/8</span>
+        </div>
       </div>`;
     }
-    // lean footer — same layout as Slate's muRow, split away/home
+    // lean footer — same layout as Slate's muRow, split away/home; avg P(hit) now lives here too, next to the related lean label
     const muRow = (awayMu||homeMu) ? `<div style="display:flex;border-top:1px solid var(--line)">
-      <div style="flex:1;padding:7px 14px;text-align:center;background:${awayMu?awayMu.bg:'transparent'};border-left:3px solid ${awayMu?awayMu.border:'var(--line)'}">${muChip(awayMu)}</div>
+      <div style="flex:1;padding:7px 14px;text-align:center;background:${awayMu?awayMu.bg:'transparent'};border-left:3px solid ${awayMu?awayMu.border:'var(--line)'}">${muChip(awayMu,awayAvg)}</div>
       <div style="width:1px;background:var(--line)"></div>
-      <div style="flex:1;padding:7px 14px;text-align:center;background:${homeMu?homeMu.bg:'transparent'};border-right:3px solid ${homeMu?homeMu.border:'var(--line)'}">${muChip(homeMu)}</div>
+      <div style="flex:1;padding:7px 14px;text-align:center;background:${homeMu?homeMu.bg:'transparent'};border-right:3px solid ${homeMu?homeMu.border:'var(--line)'}">${muChip(homeMu,homeAvg)}</div>
     </div>` : '';
 
     // post-game correct/incorrect indicator — same logic as Slate's evalSide/evalRow
@@ -3961,9 +3974,9 @@ function renderScores() {
         ${fieldInfo}
       </div>
       <div style="display:flex">
-        ${sideHtml(awaySide, awayTeam, awayMu, awayAvg)}
+        ${sideHtml(awaySide, awayTeam, awayMu)}
         <div style="width:1px;background:var(--line)"></div>
-        ${sideHtml(homeSide, homeTeam, homeMu, homeAvg)}
+        ${sideHtml(homeSide, homeTeam, homeMu)}
       </div>
       ${muRow}
       ${evalRow}
@@ -4059,14 +4072,15 @@ function loadHistory() {
         _tb[r.team].n++; _tb[r.team].exp+=r.p; _tb[r.team].act+=r.actual==='1'?1:0;
       });
       window._teamBadge = {};
+      const _neutralBadge = '<span style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.6;border:1px solid var(--line);border-radius:3px;padding:1px 5px" title="Performing in line with model expectation">–</span>';
       Object.entries(_tb).forEach(([t,v])=>{
-        if(v.n<30){ window._teamBadge[t]=''; return; }
+        if(v.n<30){ window._teamBadge[t]=_neutralBadge; return; }
         const ratio = v.exp>0 ? v.act/v.exp : 1;
         window._teamBadge[t] = ratio>=1.06
-          ? '<span style="font-family:var(--mono);font-size:8px;color:var(--good);border:1px solid rgba(178,208,126,.35);border-radius:3px;padding:1px 5px">▲</span>'
+          ? '<span style="font-family:var(--mono);font-size:8px;color:var(--good);border:1px solid rgba(178,208,126,.35);border-radius:3px;padding:1px 5px" title="Outperforming model expectation">▲</span>'
           : ratio<=0.94
-          ? '<span style="font-family:var(--mono);font-size:8px;color:var(--bad);border:1px solid rgba(231,150,110,.35);border-radius:3px;padding:1px 5px">▼</span>'
-          : '';
+          ? '<span style="font-family:var(--mono);font-size:8px;color:var(--bad);border:1px solid rgba(231,150,110,.35);border-radius:3px;padding:1px 5px" title="Underperforming model expectation">▼</span>'
+          : _neutralBadge;
       });
       // per-batter performance arrow: same ratio math as the team badge, scoped to
       // that batter's own trailing L10 (or L5 if they don't have 10 games yet).
