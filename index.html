@@ -130,6 +130,21 @@
   #slip-drawer-body{overflow-y:auto;flex:1;padding-bottom:8px}
   @media(max-width:480px){#slip-drawer{right:0;left:0;width:100%;border-radius:14px 14px 0 0}#slip-fab{right:16px;bottom:16px}}
   @media(max-width:600px){.scores-avg-col,.scores-hab-col{display:none}}
+  .pitcher-bar{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+  .pbar-id{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .pbar-name{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent}
+  .pbar-stats{display:flex;gap:10px}
+  .pbar-mix{font-family:var(--mono);font-size:9px;display:flex;gap:8px}
+  .pbar-badges{display:flex;gap:5px;flex-wrap:wrap}
+  .detail-grid{display:flex;flex-direction:column;gap:10px}
+  @media(min-width:820px){
+    .pitcher-bar{flex-direction:row;align-items:center;flex-wrap:wrap;gap:16px}
+    .pbar-id{flex:none}
+    .pbar-stats{flex:none;padding-left:14px;border-left:1px solid var(--line)}
+    .pbar-mix{flex:none;padding-left:14px;border-left:1px solid var(--line)}
+    .pbar-badges{margin-left:auto;flex:none}
+    .detail-grid{display:grid;grid-template-columns:auto 1fr 1fr;gap:24px;align-items:start}
+  }
   .slip-toggle{display:none}
   .card{background:var(--surf);border:1px solid var(--line);border-radius:12px}
   .card h2{font-family:var(--disp);font-size:12px;font-weight:400;letter-spacing:1.5px;text-transform:uppercase;color:var(--sage);margin:0;padding:13px 15px;border-bottom:1px solid var(--line)}
@@ -1616,7 +1631,7 @@ function pitchMixLine(l){
   if(fb!=null) parts.push(`<span style="color:var(--sage)">FB</span> <span style="color:var(--chalk);font-weight:600">${fb}%</span>`);
   if(bb!=null) parts.push(`<span style="color:var(--sage)">BRK</span> <span style="color:var(--chalk);font-weight:600">${bb}%</span>`);
   if(os!=null) parts.push(`<span style="color:var(--sage)">OFF</span> <span style="color:var(--chalk);font-weight:600">${os}%</span>`);
-  return `<div style="font-family:var(--mono);font-size:9px;margin-top:5px;display:flex;gap:8px" title="Pitch usage mix — fastball / breaking / offspeed">${parts.join('<span style="opacity:.3">·</span>')}</div>`;
+  return `<div class="pbar-mix" title="Pitch usage mix — fastball / breaking / offspeed">${parts.join('<span style="opacity:.3">·</span>')}</div>`;
 }
 function avgAbLine(l){
   if(l.bAvgAb==null||isNaN(l.bAvgAb)||!l.bGamesPlayed||l.bGamesPlayed<10) return '';
@@ -1665,13 +1680,11 @@ function battingDetailBlock(l){
   const badges=[rookieBadge(l.bIsRookie),thin,rest,est].filter(Boolean).join('');
   const badgesRow=badges?`<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">${badges}</div>`:'';
   return `<div style="padding:10px 14px;background:rgba(0,0,0,.15);border-top:1px solid var(--line)">
-    ${bstatsHtml}
-    ${matchupDeltaLine(l)}
-    ${avgAbLine(l)}
-    ${spRpLine(l)}
-    ${vsHtml}
-    ${streakRow}
-    ${badgesRow}
+    <div class="detail-grid">
+      <div>${bstatsHtml}</div>
+      <div>${matchupDeltaLine(l)}${avgAbLine(l)}${spRpLine(l)}</div>
+      <div>${vsHtml}${streakRow}${badgesRow}</div>
+    </div>
   </div>`;
 }
 function spRpLine(l){
@@ -3815,33 +3828,35 @@ function renderScores() {
           <div style="height:3px;border-radius:2px;background:var(--field);overflow:hidden;margin-top:5px">
             <div style="height:100%;width:${avgPct}%;background:${avgBarCol};border-radius:2px;box-shadow:0 0 8px ${avgBarCol}66;transition:width .4s"></div>
           </div>
-          ${pitcherName ? `<div style="margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span style="font-family:var(--mono);font-size:9px;color:var(--sage)">vs</span>
-            ${pGrade?`<span style="font-family:var(--mono);font-size:9px;font-weight:600;border-radius:3px;padding:1px 5px;white-space:nowrap;color:${pgCol};background:${pgBg};border:1px solid ${pgCol}55">${pGrade}</span>`:''}
-            <a href="${pitcherUrl(pitcherFullName)}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:10px;color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(pitcherName)}</a>
-            ${handTag}
-          </div>
-          ${pCsw!=null||pKbb!=null||pHH!=null ? `<div style="display:flex;gap:10px;margin-top:5px">
-            ${pstat('CSW',pCsw!=null?pCsw*100:null,30,24,v=>v.toFixed(1)+'%')}
-            ${pstat('K/BB',pKbb,3.0,1.5,v=>Number(v).toFixed(2))}
-            ${pstat('HH%',pHH!=null?pHH*100:null,null,null,v=>{
-              const c=v>=44?'var(--bad)':v<=30?'var(--good)':'var(--chalk)';
-              return `<span style="color:${c}">${v.toFixed(0)}%</span>`;
-            })}
-          </div>` : ''}
-          ${pitchMixLine(side[0]||{})}
-          <div style="margin-top:4px;display:flex;gap:5px;flex-wrap:wrap">
-            ${rookieBadge(side[0]?.pIsRookie)}
-            ${pNGames < 8 ? `<span title="Small sample — only ${pNGames} starts" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(235,178,105,.1);border:1px solid rgba(235,178,105,.3);border-radius:3px;padding:1px 5px">⚠ ${pNGames}G</span>` : ''}
-            ${pDaysRest >= 15 ? `<span title="${pDaysRest} days since last appearance" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(235,178,105,.1);border:1px solid rgba(235,178,105,.3);border-radius:3px;padding:1px 5px">⚠ ${pDaysRest}D</span>` : ''}
-            ${pHH != null && pHH >= 0.43 ? `<span title="High hard-hit rate allowed: ${(pHH*100).toFixed(0)}%" style="font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(231,150,110,.1);border:1px solid rgba(231,150,110,.3);border-radius:3px;padding:1px 5px">HH</span>` : ''}
-            ${pKbb != null && pKbb < 2.0 ? `<span title="Low K/BB ratio: ${pKbb.toFixed(1)}" style="font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(231,150,110,.1);border:1px solid rgba(231,150,110,.3);border-radius:3px;padding:1px 5px">KB</span>` : ''}
-            ${(()=>{
-              if(pCsw == null) return '';
-              const csw = pCsw * 100;
-              const [col,bg,border,label] = csw>=35?['#a78bfa','rgba(167,139,250,.12)','rgba(167,139,250,.35)','DOMINANT'] : csw>=30?['#67e8f9','rgba(103,232,249,.12)','rgba(103,232,249,.35)','ELITE'] : csw>=27?['var(--good)','rgba(178,208,126,.1)','rgba(178,208,126,.3)','AVG'] : ['var(--bad)','rgba(231,150,110,.1)','rgba(231,150,110,.3)','WEAK'];
-              return `<span title="CSW ${csw.toFixed(0)}% — ${label}" style="font-family:var(--mono);font-size:9px;color:${col};background:${bg};border:1px solid ${border};border-radius:3px;padding:1px 5px">CSW</span>`;
-            })()}
+          ${pitcherName ? `<div class="pitcher-bar">
+            <div class="pbar-id">
+              <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">vs</span>
+              ${pGrade?`<span style="font-family:var(--mono);font-size:9px;font-weight:600;border-radius:3px;padding:1px 5px;white-space:nowrap;color:${pgCol};background:${pgBg};border:1px solid ${pgCol}55">${pGrade}</span>`:''}
+              <a href="${pitcherUrl(pitcherFullName)}" target="_blank" rel="noopener" class="pbar-name" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(pitcherName)}</a>
+              ${handTag}
+            </div>
+            ${pCsw!=null||pKbb!=null||pHH!=null ? `<div class="pbar-stats">
+              ${pstat('CSW',pCsw!=null?pCsw*100:null,30,24,v=>v.toFixed(1)+'%')}
+              ${pstat('K/BB',pKbb,3.0,1.5,v=>Number(v).toFixed(2))}
+              ${pstat('HH%',pHH!=null?pHH*100:null,null,null,v=>{
+                const c=v>=44?'var(--bad)':v<=30?'var(--good)':'var(--chalk)';
+                return `<span style="color:${c}">${v.toFixed(0)}%</span>`;
+              })}
+            </div>` : ''}
+            ${pitchMixLine(side[0]||{})}
+            <div class="pbar-badges">
+              ${rookieBadge(side[0]?.pIsRookie)}
+              ${pNGames < 8 ? `<span title="Small sample — only ${pNGames} starts" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(235,178,105,.1);border:1px solid rgba(235,178,105,.3);border-radius:3px;padding:1px 5px">⚠ ${pNGames}G</span>` : ''}
+              ${pDaysRest >= 15 ? `<span title="${pDaysRest} days since last appearance" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(235,178,105,.1);border:1px solid rgba(235,178,105,.3);border-radius:3px;padding:1px 5px">⚠ ${pDaysRest}D</span>` : ''}
+              ${pHH != null && pHH >= 0.43 ? `<span title="High hard-hit rate allowed: ${(pHH*100).toFixed(0)}%" style="font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(231,150,110,.1);border:1px solid rgba(231,150,110,.3);border-radius:3px;padding:1px 5px">HH</span>` : ''}
+              ${pKbb != null && pKbb < 2.0 ? `<span title="Low K/BB ratio: ${pKbb.toFixed(1)}" style="font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(231,150,110,.1);border:1px solid rgba(231,150,110,.3);border-radius:3px;padding:1px 5px">KB</span>` : ''}
+              ${(()=>{
+                if(pCsw == null) return '';
+                const csw = pCsw * 100;
+                const [col,bg,border,label] = csw>=35?['#a78bfa','rgba(167,139,250,.12)','rgba(167,139,250,.35)','DOMINANT'] : csw>=30?['#67e8f9','rgba(103,232,249,.12)','rgba(103,232,249,.35)','ELITE'] : csw>=27?['var(--good)','rgba(178,208,126,.1)','rgba(178,208,126,.3)','AVG'] : ['var(--bad)','rgba(231,150,110,.1)','rgba(231,150,110,.3)','WEAK'];
+                return `<span title="CSW ${csw.toFixed(0)}% — ${label}" style="font-family:var(--mono);font-size:9px;color:${col};background:${bg};border:1px solid ${border};border-radius:3px;padding:1px 5px">CSW</span>`;
+              })()}
+            </div>
           </div>` : ''}
         </div>
         ${headerRow}
@@ -3909,16 +3924,18 @@ function renderScores() {
     const scoreBlock = `<div style="display:flex;flex-direction:column;justify-content:center;padding:8px 10px;min-width:100px;flex:none">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:6px">
         <span style="display:flex;align-items:center;gap:5px">
+          ${awayOu}
           <span class="teamtag" style="${teamTagStyle(awayTeam)};font-size:12px">${esc(awayTeam)}</span>
-          ${awayOu}${awayEst}
+          ${awayEst}
         </span>
         <span style="font-family:var(--disp);font-size:15px;font-weight:600;line-height:1;color:${awayLeads?'var(--amber)':'var(--chalk)'}">${as??'-'}</span>
       </div>
       <div style="height:1px;background:var(--line)"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:6px">
         <span style="display:flex;align-items:center;gap:5px">
+          ${homeOu}
           <span class="teamtag" style="${teamTagStyle(homeTeam)};font-size:12px">${esc(homeTeam)}</span>
-          ${homeOu}${homeEst}
+          ${homeEst}
         </span>
         <span style="font-family:var(--disp);font-size:15px;font-weight:600;line-height:1;color:${homeLeads?'var(--amber)':'var(--chalk)'}">${hs??'-'}</span>
       </div>
