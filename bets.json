@@ -61,7 +61,7 @@
     "odds": 561,
     "payout": 56.09,
     "trueP": 0.15130554999667806,
-    "status": "pending",
+    "status": "lost",
     "legs": [
       {
         "name": "Otto Lopez",
@@ -75,7 +75,7 @@
         "pitcherHand": "L",
         "batterId": "672640",
         "gamePk": "824337",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Heriberto Hernandez",
@@ -89,7 +89,7 @@
         "pitcherHand": "L",
         "batterId": "681715",
         "gamePk": "824337",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Yandy D\u00edaz",
@@ -103,7 +103,7 @@
         "pitcherHand": "R",
         "batterId": "650490",
         "gamePk": "824094",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "name": "Jonathan Aranda",
@@ -117,7 +117,7 @@
         "pitcherHand": "R",
         "batterId": "666018",
         "gamePk": "824094",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Junior Caminero",
@@ -131,7 +131,7 @@
         "pitcherHand": "R",
         "batterId": "691406",
         "gamePk": "824094",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Kyle Stowers",
@@ -145,7 +145,7 @@
         "pitcherHand": "L",
         "batterId": "669065",
         "gamePk": "824337",
-        "outcome": null
+        "outcome": "miss"
       }
     ]
   },
