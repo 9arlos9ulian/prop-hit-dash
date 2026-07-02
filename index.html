@@ -134,15 +134,13 @@
   .pbar-id{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .pbar-name{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent}
   .pbar-stats{display:flex;gap:10px}
-  .pbar-mix{font-family:var(--mono);font-size:9px;display:flex;gap:8px}
   .pbar-badges{display:flex;gap:5px;flex-wrap:wrap}
   .detail-grid{display:flex;flex-direction:column;gap:10px}
   @media(min-width:820px){
     .pitcher-bar{flex-direction:row;align-items:center;flex-wrap:wrap;gap:16px}
     .pbar-id{flex:none}
     .pbar-stats{flex:none;padding-left:14px;border-left:1px solid var(--line)}
-    .pbar-mix{flex:none;padding-left:14px;border-left:1px solid var(--line)}
-    .pbar-badges{margin-left:auto;flex:none}
+    .pbar-badges{margin-left:auto;flex:none;padding-left:14px;border-left:1px solid var(--line)}
     .detail-grid{display:grid;grid-template-columns:auto 1fr 1fr;gap:24px;align-items:start}
   }
   .row-icon-btn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid var(--line);background:var(--raised);color:var(--sage);cursor:pointer;font-size:10px;flex:none;padding:0;font-family:var(--mono);transition:border-color .15s,color .15s,background .15s}
@@ -1627,16 +1625,16 @@ function pstat(lbl,val,goodHi,badLo,fmt){
   const color=isNaN(n)?'var(--sage)':n>=goodHi?'var(--good)':n<=badLo?'var(--bad)':'var(--chalk)';
   return `<div style="text-align:center"><div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)">${lbl}</div><div style="font-family:var(--mono);font-size:11px;color:${color}">${val!=null?fmt(val):'—'}</div></div>`;
 }
-function pitchMixLine(l){
-  if(l.pUseFb==null&&l.pUseBb==null&&l.pUseOs==null) return '';
-  const fb=l.pUseFb!=null?Math.round(l.pUseFb*100):null;
-  const bb=l.pUseBb!=null?Math.round(l.pUseBb*100):null;
-  const os=l.pUseOs!=null?Math.round(l.pUseOs*100):null;
-  const parts=[];
-  if(fb!=null) parts.push(`<span style="color:var(--sage)">FB</span> <span style="color:var(--chalk);font-weight:600">${fb}%</span>`);
-  if(bb!=null) parts.push(`<span style="color:var(--sage)">BRK</span> <span style="color:var(--chalk);font-weight:600">${bb}%</span>`);
-  if(os!=null) parts.push(`<span style="color:var(--sage)">OFF</span> <span style="color:var(--chalk);font-weight:600">${os}%</span>`);
-  return `<div class="pbar-mix" title="Pitch usage mix — fastball / breaking / offspeed">${parts.join('<span style="opacity:.3">·</span>')}</div>`;
+function pitchDominantBadge(l){
+  // same dominant-family classification as pitchMatchupHtml — heavily favored
+  // pitch mix only, no per-batter rate (this is shown once per side, not per batter)
+  const fb=l.pUseFb, bb=l.pUseBb, os=l.pUseOs;
+  let label=null, pct=null;
+  if(fb!=null&&fb>=0.55){label='FB-HEAVY';pct=fb;}
+  else if(bb!=null&&bb>=0.40){label='BRK-HEAVY';pct=bb;}
+  else if(os!=null&&os>=0.30){label='OFF-HEAVY';pct=os;}
+  if(!label) return '';
+  return `<span title="${Math.round(pct*100)}% usage — a heavily favored pitch mix" style="font-family:var(--mono);font-size:9px;color:#a78bfa;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.35);border-radius:3px;padding:1px 5px">${label} ${Math.round(pct*100)}%</span>`;
 }
 function avgAbLine(l){
   if(l.bAvgAb==null||isNaN(l.bAvgAb)||!l.bGamesPlayed||l.bGamesPlayed<10) return '';
@@ -1678,11 +1676,10 @@ function battingDetailBlock(l){
   const s=(l.last5||'').replace(/[^01]/g,'');
   const s10=s.slice(-10);
   const dots=s10?s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}" title="${c==='1'?'hit':'no hit'}"></span>`).join(''):'';
-  const streakRow=s10?`<div style="display:flex;align-items:center;gap:6px;margin-top:6px"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div>${performanceArrow(l)}${streakBadge(l.last5)}</div>`:'';
+  const streakRow=s10?`<div style="display:flex;align-items:center;gap:6px;margin-top:6px"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div></div>`:'';
   const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';
   const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';
-  const est=(l.lineupEst&&!isLive(l.gameState)&&!isFinal(l.gameState))?`<span class="estbadge">⚠ EST</span>`:'';
-  const badges=[rookieBadge(l.bIsRookie),thin,rest,est].filter(Boolean).join('');
+  const badges=[rookieBadge(l.bIsRookie),thin,rest].filter(Boolean).join('');
   const badgesRow=badges?`<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">${badges}</div>`:'';
   return `<div style="padding:10px 14px;background:rgba(0,0,0,.15);border-top:1px solid var(--line)">
     <div class="detail-grid">
@@ -3813,6 +3810,8 @@ function renderScores() {
           <span style="font-family:var(--mono);font-size:10px;color:${nameCol};flex:none;width:28px;text-align:right">${Math.round((l.p||0)*100)}%</span>
           <span style="font-family:var(--mono);font-size:9px;color:var(--sage);flex:none;width:14px">${l.slot||''}</span>
           ${l.batterId?`<a href="#" onclick="event.preventDefault();event.stopPropagation();goToBatter(${l.batterId})" style="font-family:var(--mono);font-size:11px;color:${nameCol};${hit?'text-decoration:line-through;opacity:.45':''};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration-line:${hit?'line-through':'none'};border-bottom:1px solid transparent" ${hit?'':`onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"`}>${esc(l.name)}</a>`:`<span style="font-family:var(--mono);font-size:11px;color:${nameCol};${hit?'text-decoration:line-through;opacity:.45':''};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>`}
+          ${performanceArrow(l)}
+          ${streakBadge(l.last5)}
           ${hit?`<span style="font-family:var(--mono);font-size:9px;color:var(--good);flex:none">✓</span>`:''}
           ${isBet?`<span title="In your bet slip" style="font-size:10px;flex:none">🎫</span>`:''}
           <span class="scores-avg-col" style="font-family:var(--mono);font-size:10px;color:var(--sage);flex:none;width:34px;text-align:right">${avgTxt}</span>
@@ -3840,8 +3839,8 @@ function renderScores() {
                 return `<span style="color:${c}">${v.toFixed(0)}%</span>`;
               })}
             </div>` : ''}
-            ${pitchMixLine(side[0]||{})}
             <div class="pbar-badges">
+              ${pitchDominantBadge(side[0]||{})}
               ${rookieBadge(side[0]?.pIsRookie)}
               ${pNGames < 8 ? `<span title="Small sample — only ${pNGames} starts" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(235,178,105,.1);border:1px solid rgba(235,178,105,.3);border-radius:3px;padding:1px 5px">⚠ ${pNGames}G</span>` : ''}
               ${pDaysRest >= 15 ? `<span title="${pDaysRest} days since last appearance" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(235,178,105,.1);border:1px solid rgba(235,178,105,.3);border-radius:3px;padding:1px 5px">⚠ ${pDaysRest}D</span>` : ''}
