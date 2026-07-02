@@ -525,6 +525,24 @@
     <select id="global-date-picker" onchange="loadSlateDate(this.value)" style="margin-left:6px;background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:11px;font-family:var(--mono);cursor:pointer;align-self:center;display:none">
       <option value="">📅 Date</option>
     </select>
+    <button class="tab" onclick="switchTab('scores',this)">Scores</button>
+  </div>
+
+  <!-- SCORES TAB -->
+  <div id="tab-scores" style="display:none;margin-top:18px">
+    <div class="card" style="margin-bottom:14px">
+      <div class="poolbar">
+        <div class="poolbar-row" style="flex-wrap:wrap">
+          <span class="fchip-lbl">Sort</span>
+          <button id="scores-sort-time" class="ghost fchip amber" onclick="scoresSort='time';this.classList.add('amber');document.getElementById('scores-sort-rating').classList.remove('amber');renderScores()">Time</button>
+          <button id="scores-sort-rating" class="ghost fchip" onclick="scoresSort='rating';this.classList.add('amber');document.getElementById('scores-sort-time').classList.remove('amber');renderScores()">Favorite to hit</button>
+          <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
+          <button id="scores-live-btn" class="ghost fchip" onclick="scoresLiveOnly=!scoresLiveOnly;scoresUpcoming=false;this.classList.toggle('amber',scoresLiveOnly);document.getElementById('scores-upcoming-btn').classList.remove('amber');renderScores()">● Live</button>
+          <button id="scores-upcoming-btn" class="ghost fchip" onclick="scoresUpcoming=!scoresUpcoming;scoresLiveOnly=false;this.classList.toggle('amber',scoresUpcoming);document.getElementById('scores-live-btn').classList.remove('amber');renderScores()">Upcoming</button>
+        </div>
+      </div>
+    </div>
+    <div id="scores-grid" style="display:flex;flex-direction:column;gap:14px"></div>
   </div>
 
   <!-- SLATE TAB -->
@@ -3107,6 +3125,7 @@ function renderBetsTab(){
 // ── tab switching ─────────────────────────────────────────────────────────────
 function renderActiveTab() {
   if(currentTab==='slate') renderGames();
+  else if(currentTab==='scores') renderScores();
   else if(currentTab==='bets') renderBetsTab();
   else render();
 }
@@ -3164,6 +3183,7 @@ function switchTab(name, btn) {
   currentTab = name;
   document.getElementById('tab-dugout').style.display    = name==='dugout'    ? '' : 'none';
   document.getElementById('tab-slate').style.display     = name==='slate'     ? '' : 'none';
+  document.getElementById('tab-scores').style.display    = name==='scores'    ? '' : 'none';
   document.getElementById('tab-history').style.display   = name==='history'   ? '' : 'none';
   document.getElementById('tab-about').style.display     = name==='about'     ? '' : 'none';
   document.getElementById('tab-bets').style.display      = name==='bets'      ? '' : 'none';
@@ -3171,7 +3191,7 @@ function switchTab(name, btn) {
   if(btn) btn.classList.add('active');
   updateSlipCount();
   if(name==='history') { initCollapsibleCards(); loadHistory(); }
-  if(name==='dugout' || name==='bets') startLivePolling(); else stopLivePolling();
+  if(name==='dugout' || name==='bets' || name==='scores') startLivePolling(); else stopLivePolling();
   if(name==='bets') renderBetsTab();
   if(name==='slate') {
     renderGames();
@@ -3181,12 +3201,18 @@ function switchTab(name, btn) {
       Promise.all([fetchKalshiTotals(d), fetchMoneylines()]).then(()=>renderGames());
     }
   }
+  if(name==='scores') renderScores();
 }
 
 // ── slate / games tab ─────────────────────────────────────────────────────────
 let slateSort = 'time'; // 'time' | 'rating'
 let slateLiveOnly = false;
 let slateUpcoming = false;
+
+// ── scores tab ─────────────────────────────────────────────────────────────
+let scoresSort = 'time'; // 'time' | 'rating'
+let scoresLiveOnly = false;
+let scoresUpcoming = false;
 
 function slateSortBy(mode) {
   slateSort = mode;
@@ -3195,49 +3221,50 @@ function slateSortBy(mode) {
   renderGames();
 }
 
+// Game-level offense/pitching grading — shared by the Slate and Scores tabs.
+function offGrade(avg) {
+  if(avg >= 0.68) return 'A';
+  if(avg >= 0.63) return 'B';
+  if(avg >= 0.58) return 'C';
+  if(avg >= 0.53) return 'D';
+  return 'F';
+}
+function gradeCol(g) {
+  if(g==='A') return '#27AE60';
+  if(g==='B') return '#82C785';
+  if(g==='C') return '#E7B84B';
+  if(g==='D') return '#E67E22';
+  return '#C0392B';
+}
+function gradeBg(g) {
+  if(g==='A') return 'rgba(39,174,96,.15)';
+  if(g==='B') return 'rgba(130,199,133,.12)';
+  if(g==='C') return 'rgba(231,184,75,.12)';
+  if(g==='D') return 'rgba(230,126,34,.12)';
+  return 'rgba(192,57,43,.12)';
+}
+function dotCol(p) {
+  if(p >= 0.68) return 'var(--good)';
+  if(p >= 0.55) return 'var(--amber)';
+  return 'var(--bad)';
+}
+function muLabel(offG, pitchG) {
+  const offScore = {A:4,B:3,C:2,D:1,F:0}[offG]   ?? 2;
+  const pitScore = {A:0,B:1,C:2,D:3,F:4}[pitchG] ?? 2;
+  const total = offScore + pitScore;
+  // mismatch delta: how far from neutral (4 = perfectly neutral midpoint of 0–8)
+  const delta = total - 4;
+  if(total >= 6) return {lbl:'🔥 HIT',     col:'#4ade80', bg:'rgba(74,222,128,.11)',  border:'rgba(74,222,128,.3)',  score:total, delta};
+  if(total >= 4) return {lbl:'LEAN HIT',   col:'#34d399', bg:'rgba(52,211,153,.07)',  border:'rgba(52,211,153,.2)',  score:total, delta};
+  if(total <= 2) return {lbl:'NO HIT',     col:'#f87171', bg:'rgba(248,113,113,.11)', border:'rgba(248,113,113,.3)', score:total, delta};
+  return                {lbl:'NEUTRAL',    col:'var(--sage)', bg:'rgba(255,255,255,.03)', border:'var(--line)', score:total, delta};
+}
+
 function renderGames() {
   const el = document.getElementById('slate-grid');
   if(!legs.length) {
     el.innerHTML = '<div class="card"><div class="empty">Load a CSV on the Tonight tab first.</div></div>';
     return;
-  }
-
-  function offGrade(avg) {
-    if(avg >= 0.68) return 'A';
-    if(avg >= 0.63) return 'B';
-    if(avg >= 0.58) return 'C';
-    if(avg >= 0.53) return 'D';
-    return 'F';
-  }
-  function gradeCol(g) {
-    if(g==='A') return '#27AE60';
-    if(g==='B') return '#82C785';
-    if(g==='C') return '#E7B84B';
-    if(g==='D') return '#E67E22';
-    return '#C0392B';
-  }
-  function gradeBg(g) {
-    if(g==='A') return 'rgba(39,174,96,.15)';
-    if(g==='B') return 'rgba(130,199,133,.12)';
-    if(g==='C') return 'rgba(231,184,75,.12)';
-    if(g==='D') return 'rgba(230,126,34,.12)';
-    return 'rgba(192,57,43,.12)';
-  }
-  function dotCol(p) {
-    if(p >= 0.68) return 'var(--good)';
-    if(p >= 0.55) return 'var(--amber)';
-    return 'var(--bad)';
-  }
-  function muLabel(offG, pitchG) {
-    const offScore = {A:4,B:3,C:2,D:1,F:0}[offG]   ?? 2;
-    const pitScore = {A:0,B:1,C:2,D:3,F:4}[pitchG] ?? 2;
-    const total = offScore + pitScore;
-    // mismatch delta: how far from neutral (4 = perfectly neutral midpoint of 0–8)
-    const delta = total - 4;
-    if(total >= 6) return {lbl:'🔥 HIT',     col:'#4ade80', bg:'rgba(74,222,128,.11)',  border:'rgba(74,222,128,.3)',  score:total, delta};
-    if(total >= 4) return {lbl:'LEAN HIT',   col:'#34d399', bg:'rgba(52,211,153,.07)',  border:'rgba(52,211,153,.2)',  score:total, delta};
-    if(total <= 2) return {lbl:'NO HIT',     col:'#f87171', bg:'rgba(248,113,113,.11)', border:'rgba(248,113,113,.3)', score:total, delta};
-    return                {lbl:'NEUTRAL',    col:'var(--sage)', bg:'rgba(255,255,255,.03)', border:'var(--line)', score:total, delta};
   }
 
   const gameMap = new Map();
@@ -3520,6 +3547,147 @@ function renderGames() {
     const parts = matchup.split(' @ ');
     fetchSlateScore(gamePk, parts[0]||'', parts[1]||'', linkEl);
   });
+}
+
+// ── scores tab — live boxscore per game, same lean dynamics as Slate ──────────
+function renderScores() {
+  const el = document.getElementById('scores-grid');
+  if(!el) return;
+  if(!legs.length) {
+    el.innerHTML = '<div class="card"><div class="empty">Load a CSV on the Tonight tab first.</div></div>';
+    return;
+  }
+
+  // pending bet legs -> Set of "gamePk|batterId" so active bets can be highlighted
+  const betKeys = new Set();
+  (savedBets||[]).forEach(b => {
+    if(b.status !== 'pending') return;
+    (b.legs||[]).forEach(bl => {
+      if(bl.gamePk && bl.batterId) betKeys.add(String(bl.gamePk)+'|'+String(bl.batterId));
+    });
+  });
+
+  const gameMap = new Map();
+  legs.forEach(l => {
+    const key = l.matchup || 'Unknown';
+    if(!gameMap.has(key)) gameMap.set(key, []);
+    gameMap.get(key).push(l);
+  });
+
+  const games = [...gameMap.entries()].filter(([,batters]) => {
+    const gs = batters[0]?.gameState || '';
+    if(scoresLiveOnly) return isLive(gs);
+    if(scoresUpcoming) return !isLive(gs) && !isFinal(gs);
+    return true;
+  }).sort((a,b) => {
+    if(scoresSort === 'rating') {
+      function gameScore(bat) {
+        const pitchGrade = bat[0]?.pGrade || 'C';
+        const avgP = bat.reduce((s,l)=>s+(l.p||0),0) / (bat.length||1);
+        const og = offGrade(avgP);
+        const offScore = {A:4,B:3,C:2,D:1,F:0}[og] ?? 2;
+        const pitScore  = {A:0,B:1,C:2,D:3,F:4}[pitchGrade] ?? 2;
+        return offScore + pitScore;
+      }
+      return gameScore(b[1]) - gameScore(a[1]);
+    }
+    function timeVal(t){
+      if(!t) return 9999;
+      const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if(!m) return 9999;
+      let h=parseInt(m[1]), min=parseInt(m[2]), pm=m[3].toUpperCase()==='PM';
+      if(pm && h!==12) h+=12;
+      if(!pm && h===12) h=0;
+      return h*60+min;
+    }
+    return timeVal(a[1][0]?.startTime) - timeVal(b[1][0]?.startTime);
+  });
+
+  if(!games.length) {
+    el.innerHTML = '<div class="card"><div class="empty">No games match this filter.</div></div>';
+    return;
+  }
+
+  el.innerHTML = games.map(([matchup, batters]) => {
+    const [awayTeam, homeTeam] = matchup.split(' @ ').map(s => s.trim());
+    const awaySide = batters.filter(l => l.team === awayTeam).sort((a,b)=>(a.slot||9)-(b.slot||9));
+    const homeSide = batters.filter(l => l.team === homeTeam).sort((a,b)=>(a.slot||9)-(b.slot||9));
+    const startTime  = batters[0]?.startTime  || '';
+    const gameState  = batters[0]?.gameState  || '';
+    const gamePk     = String(batters[0]?.gamePk || '');
+    const parkFactor = batters[0]?.park_factor || null;
+
+    const ls    = _liveLinescore.get(gamePk);
+    const score = window._liveScores ? window._liveScores.get(matchup) : null;
+    const isLiveGame  = ls ? ls.isLive  : isLive(gameState);
+    const isFinalGame = ls ? ls.isFinal : isFinal(gameState);
+    const box = (isLiveGame||isFinalGame) && gamePk ? _bsCache.get(gamePk) : null;
+
+    let stateHtml;
+    if(isLiveGame && ls) {
+      const half = ls.half==='Top' ? '▲' : '▼';
+      stateHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--amber)">${half}${esc(ls.ordinal||'')} · ${ls.outs||0} out</span>`;
+    } else if(isFinalGame) {
+      stateHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--sage);opacity:.6">Final</span>`;
+    } else {
+      stateHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--sage)">${esc(startTime)}</span>`;
+    }
+    const scoreHtml = (score && score.as!=null && score.hs!=null)
+      ? `<span style="font-family:var(--mono);font-size:13px;color:var(--chalk);font-weight:600">${score.as}-${score.hs}</span>`
+      : '';
+
+    // game-level HIT/LEAN/NO HIT label — same dynamics as the Slate tab
+    const avgAll  = batters.reduce((s,l)=>s+(l.p||0),0) / (batters.length||1);
+    const offG    = offGrade(avgAll);
+    const pitchG  = batters[0]?.pGrade || 'C';
+    const mu      = muLabel(offG, pitchG);
+
+    function sideHtml(side, team, isHome) {
+      if(!side.length) return `<div style="flex:1;padding:14px;color:var(--sage);font-size:11px;font-family:var(--mono);text-align:center">no lineup</div>`;
+      const pitcherName = side[0]?.pitcher ? side[0].pitcher.split(' ').slice(-1)[0] : '';
+      const rows = side.map(l => {
+        const isBet = betKeys.has(gamePk+'|'+String(l.batterId||''));
+        const bat = box && l.batterId ? box.players.get(String(l.batterId)) : null;
+        let boxHtml = '';
+        if(bat) {
+          const h = bat.hits??0, ab = bat.atBats??0;
+          const hitColor = h>0 ? 'var(--good)' : ab>0 ? 'var(--bad)' : 'var(--sage)';
+          boxHtml = `<span style="font-family:var(--mono);font-size:10px;color:${hitColor};flex:none;width:34px;text-align:right">${ab>0?h+'-'+ab:'—'}</span>`;
+        } else if(isLiveGame||isFinalGame) {
+          boxHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--sage);opacity:.4;flex:none;width:34px;text-align:right">—</span>`;
+        }
+        return `<div style="display:flex;align-items:center;gap:8px;padding:4px 10px;border-left:2px solid ${isBet?'var(--amber)':'transparent'};${isBet?'background:rgba(231,184,75,.09)':''}">
+          ${l.batterId?`<a href="#" onclick="event.preventDefault();goToBatter(${l.batterId})" style="font-family:var(--mono);font-size:11px;color:var(--chalk);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${l.slot?l.slot+'. ':''}${esc(l.name)}</a>`:`<span style="font-family:var(--mono);font-size:11px;color:var(--chalk);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.slot?l.slot+'. ':''}${esc(l.name)}</span>`}
+          ${isBet?`<span title="In your bet slip" style="font-size:10px;flex:none">🎫</span>`:''}
+          <span style="font-family:var(--mono);font-size:10px;color:${dotCol(l.p||0)};flex:none;width:28px;text-align:right">${Math.round((l.p||0)*100)}%</span>
+          ${boxHtml}
+        </div>`;
+      }).join('');
+      return `<div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line)">
+          ${teamUrl(team)?`<a href="${teamUrl(team)}" target="_blank" rel="noopener" style="font-family:var(--disp);font-size:13px;color:var(--chalk);text-decoration:none">${esc(team)}${isHome?' (H)':''}</a>`:`<span style="font-family:var(--disp);font-size:13px;color:var(--chalk)">${esc(team)}${isHome?' (H)':''}</span>`}
+          ${pitcherName?`<span style="font-family:var(--mono);font-size:9px;color:var(--sage)">vs ${esc(pitcherName)}</span>`:''}
+        </div>
+        ${rows}
+      </div>`;
+    }
+
+    return `<div class="card" style="padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--line);flex-wrap:wrap">
+        <span style="font-family:var(--disp);font-size:13px;color:var(--chalk)">${esc(matchup)}</span>
+        ${scoreHtml}
+        ${stateHtml}
+        <div style="flex:1"></div>
+        ${parkFactor?`<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">PF ${Number(parkFactor).toFixed(2)}</span>`:''}
+        <span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;color:${mu.col};background:${mu.bg};border:1px solid ${mu.border};border-radius:4px;padding:2px 8px">${mu.lbl}</span>
+      </div>
+      <div style="display:flex">
+        ${sideHtml(awaySide, awayTeam, false)}
+        <div style="width:1px;background:var(--line)"></div>
+        ${sideHtml(homeSide, homeTeam, true)}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // inject weather into all wx-* placeholders currently in the DOM
