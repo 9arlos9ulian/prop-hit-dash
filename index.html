@@ -3673,8 +3673,11 @@ function renderScores() {
       return arr;
     }
 
-    function sideHtml(side, team, mu) {
+    function sideHtml(side, team, mu, avg) {
       if(!side.length) return `<div style="flex:1;padding:14px;color:var(--sage);font-size:11px;font-family:var(--mono);text-align:center">no lineup</div>`;
+      const avgPct = Math.round((avg||0)*100);
+      const avgGrade = offGrade(avg||0);
+      const avgCol = gradeCol(avgGrade);
       const pGrade = side[0]?.pGrade || '';
       const pgCol = gradeCol(pGrade || 'C');
       const pgBg  = gradeBg(pGrade  || 'C');
@@ -3727,7 +3730,10 @@ function renderScores() {
 
       return `<div style="flex:1;min-width:0;${colBg.startsWith('linear')?`background:${colBg}`:`background:${colBg}`}">
         <div style="padding:8px 10px;border-bottom:1px solid var(--line)">
-          <span class="teamtag" style="${teamTagStyle(team)}">${esc(team)}</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <span style="font-family:var(--mono);font-size:9px;color:var(--sage)">avg P(hit)</span>
+            <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${avgCol}">${avgPct}% <span style="opacity:.75">${avgGrade}</span></span>
+          </div>
           ${pitcherName ? `<div style="margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span style="font-family:var(--mono);font-size:9px;color:var(--sage)">vs</span>
             ${pGrade?`<span style="font-family:var(--mono);font-size:9px;font-weight:600;border-radius:3px;padding:1px 5px;white-space:nowrap;color:${pgCol};background:${pgBg};border:1px solid ${pgCol}55">${pGrade}</span>`:''}
@@ -3770,12 +3776,42 @@ function renderScores() {
       <div style="flex:1;padding:7px 14px;text-align:center;background:${homeMu?homeMu.bg:'transparent'};border-right:3px solid ${homeMu?homeMu.border:'var(--line)'}">${muChip(homeMu)}</div>
     </div>` : '';
 
+    // post-game correct/incorrect indicator — same logic as Slate's evalSide/evalRow
+    function evalSide(side, mu) {
+      if(!mu) return '';
+      const settled = side.filter(l => isFinal(l.gameState));
+      if(!settled.length) return '';
+      const hits = settled.filter(l => l.hasHit).length;
+      const hr = hits / settled.length;
+      const hrPct = Math.round(hr * 100);
+      const lbl = mu.lbl.replace('🔥 ','');
+      const correct = (lbl==='HIT' && hr>=0.65)||(lbl==='LEAN HIT' && hr>=0.55)||
+                      (lbl==='NEUTRAL' && hr>=0.45 && hr<0.65)||(lbl==='NO HIT' && hr<0.50);
+      const icon = correct ? '✓' : '✗';
+      const col  = correct ? 'var(--good)' : '#f87171';
+      return `<div style="font-family:var(--mono);font-size:9px;display:flex;align-items:center;justify-content:center;gap:5px;padding:5px 0">
+        <span style="color:${col};font-weight:700;font-size:11px">${icon}</span>
+        <span style="color:var(--chalk)">${hits}/${settled.length} got hits</span>
+        <span style="color:var(--sage)">(${hrPct}%)</span>
+      </div>`;
+    }
+    const evalRow = isFinalGame ? (()=>{
+      const ea = evalSide(awaySide, awayMu);
+      const eh = evalSide(homeSide, homeMu);
+      if(!ea && !eh) return '';
+      return `<div style="display:flex;border-top:1px solid var(--line);background:rgba(0,0,0,.2)">
+        <div style="flex:1">${ea||'<div style="padding:5px 0"></div>'}</div>
+        <div style="width:1px;background:var(--line)"></div>
+        <div style="flex:1">${eh||'<div style="padding:5px 0"></div>'}</div>
+      </div>`;
+    })() : '';
+
     // TV-style scoreboard header — team/score block (divider between the two
     // rows, score sized to match the team badge), inning+diamond+outs framed
     // by a line on each side, then the "tonight" field info (Gameday +
     // MLB.TV links, park, PF, weather) where the lean badge used to sit —
     // the lean label now lives in the footer below, matching Slate.
-    const scoreBlock = `<div style="display:flex;flex-direction:column;justify-content:center;padding:8px 16px;min-width:130px">
+    const scoreBlock = `<div style="display:flex;flex-direction:column;justify-content:center;padding:8px 10px;min-width:100px;flex:none">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:6px">
         <span class="teamtag" style="${teamTagStyle(awayTeam)};font-size:12px">${esc(awayTeam)}</span>
         <span style="font-family:var(--disp);font-size:15px;font-weight:600;line-height:1;color:${awayLeads?'var(--amber)':'var(--chalk)'}">${as??'-'}</span>
@@ -3790,7 +3826,7 @@ function renderScores() {
     const _park = parkInfo(homeTeam);
     const _wxDate = batters[0]?.gameDate || new Date().toISOString().slice(0,10);
     const _wxId = `wx-${homeTeam}-${_wxDate.replace(/-/g,'')}`;
-    const fieldInfo = `<div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;padding:8px 14px;min-width:130px">
+    const fieldInfo = `<div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;padding:8px 10px;min-width:0;flex:1">
       <a href="${gameUrl(batters[0]?.gameDate,gamePk,matchup,gameState)}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:10px;color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">Gameday ↗</a>
       ${_park?`<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.8">${esc(_park.name)}${_park.roof?' 🏟':' ⛳'}</span>`:''}
       ${parkFactor!=null?`<span style="font-family:var(--mono);font-size:9px;color:${parkFactor>=1.06?'var(--amber)':parkFactor<=0.94?'var(--bad)':'var(--sage)'}">PF ${Number(parkFactor).toFixed(2)}</span>`:''}
@@ -3799,20 +3835,20 @@ function renderScores() {
     </div>`;
 
     return `<div class="card" style="padding:0;overflow:hidden">
-      <div style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line);flex-wrap:wrap">
+      <div style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
         ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" title="Watch on MLB.TV" style="text-decoration:none;color:inherit;display:flex">${scoreBlock}</a>`:scoreBlock}
         <div style="width:1px;background:var(--line)"></div>
-        <div style="display:flex;align-items:center;justify-content:center;padding:8px 16px;min-width:70px">${midHtml}</div>
+        <div style="display:flex;align-items:center;justify-content:center;padding:8px 8px;min-width:0;flex:none">${midHtml}</div>
         <div style="width:1px;background:var(--line)"></div>
-        <div style="flex:1"></div>
         ${fieldInfo}
       </div>
       <div style="display:flex">
-        ${sideHtml(awaySide, awayTeam, awayMu)}
+        ${sideHtml(awaySide, awayTeam, awayMu, awayAvg)}
         <div style="width:1px;background:var(--line)"></div>
-        ${sideHtml(homeSide, homeTeam, homeMu)}
+        ${sideHtml(homeSide, homeTeam, homeMu, homeAvg)}
       </div>
       ${muRow}
+      ${evalRow}
     </div>`;
   }).join('');
   injectWeather(legs);
