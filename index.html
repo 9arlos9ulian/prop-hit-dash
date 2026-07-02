@@ -3623,18 +3623,23 @@ function renderScores() {
     const isFinalGame = ls ? ls.isFinal : isFinal(gameState);
     const box = (isLiveGame||isFinalGame) && gamePk ? _bsCache.get(gamePk) : null;
 
-    let stateHtml;
+    const as = score?.as ?? null, hs = score?.hs ?? null;
+    const awayLeads = as!=null && hs!=null && as > hs, homeLeads = as!=null && hs!=null && hs > as;
+    const tvUrl = (isLiveGame && gamePk) ? `https://www.mlb.com/tv/g${gamePk}` : '';
+
+    let midHtml;
     if(isLiveGame && ls) {
       const half = ls.half==='Top' ? '▲' : '▼';
-      stateHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--amber)">${half}${esc(ls.ordinal||'')} · ${ls.outs||0} out</span>`;
+      midHtml = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+        <span style="font-family:var(--mono);font-size:12px;color:var(--amber)">${half}${esc(ls.ordinal||'')}</span>
+        ${_baseDiamond(ls, 22)}
+        ${_outDots(ls.outs||0)}
+      </div>`;
     } else if(isFinalGame) {
-      stateHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--sage);opacity:.6">Final</span>`;
+      midHtml = `<span style="font-family:var(--disp);font-size:12px;letter-spacing:.5px;color:var(--sage);opacity:.7">FINAL</span>`;
     } else {
-      stateHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--sage)">${esc(startTime)}</span>`;
+      midHtml = `<span style="font-family:var(--mono);font-size:11px;color:var(--sage)">${esc(startTime)}</span>`;
     }
-    const scoreHtml = (score && score.as!=null && score.hs!=null)
-      ? `<span style="font-family:var(--mono);font-size:13px;color:var(--chalk);font-weight:600">${score.as}-${score.hs}</span>`
-      : '';
 
     // game-level HIT/LEAN/NO HIT label — same dynamics as the Slate tab
     const avgAll  = batters.reduce((s,l)=>s+(l.p||0),0) / (batters.length||1);
@@ -3672,14 +3677,31 @@ function renderScores() {
       </div>`;
     }
 
+    // TV-style scoreboard header — team/score block, inning+diamond+outs (or
+    // FINAL/start time), park factor + lean badge. tvUrl wraps the score
+    // block so live games keep the "watch on MLB.TV" affordance the old
+    // ticker chip had.
+    const scoreBlock = `<div style="display:flex;flex-direction:column;justify-content:center;padding:10px 16px;gap:5px;min-width:150px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+        <span style="font-family:var(--disp);font-size:15px;color:${awayLeads?'var(--chalk)':'var(--sage)'}">${esc(awayTeam)}</span>
+        <span style="font-family:var(--disp);font-size:22px;font-weight:600;line-height:1;color:${awayLeads?'var(--amber)':'var(--chalk)'}">${as??'-'}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+        <span style="font-family:var(--disp);font-size:15px;color:${homeLeads?'var(--chalk)':'var(--sage)'}">${esc(homeTeam)}</span>
+        <span style="font-family:var(--disp);font-size:22px;font-weight:600;line-height:1;color:${homeLeads?'var(--amber)':'var(--chalk)'}">${hs??'-'}</span>
+      </div>
+    </div>`;
+
     return `<div class="card" style="padding:0;overflow:hidden">
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--line);flex-wrap:wrap">
-        <span style="font-family:var(--disp);font-size:13px;color:var(--chalk)">${esc(matchup)}</span>
-        ${scoreHtml}
-        ${stateHtml}
+      <div style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line);flex-wrap:wrap">
+        ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" title="Watch on MLB.TV" style="text-decoration:none;color:inherit;display:flex">${scoreBlock}</a>`:scoreBlock}
+        <div style="width:1px;background:var(--line)"></div>
+        <div style="display:flex;align-items:center;justify-content:center;padding:8px 16px;min-width:70px">${midHtml}</div>
         <div style="flex:1"></div>
-        ${parkFactor?`<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">PF ${Number(parkFactor).toFixed(2)}</span>`:''}
-        <span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;color:${mu.col};background:${mu.bg};border:1px solid ${mu.border};border-radius:4px;padding:2px 8px">${mu.lbl}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:5px;padding:10px 14px">
+          ${parkFactor?`<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">PF ${Number(parkFactor).toFixed(2)}</span>`:''}
+          <span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;color:${mu.col};background:${mu.bg};border:1px solid ${mu.border};border-radius:4px;padding:2px 8px">${mu.lbl}</span>
+        </div>
       </div>
       <div style="display:flex">
         ${sideHtml(awaySide, awayTeam, false)}
@@ -4277,24 +4299,26 @@ function loadSlateDate(date){
   }).catch(()=>alert('Failed to load slate for '+date));
 }
 
+// Base diamond + out dots — shared by the ticker and the Scores tab's
+// TV-scoreboard card header. Takes {onFirst,onSecond,onThird} (flat, not
+// nested under .offense) so both callers can pass their own linescore shape.
+function _baseDiamond(bases, size){
+  const on1 = !!bases?.onFirst, on2 = !!bases?.onSecond, on3 = !!bases?.onThird;
+  const c = (on) => on ? 'rgba(231,184,75,.9)' : 'rgba(255,255,255,.15)';
+  const w = size || 16, h = Math.round(w * 13/16);
+  return `<svg viewBox="0 0 22 18" width="${w}" height="${h}" style="display:block">
+    <rect x="8" y="0.5" width="6" height="6" rx=".8" transform="rotate(45 11 3.5)" fill="${c(on2)}"/>
+    <rect x="0.5" y="8" width="6" height="6" rx=".8" transform="rotate(45 3.5 11)" fill="${c(on3)}"/>
+    <rect x="15.5" y="8" width="6" height="6" rx=".8" transform="rotate(45 18.5 11)" fill="${c(on1)}"/>
+  </svg>`;
+}
+function _outDots(outs){
+  return `<div class="sc-dots">${[0,1,2].map(i=>`<div class="sc-dot ${i<outs?'sc-dot-on':'sc-dot-off'}"></div>`).join('')}</div>`;
+}
+
 // ── mlb live ticker ───────────────────────────────────────────────────────
 (function(){
   let _timer = null;
-
-  function _baseDiamond(ls){
-    const off = ls.offense || {};
-    const on1 = !!off.first, on2 = !!off.second, on3 = !!off.third;
-    const c = (on) => on ? 'rgba(231,184,75,.9)' : 'rgba(255,255,255,.15)';
-    return `<svg viewBox="0 0 22 18" width="16" height="13" style="display:block">
-      <rect x="8" y="0.5" width="6" height="6" rx=".8" transform="rotate(45 11 3.5)" fill="${c(on2)}"/>
-      <rect x="0.5" y="8" width="6" height="6" rx=".8" transform="rotate(45 3.5 11)" fill="${c(on3)}"/>
-      <rect x="15.5" y="8" width="6" height="6" rx=".8" transform="rotate(45 18.5 11)" fill="${c(on1)}"/>
-    </svg>`;
-  }
-
-  function _outDots(outs){
-    return `<div class="sc-dots">${[0,1,2].map(i=>`<div class="sc-dot ${i<outs?'sc-dot-on':'sc-dot-off'}"></div>`).join('')}</div>`;
-  }
 
   function fmt(g){
     const away = g.teams.away.team.abbreviation;
@@ -4304,26 +4328,12 @@ function loadSlateDate(date){
     const state = g.status.abstractGameState;
     const code  = g.status.statusCode;
 
-    // tracked-player context
+    // tracked-player context — only batters in the slip are "tracked" for scoreboard purposes
     const gpk = String(g.gamePk);
-    // only batters in the slip are "tracked" for scoreboard purposes
     const slipInGame = legs.filter(l => l.inSlip && (String(l.gamePk) === gpk || l.matchup===`${away} @ ${home}`));
     const curBatterId = String(g.linescore?.offense?.batter?.id || '');
-    const curBatterName = g.linescore?.offense?.batter?.fullName || '';
-    // who's currently at bat AND in slip — fall back to any slip batter in game for chip display
     const slipAtBat = curBatterId ? slipInGame.find(l => String(l.batterId) === curBatterId) : null;
     const trackedClass = slipAtBat && state === 'Live' ? ' sc-tracked sc-at-bat' : slipInGame.length > 0 ? ' sc-tracked' : '';
-    // chip shows the current batter's model % if they're in our slate (not just slip)
-    const allInGame = legs.filter(l => String(l.gamePk) === gpk || l.matchup===`${away} @ ${home}`);
-    const anyAtBat = curBatterId ? allInGame.find(l => String(l.batterId) === curBatterId) : null;
-    function trackedBatterChip(){
-      if(!anyAtBat || state !== 'Live') return '';
-      const pct = Math.round(anyAtBat.p * 100);
-      const pctColor = anyAtBat.p >= 0.70 ? 'var(--good)' : anyAtBat.p >= 0.55 ? 'var(--amber)' : 'var(--sage)';
-      const lastName = (anyAtBat.name || curBatterName || '').split(' ').slice(-1)[0];
-      const firstI = (anyAtBat.name || curBatterName || '').split(' ')[0]?.[0] || '';
-      return `<div style="font-family:var(--mono);font-size:9px;color:var(--chalk);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:${pctColor};font-weight:600">${pct}</span> ${firstI}. ${lastName}</div>`;
-    }
 
     if(code==='PPD'||code==='C'){
       return `<div class="sc-card" style="opacity:.35">
@@ -4342,55 +4352,16 @@ function loadSlateDate(date){
       const awayLeads = as > hs, homeLeads = hs > as;
       const warmup = code==='PW' || !inn;
       const tvUrl    = g.gamePk ? `https://www.mlb.com/tv/g${g.gamePk}` : '';
-      const gdLiveUrl= g.gamePk ? `https://www.mlb.com/gameday/${g.gamePk}/live` : '';
       const innLabel = warmup ? 'Warm' : `${arr}${inn}`;
-      const liveLinks = '';
 
-      // pitcher + batter from linescore defense/offense
-      const defPitcher = ls.defense?.pitcher || {};
-      const offBatter  = ls.offense?.batter  || {};
-      const pitcherId  = defPitcher.id ? String(defPitcher.id) : null;
-      const batterId   = offBatter.id  ? String(offBatter.id)  : null;
-      const bs         = _bsCache.get(String(g.gamePk));
-      const pitStats   = pitcherId && bs?.pitching?.get(pitcherId);
-      const batStats   = batterId  && bs?.players?.get(batterId);
-
-      const pitLastName = (defPitcher.fullName||'').split(' ').slice(-1)[0] || '';
-      const batLastName = (offBatter.fullName ||'').split(' ').slice(-1)[0] || '';
-      const pitchCount  = pitStats?.pitches ?? null;
-      const pitcherER   = pitStats?.er      ?? null;
-      const batH        = batStats?.hits     ?? null;
-      const batAB       = batStats?.atBats   ?? null;
-
-      // line stats: runs + hits per team from linescore teams data
-      const awayH = ls.teams?.away?.hits ?? null;
-      const homeH = ls.teams?.home?.hits ?? null;
-
-      const pitRow = pitLastName ? `<div style="display:flex;align-items:center;gap:3px;white-space:nowrap">
-        <span style="font-family:var(--mono);font-size:7px;color:var(--sage);opacity:.6">P</span>
-        <span style="font-family:var(--mono);font-size:8px;color:var(--chalk)">${esc(pitLastName)}</span>
-        ${pitchCount!==null?`<span style="font-family:var(--mono);font-size:7px;color:var(--sage)">${pitchCount}p</span>`:''}
-        ${pitcherER!==null?`<span style="font-family:var(--mono);font-size:7px;color:${pitcherER>0?'var(--bad)':'var(--sage)'}">${pitcherER}ER</span>`:''}
-      </div>` : '';
-
-      const batRow = batLastName ? `<div style="display:flex;align-items:center;gap:3px;white-space:nowrap">
-        <span style="font-family:var(--mono);font-size:7px;color:var(--amber);opacity:.8">B</span>
-        <span style="font-family:var(--mono);font-size:8px;color:var(--chalk)">${esc(batLastName)}</span>
-        ${batH!==null&&batAB!==null?`<span style="font-family:var(--mono);font-size:7px;color:var(--sage)">${batH}-${batAB}</span>`:''}
-      </div>` : '';
-
-      const hitsLine = (awayH!==null||homeH!==null) ? `<div style="display:flex;flex-direction:column;gap:1px;margin-left:2px">
-        <span style="font-family:var(--mono);font-size:7px;color:var(--sage);opacity:.6">${awayH!==null?awayH+'H':''}</span>
-        <span style="font-family:var(--mono);font-size:7px;color:var(--sage);opacity:.6">${homeH!==null?homeH+'H':''}</span>
-      </div>` : '';
-
-      const liveDetail = pitRow ? `<div style="display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--line);padding-left:7px;flex:none">${pitRow}${batRow}</div>` : '';
-
+      // Simplified 2026-07-01: just inning, outs, teams, score — click through
+      // to MLB.TV to watch live, or the Scores tab for the full boxscore
+      // (base diamond, pitcher/batter detail, hits) instead of cramming it
+      // into this small chip.
       return `<div class="sc-card${trackedClass}"${warmup?' style="opacity:.6"':''}>
         <div class="sc-inn sc-inn-live" style="display:flex;flex-direction:column;gap:2px">
           <span style="color:var(--amber);font-family:var(--mono);font-size:8.5px">${innLabel}</span>
           <span style="color:var(--sage);font-family:var(--mono);font-size:7px;opacity:.7">${outs} out</span>
-          ${liveLinks}
         </div>
         ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit" title="Watch on MLB.TV">`:'<div>'}
         <div class="sc-teams">
@@ -4398,9 +4369,6 @@ function loadSlateDate(date){
           <div class="sc-row"><span class="sc-abbr${homeLeads?' sc-leader':''}">${home}</span><span class="sc-score${homeLeads?' sc-leader':''}">${hs??''}</span></div>
         </div>
         ${tvUrl?'</a>':'</div>'}
-        ${hitsLine}
-        <div class="sc-meta">${_baseDiamond(ls)}${_outDots(outs)}</div>
-        ${liveDetail}
       </div>`;
     }
 
@@ -4519,6 +4487,11 @@ function loadSlateDate(date){
             outs:    ld.outs           || 0,
             isLive:  absState === 'live',
             isFinal: absState === 'final',
+            onFirst:  !!ld.offense?.first,
+            onSecond: !!ld.offense?.second,
+            onThird:  !!ld.offense?.third,
+            awayH: ld.teams?.away?.hits ?? null,
+            homeH: ld.teams?.home?.hits ?? null,
           });
           const newState = absState === 'final' ? (g.status?.detailedState || 'Final') : absState === 'live' ? 'In Progress' : '';
           if(newState) legs.forEach(l => { if(String(l.gamePk)===gpk) l.gameState=newState; });
