@@ -129,6 +129,7 @@
   #slip-drawer-close:hover{opacity:1;color:var(--chalk)}
   #slip-drawer-body{overflow-y:auto;flex:1;padding-bottom:8px}
   @media(max-width:480px){#slip-drawer{right:0;left:0;width:100%;border-radius:14px 14px 0 0}#slip-fab{right:16px;bottom:16px}}
+  @media(max-width:600px){.scores-avg-col,.scores-hab-col{display:none}}
   .slip-toggle{display:none}
   .card{background:var(--surf);border:1px solid var(--line);border-radius:12px}
   .card h2{font-family:var(--disp);font-size:12px;font-weight:400;letter-spacing:1.5px;text-transform:uppercase;color:var(--sage);margin:0;padding:13px 15px;border-bottom:1px solid var(--line)}
@@ -3213,6 +3214,13 @@ let slateUpcoming = false;
 let scoresSort = 'time'; // 'time' | 'rating'
 let scoresLiveOnly = false;
 let scoresUpcoming = false;
+// lineup table column sort (applies to every game's lineup, Excel-style)
+let scoresLineupSort = { col: 'order', dir: 1 };
+function sortScoresLineup(col){
+  if(scoresLineupSort.col === col) scoresLineupSort.dir *= -1;
+  else scoresLineupSort = { col, dir: col==='score' ? -1 : 1 };
+  renderScores();
+}
 
 function slateSortBy(mode) {
   slateSort = mode;
@@ -3641,55 +3649,147 @@ function renderScores() {
       midHtml = `<span style="font-family:var(--mono);font-size:11px;color:var(--sage)">${esc(startTime)}</span>`;
     }
 
-    // game-level HIT/LEAN/NO HIT label — same dynamics as the Slate tab
-    const avgAll  = batters.reduce((s,l)=>s+(l.p||0),0) / (batters.length||1);
-    const offG    = offGrade(avgAll);
-    const pitchG  = batters[0]?.pGrade || 'C';
-    const mu      = muLabel(offG, pitchG);
+    // per-side HIT/LEAN/NO HIT label — same dynamics as Slate, computed per
+    // side (each side's own offense grade vs the pitcher IT is facing, via
+    // side[0].pGrade — already the opposing-pitcher grade in the data)
+    const awayAvg = awaySide.length ? awaySide.reduce((s,l)=>s+(l.p||0),0)/awaySide.length : 0;
+    const homeAvg = homeSide.length ? homeSide.reduce((s,l)=>s+(l.p||0),0)/homeSide.length : 0;
+    const awayMu  = awaySide.length ? muLabel(offGrade(awayAvg), awaySide[0]?.pGrade || 'C') : null;
+    const homeMu  = homeSide.length ? muLabel(offGrade(homeAvg), homeSide[0]?.pGrade || 'C') : null;
 
-    function sideHtml(side, team, isHome) {
+    function sortArrow(col){ return scoresLineupSort.col===col ? (scoresLineupSort.dir===1?' ▲':' ▼') : ''; }
+    function sortedSide(side){
+      const arr = [...side];
+      const dir = scoresLineupSort.dir;
+      if(scoresLineupSort.col === 'score') arr.sort((a,b)=>((a.p||0)-(b.p||0))*dir);
+      else if(scoresLineupSort.col === 'name') arr.sort((a,b)=>a.name.localeCompare(b.name)*dir);
+      else arr.sort((a,b)=>((a.slot||9)-(b.slot||9))*dir);
+      return arr;
+    }
+
+    function sideHtml(side, team, mu) {
       if(!side.length) return `<div style="flex:1;padding:14px;color:var(--sage);font-size:11px;font-family:var(--mono);text-align:center">no lineup</div>`;
-      const pitcherName = side[0]?.pitcher ? side[0].pitcher.split(' ').slice(-1)[0] : '';
-      const rows = side.map(l => {
+      const pGrade = side[0]?.pGrade || '';
+      const pgCol = gradeCol(pGrade || 'C');
+      const pgBg  = gradeBg(pGrade  || 'C');
+      const pitcherFullName = side[0]?.pitcher || '';
+      const pitcherName = pitcherFullName ? pitcherFullName.split(' ').slice(-1)[0] : '';
+      const handTag = side[0]?.pitcherHand ? `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${side[0].pitcherHand}HP</span>` : '';
+      const pNGames = side[0]?.pNGames || 0;
+      const pDaysRest = side[0]?.pDaysRest || 0;
+      const pHH = side[0]?.pHH, pKbb = side[0]?.pKbb, pCsw = side[0]?.pCsw;
+
+      // same background color coding Slate uses for HIT/LEAN HIT/NO HIT/NEUTRAL
+      const colBg = !mu ? 'rgba(120,120,130,.04)'
+                  : mu.lbl.includes('🔥 HIT') ? 'rgba(111,207,142,.09)'
+                  : mu.lbl.includes('LEAN')   ? 'linear-gradient(180deg,rgba(111,207,142,.07) 0%,transparent 100%)'
+                  : mu.lbl.includes('NO HIT') ? 'rgba(192,57,43,.12)'
+                  : 'rgba(120,120,130,.04)';
+
+      const headerRow = `<div style="display:flex;align-items:center;gap:8px;padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)">
+        <span onclick="sortScoresLineup('score')" style="cursor:pointer;font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:${scoresLineupSort.col==='score'?'var(--amber)':'var(--sage)'};width:28px;text-align:right;flex:none">Scr${sortArrow('score')}</span>
+        <span onclick="sortScoresLineup('order')" style="cursor:pointer;font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:${scoresLineupSort.col==='order'?'var(--amber)':'var(--sage)'};width:14px;flex:none">#${sortArrow('order')}</span>
+        <span onclick="sortScoresLineup('name')" style="cursor:pointer;font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:${scoresLineupSort.col==='name'?'var(--amber)':'var(--sage)'};flex:1">Name${sortArrow('name')}</span>
+        <span class="scores-avg-col" style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:34px;text-align:right;flex:none">Avg</span>
+        <span class="scores-hab-col" style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:34px;text-align:right;flex:none">${(isLiveGame||isFinalGame)?'H-AB':''}</span>
+      </div>`;
+
+      const rows = sortedSide(side).map((l,idx) => {
         const isBet = betKeys.has(gamePk+'|'+String(l.batterId||''));
         const bat = box && l.batterId ? box.players.get(String(l.batterId)) : null;
-        let boxHtml = '';
+        const hit = l.hasHit;
+        const nameCol = dotCol(l.p||0);
+        const avgTxt = l.bHitRate!=null && !isNaN(l.bHitRate) ? Number(l.bHitRate).toFixed(3).replace(/^0/,'') : '—';
+        let boxTxt = '—', boxCol = 'var(--sage)';
         if(bat) {
           const h = bat.hits??0, ab = bat.atBats??0;
-          const hitColor = h>0 ? 'var(--good)' : ab>0 ? 'var(--bad)' : 'var(--sage)';
-          boxHtml = `<span style="font-family:var(--mono);font-size:10px;color:${hitColor};flex:none;width:34px;text-align:right">${ab>0?h+'-'+ab:'—'}</span>`;
-        } else if(isLiveGame||isFinalGame) {
-          boxHtml = `<span style="font-family:var(--mono);font-size:10px;color:var(--sage);opacity:.4;flex:none;width:34px;text-align:right">—</span>`;
+          boxCol = h>0 ? 'var(--good)' : ab>0 ? 'var(--bad)' : 'var(--sage)';
+          boxTxt = ab>0 ? h+'-'+ab : '—';
         }
-        return `<div style="display:flex;align-items:center;gap:8px;padding:4px 10px;border-left:2px solid ${isBet?'var(--amber)':'transparent'};${isBet?'background:rgba(231,184,75,.09)':''}">
-          ${l.batterId?`<a href="#" onclick="event.preventDefault();goToBatter(${l.batterId})" style="font-family:var(--mono);font-size:11px;color:var(--chalk);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${l.slot?l.slot+'. ':''}${esc(l.name)}</a>`:`<span style="font-family:var(--mono);font-size:11px;color:var(--chalk);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.slot?l.slot+'. ':''}${esc(l.name)}</span>`}
+        const zebraBg = idx%2===1 ? 'rgba(255,255,255,.015)' : 'transparent';
+        const restBg = isBet ? 'rgba(231,184,75,.09)' : zebraBg;
+        return `<div style="display:flex;align-items:center;gap:8px;padding:4px 10px;background:${restBg};border-left:2px solid ${isBet?'var(--amber)':'transparent'};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='${restBg}'">
+          <span style="font-family:var(--mono);font-size:10px;color:${nameCol};flex:none;width:28px;text-align:right">${Math.round((l.p||0)*100)}%</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--sage);flex:none;width:14px">${l.slot||''}</span>
+          ${l.batterId?`<a href="#" onclick="event.preventDefault();goToBatter(${l.batterId})" style="font-family:var(--mono);font-size:11px;color:${nameCol};${hit?'text-decoration:line-through;opacity:.45':''};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration-line:${hit?'line-through':'none'};border-bottom:1px solid transparent" ${hit?'':`onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"`}>${esc(l.name)}</a>`:`<span style="font-family:var(--mono);font-size:11px;color:${nameCol};${hit?'text-decoration:line-through;opacity:.45':''};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>`}
+          ${hit?`<span style="font-family:var(--mono);font-size:9px;color:var(--good);flex:none">✓</span>`:''}
           ${isBet?`<span title="In your bet slip" style="font-size:10px;flex:none">🎫</span>`:''}
-          <span style="font-family:var(--mono);font-size:10px;color:${dotCol(l.p||0)};flex:none;width:28px;text-align:right">${Math.round((l.p||0)*100)}%</span>
-          ${boxHtml}
+          <span class="scores-avg-col" style="font-family:var(--mono);font-size:10px;color:var(--sage);flex:none;width:34px;text-align:right">${avgTxt}</span>
+          <span class="scores-hab-col" style="font-family:var(--mono);font-size:10px;color:${boxCol};flex:none;width:34px;text-align:right">${boxTxt}</span>
         </div>`;
       }).join('');
-      return `<div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line)">
-          ${teamUrl(team)?`<a href="${teamUrl(team)}" target="_blank" rel="noopener" style="font-family:var(--disp);font-size:13px;color:var(--chalk);text-decoration:none">${esc(team)}${isHome?' (H)':''}</a>`:`<span style="font-family:var(--disp);font-size:13px;color:var(--chalk)">${esc(team)}${isHome?' (H)':''}</span>`}
-          ${pitcherName?`<span style="font-family:var(--mono);font-size:9px;color:var(--sage)">vs ${esc(pitcherName)}</span>`:''}
+
+      return `<div style="flex:1;min-width:0;${colBg.startsWith('linear')?`background:${colBg}`:`background:${colBg}`}">
+        <div style="padding:8px 10px;border-bottom:1px solid var(--line)">
+          <span class="teamtag" style="${teamTagStyle(team)}">${esc(team)}</span>
+          ${pitcherName ? `<div style="margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="font-family:var(--mono);font-size:9px;color:var(--sage)">vs</span>
+            ${pGrade?`<span style="font-family:var(--mono);font-size:9px;font-weight:600;border-radius:3px;padding:1px 5px;white-space:nowrap;color:${pgCol};background:${pgBg};border:1px solid ${pgCol}55">${pGrade}</span>`:''}
+            <a href="${pitcherUrl(pitcherFullName)}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:10px;color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(pitcherName)}</a>
+            ${handTag}
+          </div>
+          <div style="margin-top:4px;display:flex;gap:5px;flex-wrap:wrap">
+            ${rookieBadge(side[0]?.pIsRookie)}
+            ${pNGames < 8 ? `<span title="Small sample — only ${pNGames} starts" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(231,184,75,.1);border:1px solid rgba(231,184,75,.3);border-radius:3px;padding:1px 5px">⚠ ${pNGames}G</span>` : ''}
+            ${pDaysRest >= 15 ? `<span title="${pDaysRest} days since last appearance" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(231,184,75,.1);border:1px solid rgba(231,184,75,.3);border-radius:3px;padding:1px 5px">⚠ ${pDaysRest}D</span>` : ''}
+            ${pHH != null && pHH >= 0.43 ? `<span title="High hard-hit rate allowed: ${(pHH*100).toFixed(0)}%" style="font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(210,105,62,.1);border:1px solid rgba(210,105,62,.3);border-radius:3px;padding:1px 5px">HH</span>` : ''}
+            ${pKbb != null && pKbb < 2.0 ? `<span title="Low K/BB ratio: ${pKbb.toFixed(1)}" style="font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(210,105,62,.1);border:1px solid rgba(210,105,62,.3);border-radius:3px;padding:1px 5px">KB</span>` : ''}
+            ${(()=>{
+              if(pCsw == null) return '';
+              const csw = pCsw * 100;
+              const [col,bg,border,label] = csw>=35?['#a78bfa','rgba(167,139,250,.12)','rgba(167,139,250,.35)','DOMINANT'] : csw>=30?['#67e8f9','rgba(103,232,249,.12)','rgba(103,232,249,.35)','ELITE'] : csw>=27?['var(--good)','rgba(111,207,142,.1)','rgba(111,207,142,.3)','AVG'] : ['var(--bad)','rgba(210,105,62,.1)','rgba(210,105,62,.3)','WEAK'];
+              return `<span title="CSW ${csw.toFixed(0)}% — ${label}" style="font-family:var(--mono);font-size:9px;color:${col};background:${bg};border:1px solid ${border};border-radius:3px;padding:1px 5px">CSW</span>`;
+            })()}
+          </div>` : ''}
         </div>
+        ${headerRow}
         ${rows}
       </div>`;
     }
 
-    // TV-style scoreboard header — team/score block, inning+diamond+outs (or
-    // FINAL/start time), park factor + lean badge. tvUrl wraps the score
-    // block so live games keep the "watch on MLB.TV" affordance the old
-    // ticker chip had.
-    const scoreBlock = `<div style="display:flex;flex-direction:column;justify-content:center;padding:10px 16px;gap:5px;min-width:150px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
-        <span style="font-family:var(--disp);font-size:15px;color:${awayLeads?'var(--chalk)':'var(--sage)'}">${esc(awayTeam)}</span>
-        <span style="font-family:var(--disp);font-size:22px;font-weight:600;line-height:1;color:${awayLeads?'var(--amber)':'var(--chalk)'}">${as??'-'}</span>
+    function muChip(mu){
+      if(!mu) return '';
+      const sign = mu.delta >= 0 ? '+' : '';
+      const deltaCol = mu.delta >= 2 ? 'var(--good)' : mu.delta <= -2 ? 'var(--bad)' : 'var(--sage)';
+      return `<div style="display:flex;align-items:center;justify-content:center;gap:6px">
+        <span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;color:${mu.col}">${mu.lbl}</span>
+        <span style="font-family:var(--mono);font-size:11px;font-weight:900;color:${deltaCol};background:${deltaCol==='var(--sage)'?'rgba(120,120,130,.1)':deltaCol==='var(--good)'?'rgba(111,207,142,.12)':'rgba(192,57,43,.12)'};border:1px solid ${deltaCol}33;border-radius:5px;padding:0 6px;line-height:18px">${sign}${mu.delta}</span>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${mu.score}/8</span>
+      </div>`;
+    }
+    // lean footer — same layout as Slate's muRow, split away/home
+    const muRow = (awayMu||homeMu) ? `<div style="display:flex;border-top:1px solid var(--line)">
+      <div style="flex:1;padding:7px 14px;text-align:center;background:${awayMu?awayMu.bg:'transparent'};border-left:3px solid ${awayMu?awayMu.border:'var(--line)'}">${muChip(awayMu)}</div>
+      <div style="width:1px;background:var(--line)"></div>
+      <div style="flex:1;padding:7px 14px;text-align:center;background:${homeMu?homeMu.bg:'transparent'};border-right:3px solid ${homeMu?homeMu.border:'var(--line)'}">${muChip(homeMu)}</div>
+    </div>` : '';
+
+    // TV-style scoreboard header — team/score block (divider between the two
+    // rows, score sized to match the team badge), inning+diamond+outs framed
+    // by a line on each side, then the "tonight" field info (Gameday +
+    // MLB.TV links, park, PF, weather) where the lean badge used to sit —
+    // the lean label now lives in the footer below, matching Slate.
+    const scoreBlock = `<div style="display:flex;flex-direction:column;justify-content:center;padding:8px 16px;min-width:130px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:6px">
+        <span class="teamtag" style="${teamTagStyle(awayTeam)};font-size:12px">${esc(awayTeam)}</span>
+        <span style="font-family:var(--disp);font-size:15px;font-weight:600;line-height:1;color:${awayLeads?'var(--amber)':'var(--chalk)'}">${as??'-'}</span>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
-        <span style="font-family:var(--disp);font-size:15px;color:${homeLeads?'var(--chalk)':'var(--sage)'}">${esc(homeTeam)}</span>
-        <span style="font-family:var(--disp);font-size:22px;font-weight:600;line-height:1;color:${homeLeads?'var(--amber)':'var(--chalk)'}">${hs??'-'}</span>
+      <div style="height:1px;background:var(--line)"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:6px">
+        <span class="teamtag" style="${teamTagStyle(homeTeam)};font-size:12px">${esc(homeTeam)}</span>
+        <span style="font-family:var(--disp);font-size:15px;font-weight:600;line-height:1;color:${homeLeads?'var(--amber)':'var(--chalk)'}">${hs??'-'}</span>
       </div>
+    </div>`;
+
+    const _park = parkInfo(homeTeam);
+    const _wxDate = batters[0]?.gameDate || new Date().toISOString().slice(0,10);
+    const _wxId = `wx-${homeTeam}-${_wxDate.replace(/-/g,'')}`;
+    const fieldInfo = `<div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;padding:8px 14px;min-width:130px">
+      <a href="${gameUrl(batters[0]?.gameDate,gamePk,matchup,gameState)}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:10px;color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">Gameday ↗</a>
+      ${_park?`<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.8">${esc(_park.name)}${_park.roof?' 🏟':' ⛳'}</span>`:''}
+      ${parkFactor!=null?`<span style="font-family:var(--mono);font-size:9px;color:${parkFactor>=1.06?'var(--amber)':parkFactor<=0.94?'var(--bad)':'var(--sage)'}">PF ${Number(parkFactor).toFixed(2)}</span>`:''}
+      <span id="${_wxId}" style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.75"></span>
+      ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:9px;color:#e05c5c;text-decoration:none"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#e05c5c;vertical-align:middle;margin-right:3px"></span>MLB.TV ↗</a>`:''}
     </div>`;
 
     return `<div class="card" style="padding:0;overflow:hidden">
@@ -3697,19 +3797,19 @@ function renderScores() {
         ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" title="Watch on MLB.TV" style="text-decoration:none;color:inherit;display:flex">${scoreBlock}</a>`:scoreBlock}
         <div style="width:1px;background:var(--line)"></div>
         <div style="display:flex;align-items:center;justify-content:center;padding:8px 16px;min-width:70px">${midHtml}</div>
+        <div style="width:1px;background:var(--line)"></div>
         <div style="flex:1"></div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:5px;padding:10px 14px">
-          ${parkFactor?`<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">PF ${Number(parkFactor).toFixed(2)}</span>`:''}
-          <span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;color:${mu.col};background:${mu.bg};border:1px solid ${mu.border};border-radius:4px;padding:2px 8px">${mu.lbl}</span>
-        </div>
+        ${fieldInfo}
       </div>
       <div style="display:flex">
-        ${sideHtml(awaySide, awayTeam, false)}
+        ${sideHtml(awaySide, awayTeam, awayMu)}
         <div style="width:1px;background:var(--line)"></div>
-        ${sideHtml(homeSide, homeTeam, true)}
+        ${sideHtml(homeSide, homeTeam, homeMu)}
       </div>
+      ${muRow}
     </div>`;
   }).join('');
+  injectWeather(legs);
 }
 
 // inject weather into all wx-* placeholders currently in the DOM
