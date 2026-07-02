@@ -7,7 +7,7 @@
     "odds": 145,
     "payout": 14.5,
     "trueP": 0.4081719188333802,
-    "status": "pending",
+    "status": "lost",
     "legs": [
       {
         "name": "Casey Schmitt",
@@ -21,7 +21,7 @@
         "pitcherHand": "R",
         "batterId": "669477",
         "gamePk": "825064",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "name": "Luis Arr\u00e1ez",
@@ -35,7 +35,7 @@
         "pitcherHand": "R",
         "batterId": "650333",
         "gamePk": "825064",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "name": "Ketel Marte",
@@ -49,7 +49,7 @@
         "pitcherHand": "R",
         "batterId": "606466",
         "gamePk": "825064",
-        "outcome": null
+        "outcome": "hit"
       }
     ]
   },
