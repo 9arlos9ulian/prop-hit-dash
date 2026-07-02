@@ -3,7 +3,7 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
   :root{
-    --field:#0D0C0B; --surf:#121110; --raised:#181614; --chalk:#E6E2D9;
+    --field:#0D0C0B; --surf:#121110; --raised:#181614; --chalk:#EFE1C4;
     --sage:#9C978D; --line:#292620; --good:#AEC28C; --bad:#D99B7C; --amber:#DDB077;
     --disp:'JetBrains Mono',monospace; --mono:'JetBrains Mono',monospace; --body:'Inter',sans-serif;
   }
@@ -480,7 +480,7 @@
     display:flex;align-items:center;justify-content:center;
     font-family:var(--disp);font-size:22px;font-weight:400;
     opacity:0;transition:opacity .15s,background .15s;
-    background:transparent;color:rgba(255,255,255,.9);
+    background:transparent;color:var(--chalk);
     pointer-events:none;
   }
   .scorecircle:not(.scorecircle-done):not(.sc-picked):hover .sc-overlay{opacity:1;background:rgba(0,0,0,.25)}
