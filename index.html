@@ -567,7 +567,6 @@
   <div class="tabs">
     <button class="tab active" onclick="switchTab('scores',this)">Scores</button>
     <button class="tab" onclick="switchTab('allbatters',this)">All Batters</button>
-    <button class="tab" onclick="switchTab('verdict',this)">Verdict</button>
     <div class="tabs-spacer"></div>
     <button class="tab" onclick="switchTab('bets',this)">Bets<span id="tab-bets-badge" style="display:none;font-family:var(--mono);font-size:9px;opacity:.6;margin-left:5px;font-weight:400"></span></button>
     <button class="tab" onclick="switchTab('history',this)">History</button>
@@ -625,11 +624,6 @@
       </div>
     </div>
     <div id="allbatters-grid"></div>
-  </div>
-
-  <!-- VERDICT TAB — prototype, additive only -->
-  <div id="tab-verdict" style="display:none;margin-top:18px">
-    <div id="verdict-grid"></div>
   </div>
 
   <!-- BATTER POPUP — replaces the old Tonight-tab card; opened from any Scores
@@ -3253,7 +3247,6 @@ function renderBetsTab(){
 function renderActiveTab() {
   if(currentTab==='scores') renderScores();
   else if(currentTab==='allbatters') renderScoresAllBatters();
-  else if(currentTab==='verdict') renderVerdict();
   else if(currentTab==='bets') renderBetsTab();
   else render(); // history/about have no dedicated builder; render() still needs to run to keep #legs (bet slip) current
 }
@@ -3406,7 +3399,6 @@ function switchTab(name, btn) {
   document.getElementById('tab-dugout').style.display     = 'none'; // removed from nav 2026-07-02, kept for #pool/slip state only
   document.getElementById('tab-scores').style.display     = name==='scores'     ? '' : 'none';
   document.getElementById('tab-allbatters').style.display = name==='allbatters' ? '' : 'none';
-  document.getElementById('tab-verdict').style.display    = name==='verdict'    ? '' : 'none';
   document.getElementById('tab-history').style.display    = name==='history'    ? '' : 'none';
   document.getElementById('tab-about').style.display      = name==='about'      ? '' : 'none';
   document.getElementById('tab-bets').style.display       = name==='bets'       ? '' : 'none';
@@ -3414,11 +3406,10 @@ function switchTab(name, btn) {
   if(btn) btn.classList.add('active');
   updateSlipCount();
   if(name==='history') { initCollapsibleCards(); loadHistory(); }
-  if((name==='bets' || name==='scores' || name==='allbatters' || name==='verdict') && !viewingDate) startLivePolling(); else stopLivePolling();
+  if((name==='bets' || name==='scores' || name==='allbatters') && !viewingDate) startLivePolling(); else stopLivePolling();
   if(name==='bets') renderBetsTab();
   if(name==='allbatters') renderScoresAllBatters();
-  if(name==='verdict') renderVerdict();
-  if(name==='scores' || name==='allbatters' || name==='verdict') {
+  if(name==='scores' || name==='allbatters') {
     if(name==='scores') renderScores();
     // fetch Kalshi O/U totals (only open markets exist, so today-only; no-op for historical)
     if(!_kalshiOu.size) {
@@ -3488,8 +3479,7 @@ function muLabel(offG, pitchG) {
 function _isCardCollapsed(id){ try{ return localStorage.getItem('card_collapsed_'+id)==='1'; }catch(e){ return false; } }
 
 // ── scores tab — live boxscore per game, same lean dynamics as Slate ──────────
-// full per-game card — extracted so the new Verdict tab can reuse the exact
-// same live/final rendering without duplicating this logic
+// full per-game card, called from renderScores()'s map below
 function buildScoreCard(matchup, batters, betKeys) {
     const [awayTeam, homeTeam] = matchup.split(' @ ').map(s => s.trim());
     const awaySide = batters.filter(l => l.team === awayTeam).sort((a,b)=>(a.slot||9)-(b.slot||9));
@@ -3786,84 +3776,6 @@ function buildScoreCard(matchup, batters, betKeys) {
     </div>`;
   }
 
-// ── Verdict tab (prototype, additive only — does not change Scores' own
-// rendering) — pregame shows just the score header + a lean-label verdict
-// per side; once a game goes live or is final, delegates to the exact same
-// buildScoreCard() Scores itself uses ──────────────────────────────────────
-function _verdictLabelPill(mu){
-  if(!mu) return '';
-  return `<span style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.5px;color:${mu.col};background:${mu.bg};border:1px solid ${mu.border};border-radius:4px;padding:2px 7px">${mu.lbl}</span>`;
-}
-
-function buildVerdictCard(matchup, batters, betKeys) {
-  const [awayTeam, homeTeam] = matchup.split(' @ ').map(s => s.trim());
-  const gameState = batters[0]?.gameState || '';
-  const ls = _liveLinescore.get(String(batters[0]?.gamePk || ''));
-  const isLiveGame  = ls ? ls.isLive  : isLive(gameState);
-  const isFinalGame = ls ? ls.isFinal : isFinal(gameState);
-
-  if(isLiveGame || isFinalGame) return buildScoreCard(matchup, batters, betKeys);
-
-  // pregame minimal card: score header + team lean pills only
-  const awaySide = batters.filter(l => l.team === awayTeam);
-  const homeSide = batters.filter(l => l.team === homeTeam);
-  const awayAvg = awaySide.length ? awaySide.reduce((s,l)=>s+(l.p||0),0)/awaySide.length : 0;
-  const homeAvg = homeSide.length ? homeSide.reduce((s,l)=>s+(l.p||0),0)/homeSide.length : 0;
-  const awayMu  = awaySide.length ? muLabel(offGrade(awayAvg), awaySide[0]?.pGrade || 'C') : null;
-  const homeMu  = homeSide.length ? muLabel(offGrade(homeAvg), homeSide[0]?.pGrade || 'C') : null;
-  const startTime = batters[0]?.startTime || '';
-  const awayOu = (window._teamBadge && window._teamBadge[awayTeam]) || '';
-  const homeOu = (window._teamBadge && window._teamBadge[homeTeam]) || '';
-
-  // small, intentional duplication of scoreStacked's markup — not worth
-  // extracting further for a prototype; skips season-record/live-score
-  // display here (just start time) to avoid re-deriving the
-  // window._liveScores lookup a second time
-  const scoreStacked = `<div class="gm-score-stacked" style="flex-direction:column;justify-content:center;padding:8px 10px;min-width:100px;flex:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:6px">
-      <span style="display:flex;align-items:center;gap:5px">${awayOu}<span class="teamtag" style="${teamTagStyle(awayTeam)}">${esc(awayTeam)}</span></span>
-    </div>
-    <div style="height:1px;background:var(--line)"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:6px">
-      <span style="display:flex;align-items:center;gap:5px">${homeOu}<span class="teamtag" style="${teamTagStyle(homeTeam)}">${esc(homeTeam)}</span></span>
-    </div>
-  </div>`;
-
-  return `<div class="card" style="padding:0;overflow:hidden">
-    <div class="gm-scoreboard" style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
-      <div class="gm-mid-wrap" style="display:flex;align-items:center;justify-content:center;min-width:0;flex:none">
-        <span style="font-family:var(--mono);font-size:11px;color:var(--sage)">${esc(startTime)}</span>
-      </div>
-      <div style="width:1px;background:var(--line)"></div>
-      ${scoreStacked}
-    </div>
-    <div style="display:flex;border-top:1px solid var(--line)">
-      <div style="flex:1;padding:10px 14px;text-align:center">${_verdictLabelPill(awayMu)}</div>
-      <div style="width:1px;background:var(--line)"></div>
-      <div style="flex:1;padding:10px 14px;text-align:center">${_verdictLabelPill(homeMu)}</div>
-    </div>
-  </div>`;
-}
-
-function renderVerdict() {
-  const el = document.getElementById('verdict-grid');
-  if(!el) return;
-  if(!legs.length) { el.innerHTML = '<div class="card"><div class="empty">Load a CSV first.</div></div>'; return; }
-  const betKeys = new Set();
-  (savedBets||[]).forEach(b => {
-    if(b.status !== 'pending') return;
-    (b.legs||[]).forEach(bl => { if(bl.gamePk && bl.batterId) betKeys.add(String(bl.gamePk)+'|'+String(bl.batterId)); });
-  });
-  const gameMap = new Map();
-  legs.forEach(l => {
-    const key = l.matchup || 'Unknown';
-    if(!gameMap.has(key)) gameMap.set(key, []);
-    gameMap.get(key).push(l);
-  });
-  const games = [...gameMap.entries()];
-  if(!games.length) { el.innerHTML = '<div class="card"><div class="empty">No games today.</div></div>'; return; }
-  el.innerHTML = games.map(([matchup, batters]) => buildVerdictCard(matchup, batters, betKeys)).join('');
-}
 
 function renderScores() {
   const el = document.getElementById('scores-grid');
