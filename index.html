@@ -497,11 +497,6 @@
   #mlb-ticker::-webkit-scrollbar{display:none}
   #ticker-track{display:flex;align-items:stretch;gap:0;white-space:nowrap;height:100%}
   .sc-card{display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-right:1px solid var(--line);cursor:default;flex:none;position:relative;overflow:hidden}
-  .sc-pre-link{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:3px;z-index:2}
-  .sc-fade-hover{transition:opacity .12s}
-  .sc-card:hover .sc-pre-time{visibility:hidden}
-  .sc-card:hover .sc-pre-link{display:flex}
-  .sc-card:hover .sc-fade-hover{opacity:0;pointer-events:none}
   .sc-card:first-child{border-left:none}
   .sc-inn{font-family:var(--mono);font-size:8.5px;letter-spacing:.3px;min-width:32px;flex:none}
   .sc-inn-live{color:#e05c5c}
@@ -4822,13 +4817,11 @@ function canonMatchup(matchup){
 
     // upcoming
     const t = new Date(g.gameDate).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
-    const gdUrl = g.gamePk ? `https://www.mlb.com/gameday/${g.gamePk}` : '';
     return `<div class="sc-card${trackedClass}"${goClick}>
       <div class="sc-inn sc-inn-pre">
         <span class="sc-pre-time">${t}</span>
-        ${gdUrl?`<div class="sc-pre-link"><a href="${gdUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.6px;color:var(--amber);text-decoration:none;white-space:nowrap">Gameday ↗</a></div>`:''}
       </div>
-      <div class="sc-teams sc-fade-hover">
+      <div class="sc-teams">
         <div class="sc-row"><span class="sc-abbr">${away}</span></div>
         <div class="sc-row"><span class="sc-abbr">${home}</span></div>
       </div>
