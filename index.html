@@ -3750,9 +3750,13 @@ function renderScores() {
 
     const storyline = gameStoryline(awaySide, homeSide, parkFactor);
     const cardId = `scoregame-${gamePk}`;
-    const collapsed = _isCardCollapsed(cardId);
+    // collapsible only makes sense on narrow viewports where cards eat the
+    // whole screen — at wider breakpoints (900px+, where the card already
+    // gets the full desktop layout) always show everything
+    const collapsible = window.innerWidth < 900;
+    const collapsed = collapsible && _isCardCollapsed(cardId);
     return `<div class="card gamecard-collapsible${collapsed?' collapsed':''}" id="${cardId}" style="padding:0;overflow:hidden">
-      <div class="gm-header" onclick="if(!event.target.closest('a'))toggleCard('${cardId}')">
+      <div class="gm-header" onclick="if(${collapsible} && !event.target.closest('a'))toggleCard('${cardId}')" style="${collapsible?'':'cursor:default'}">
         ${storyline?`<div style="padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);text-align:center"><span title="${esc(storyline.title)}" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:${storyline.color}">✦ ${storyline.label}</span></div>`:''}
         <div class="gm-scoreboard" style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
           ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" title="Watch on MLB.TV" style="text-decoration:none;color:inherit;display:flex">${scoreBlock}</a>`:scoreBlock}
