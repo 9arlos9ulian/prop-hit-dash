@@ -4176,10 +4176,24 @@ async function loadHistoricalScores(date){
 
     // per-batter final AB line ("H-AB" in the Scores card) reads _bsCache,
     // which is normally only filled for today's live/final games — fetch it
-    // for this date's games too so the historical view isn't stuck on "—"
+    // for this date's games too so the historical view isn't stuck on "—".
+    // Also overwrite l.hasHit/l.subbedOut from the real box score (mirrors
+    // fetchLiveGameData()'s logic) — the archived slates/<date>.csv snapshot
+    // was written whenever that day's slate script last ran (noon/4pm), so
+    // has_hit is baked in as stale/False for any game that finished later
+    // (i.e. most evening games), wrongly showing real hitters as NO HIT.
     const finalGamePks = games.filter(g => (g.status?.abstractGameState||'').toLowerCase()==='final').map(g => String(g.gamePk));
     if(finalGamePks.length){
-      await Promise.all(finalGamePks.map(gpk => _fetchBoxscore(gpk).catch(()=>null)));
+      const boxscores = await Promise.all(finalGamePks.map(gpk =>
+        _fetchBoxscore(gpk).then(bs => [gpk, bs]).catch(() => [gpk, null])));
+      boxscores.forEach(([gpk, bs]) => {
+        if(!bs) return;
+        bs.players.forEach((batting, batterId) => {
+          const gotHit = (batting.hits || 0) > 0;
+          const subbedOut = isSubbedOut(bs, batterId);
+          legs.forEach(l => { if(String(l.gamePk)===gpk && String(l.batterId)===String(batterId)){ l.hasHit=gotHit; l.subbedOut=subbedOut; } });
+        });
+      });
       if(viewingDate === date) renderActiveTab();
     }
   } catch(_){}
