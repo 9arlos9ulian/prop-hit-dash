@@ -3811,16 +3811,21 @@ function renderScoresAllBatters() {
     const [away,home] = (l.matchup||'').split(' @ ').map(s=>s.trim());
     return l.team===away ? home : l.team===home ? away : '';
   };
+  // same good/bad thresholds already used elsewhere (bstat/pstat helpers) —
+  // reused here rather than invented, so the table agrees with the card/popup views
+  const hiLoCol = (v,hi,lo) => v==null||isNaN(v) ? 'var(--sage)' : v>=hi ? 'var(--good)' : v<=lo ? 'var(--bad)' : 'var(--chalk)';
+  const scoreCol = p => p>=0.70?'var(--good)':p>=0.55?'var(--amber)':'var(--sage)';
+  const babipCol = v => v==null||isNaN(v) ? 'var(--sage)' : v>=0.350 ? 'var(--amber)' : v<=0.250 ? 'var(--good)' : 'var(--chalk)';
   const cols = [
     ['Pick',   null,                                                   'center'], // special-cased below
-    ['Scr',    l => Math.round((l.p||0)*100),                          'right'],
+    ['Scr',    l => Math.round((l.p||0)*100),                          'right',   l => scoreCol(l.p||0)],
     ['#',      l => l.slot||'',                                        'center'],
     ['Team',   null,                                                   'center'], // special-cased below
     ['Name',   null,                                                   'left'], // special-cased below
-    ['AVG',    l => num(l.bHitRate),                                   'right'],
-    ['xBA',    l => num(l.bXba),                                       'right'],
-    ['HH%',    l => pct(l.bHH),                                        'right'],
-    ['BABIP',  l => num(l.bBabip),                                     'right'],
+    ['AVG',    l => num(l.bHitRate),                                   'right',   l => hiLoCol(l.bHitRate,.300,.230)],
+    ['xBA',    l => num(l.bXba),                                       'right',   l => hiLoCol(l.bXba,.290,.220)],
+    ['HH%',    l => pct(l.bHH),                                        'right',   l => hiLoCol(l.bHH!=null?l.bHH*100:null,50,30)],
+    ['BABIP',  l => num(l.bBabip),                                     'right',   l => babipCol(l.bBabip)],
     ['vsL',    l => num(l.vsL),                                        'right'],
     ['vsR',    l => num(l.vsR),                                        'right'],
     ['Split',  l => l.splitDiff!=null ? (l.splitDiff>=0?'+':'')+pct(l.splitDiff,1) : '—', 'right'],
@@ -3833,10 +3838,10 @@ function renderScoresAllBatters() {
     ['ParkF',  l => l.parkFactor!=null ? Number(l.parkFactor).toFixed(2) : '—', 'right'],
     ['P.Team', l => esc(pitcherTeam(l)),                                'center'], // special-cased below (colored)
     ['Pitcher',l => esc(l.pitcher ? l.pitcher.split(' ').slice(-1)[0] : ''), 'left'],
-    ['P.Grd',  l => l.pGrade||'—',                                     'center'],
-    ['P.CSW',  l => pct(l.pCsw),                                       'right'],
-    ['P.K/BB', l => num(l.pKbb,2),                                     'right'],
-    ['P.HH%',  l => pct(l.pHH),                                        'right'],
+    ['P.Grd',  l => l.pGrade||'—',                                     'center',  l => l.pGrade ? gradeCol(l.pGrade) : 'var(--sage)'],
+    ['P.CSW',  l => pct(l.pCsw),                                       'right',   l => hiLoCol(l.pCsw!=null?l.pCsw*100:null,30,24)],
+    ['P.K/BB', l => num(l.pKbb,2),                                     'right',   l => hiLoCol(l.pKbb,3.0,1.5)],
+    ['P.HH%',  l => pct(l.pHH),                                        'right',   l => l.pHH==null||isNaN(l.pHH) ? 'var(--sage)' : (l.pHH*100)>=44 ? 'var(--bad)' : (l.pHH*100)<=30 ? 'var(--good)' : 'var(--chalk)'],
     ['P.Rest', l => l.pDaysRest??'—',                                  'right'],
     ['P.Rk',   l => l.pIsRookie?'Y':'',                                'center'],
   ];
@@ -3851,7 +3856,7 @@ function renderScoresAllBatters() {
       <span style="${l.hasHit?'text-decoration:line-through;opacity:.45':''}">${esc(l.name)}</span>
       ${noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
     </td>`;
-    const cells = cols.map(([lbl,fn,align]) => lbl==='Pick' ? pickCell : lbl==='Team' ? teamCell : lbl==='P.Team' ? pTeamCell : lbl==='Name' ? nameCell : `<td style="text-align:${align}">${fn(l)}</td>`).join('');
+    const cells = cols.map(([lbl,fn,align,colorFn]) => lbl==='Pick' ? pickCell : lbl==='Team' ? teamCell : lbl==='P.Team' ? pTeamCell : lbl==='Name' ? nameCell : `<td style="text-align:${align};${colorFn?`color:${colorFn(l)}`:''}">${fn(l)}</td>`).join('');
     return `<tr>${cells}</tr>`;
   }).join('');
   el.innerHTML = `<div class="card" style="overflow-x:auto;padding:0">
