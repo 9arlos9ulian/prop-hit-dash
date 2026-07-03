@@ -442,7 +442,7 @@
   #batter-popup-close{position:absolute;top:10px;right:12px;font-family:var(--mono);font-size:11px;color:var(--sage);opacity:.7;line-height:1;background:var(--field);border:1px solid var(--line);border-radius:4px;padding:3px 9px;cursor:pointer;z-index:1}
   #batter-popup-close:hover{opacity:1;color:var(--chalk)}
   @keyframes popupIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-  @media(max-width:600px){#batter-popup-backdrop{padding:0}#batter-popup-card{max-width:100%;border-radius:0;min-height:100vh}}
+  @media(max-width:600px){#batter-popup-backdrop{padding:16px;align-items:center}#batter-popup-card{max-width:100%;max-height:100%;overflow-y:auto}}
   .row-cold-glow{box-shadow:0 0 0 1px rgba(178,208,126,.18),0 0 18px rgba(178,208,126,.14),0 0 40px rgba(178,208,126,.08);animation:coldGlowGreen 2.4s ease-in-out infinite}
   .row-cold-glow-red{box-shadow:0 0 0 1px rgba(224,92,92,.18),0 0 18px rgba(224,92,92,.14),0 0 40px rgba(224,92,92,.08);animation:coldGlowRed 2.4s ease-in-out infinite}
   .row-cold-glow-blue{box-shadow:0 0 0 1px rgba(103,232,249,.18),0 0 18px rgba(103,232,249,.14),0 0 40px rgba(103,232,249,.08);animation:coldGlowBlue 2.4s ease-in-out infinite}
