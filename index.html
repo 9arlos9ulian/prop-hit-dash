@@ -3283,7 +3283,7 @@ function batterPopupHtml(l){
   const s = (l.last5||'').replace(/[^01]/g,'');
   const s10 = s.slice(-10);
   const dots = s10 ? s10.split('').map(c=>`<span class="sdot ${c==='1'?'sdot-hit':'sdot-miss'}" title="${c==='1'?'hit':'no hit'}"></span>`).join('') : '';
-  const streakRow = s10 ? `<div class="streakrow"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div></div>` : '';
+  const streakRow = s10 ? `<div class="streakrow" style="justify-content:center"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div></div>` : '';
   const thin = l.bNGames>0 && l.bNGames<15 ? `<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>` : '';
   const rest = l.bDaysRest>=8 ? (()=>{const warn=l.bDaysRest>=15;return `<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})() : '';
   const est = (l.lineupEst && !isLive(l.gameState) && !isFinal(l.gameState)) ? `<span class="estbadge">⚠ EST</span>` : '';
