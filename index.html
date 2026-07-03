@@ -400,6 +400,24 @@
      stack the lean chip above the eval result unconditionally, not just on
      narrow viewports like .gm-footer-cell does */
   .gm-footer-cell-stack{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+  .allbatters-table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:10px;white-space:nowrap}
+  .allbatters-table th{position:sticky;top:0;background:var(--raised);color:var(--sage);text-transform:uppercase;letter-spacing:.4px;font-size:8px;font-weight:400;padding:6px 8px;border-bottom:1px solid var(--line);z-index:1}
+  .allbatters-table td{padding:3px 8px;color:var(--chalk);border-bottom:1px solid rgba(255,255,255,.04)}
+  .allbatters-table tbody tr:nth-child(even){background:rgba(255,255,255,.015)}
+  .allbatters-table tbody tr:hover{background:rgba(255,255,255,.06)}
+  .gm-mid-wide{display:none}
+  .linescore-grid{border-collapse:collapse;font-family:var(--mono);font-size:10px;color:var(--chalk)}
+  .linescore-grid th{color:var(--sage);font-weight:400;font-size:8px;padding:1px 6px;text-align:center}
+  .linescore-grid td{padding:1px 6px;text-align:center}
+  .linescore-grid td:first-child{text-align:left;color:var(--sage);padding-right:10px}
+  .linescore-grid td:nth-last-child(3){border-left:1px solid var(--line);font-weight:700;color:var(--chalk)}
+  @media(min-width:900px){
+    .gm-mid-compact{display:none}
+    .gm-mid-wide{display:block}
+    .gm-scoreboard{gap:10px}
+    .gm-scoreboard .teamtag{font-size:14px!important}
+    .gm-mid-wrap{padding:8px 20px!important}
+  }
   #scores-grid{display:flex;flex-direction:column;gap:14px}
   /* Compact mode: multi-column card grid instead of one stacked column */
   #scores-grid.compact-grid{display:grid;grid-template-columns:1fr;align-items:start}
@@ -538,13 +556,14 @@
   <div id="mlb-ticker"><div id="ticker-track"><span class="sc-card"><span class="sc-inn sc-inn-pre">Loading…</span></span></div></div>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('scores',this)">Scores</button>
     <button class="tab" onclick="switchTab('history',this)">History</button>
-    <button class="tab" onclick="switchTab('bets',this)">Bets<span id="tab-bets-badge" style="display:none;font-family:var(--mono);font-size:9px;opacity:.6;margin-left:5px;font-weight:400"></span></button>
-    <div class="tabs-spacer"></div>
-    <select id="global-date-picker" onchange="loadSlateDate(this.value)" style="margin-left:6px;background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:11px;font-family:var(--mono);cursor:pointer;align-self:center;display:none">
+    <select id="global-date-picker" onchange="syncHistoryDate(this.value)" style="margin-left:6px;background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:11px;font-family:var(--mono);cursor:pointer;align-self:center">
       <option value="">📅 Date</option>
     </select>
+    <button class="tab active" onclick="switchTab('scores',this)">Scores</button>
+    <button class="tab" onclick="switchTab('allbatters',this)">All Batters</button>
+    <button class="tab" onclick="switchTab('bets',this)">Bets<span id="tab-bets-badge" style="display:none;font-family:var(--mono);font-size:9px;opacity:.6;margin-left:5px;font-weight:400"></span></button>
+    <div class="tabs-spacer"></div>
   </div>
 
   <!-- SCORES TAB -->
@@ -552,53 +571,53 @@
     <div class="card" style="margin-bottom:14px">
       <div class="poolbar">
         <div class="poolbar-row" style="flex-wrap:wrap">
-          <span class="fchip-lbl">View</span>
-          <button id="scores-mode-compact" class="ghost fchip" onclick="setScoresMode('compact')">Compact</button>
-          <button id="scores-mode-normal" class="ghost fchip amber" onclick="setScoresMode('normal')">Normal</button>
-          <button id="scores-mode-expanded" class="ghost fchip" onclick="setScoresMode('expanded')">Expanded</button>
-          <button id="scores-mode-all" class="ghost fchip" onclick="setScoresMode('all')">All Batters</button>
-        </div>
-        <div class="poolbar-row" style="flex-wrap:wrap">
           <span class="fchip-lbl">Sort</span>
           <button id="scores-sort-time" class="ghost fchip amber" onclick="scoresSort='time';this.classList.add('amber');document.getElementById('scores-sort-rating').classList.remove('amber');renderScores()">Time</button>
-          <button id="scores-sort-rating" class="ghost fchip" onclick="scoresSort='rating';this.classList.add('amber');document.getElementById('scores-sort-time').classList.remove('amber');renderScores()">Favorite to hit</button>
+          <button id="scores-sort-rating" class="ghost fchip" onclick="scoresSort='rating';this.classList.add('amber');document.getElementById('scores-sort-time').classList.remove('amber');renderScores()">Best Lean</button>
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
           <button id="scores-live-btn" class="ghost fchip" onclick="scoresLiveOnly=!scoresLiveOnly;scoresUpcoming=false;this.classList.toggle('amber',scoresLiveOnly);document.getElementById('scores-upcoming-btn').classList.remove('amber');renderScores()">● Live</button>
           <button id="scores-upcoming-btn" class="ghost fchip" onclick="scoresUpcoming=!scoresUpcoming;scoresLiveOnly=false;this.classList.toggle('amber',scoresUpcoming);document.getElementById('scores-live-btn').classList.remove('amber');renderScores()">Upcoming</button>
         </div>
-        <div id="scores-all-filters" style="display:none">
-          <div class="poolbar-row" style="flex-wrap:wrap">
-            <select id="exp-game-select" onchange="syncGameFilter(this.value)" style="background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:12px;font-family:var(--mono);cursor:pointer"></select>
-            <input id="exp-batter-search" type="text" placeholder="Search batter…" oninput="syncSearchFilter(this.value)" style="background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 10px;font-size:12px;font-family:var(--mono);width:140px;outline:none" />
-            <button id="exp-liveBtn" class="ghost fchip" onclick="filterLiveOnly=!filterLiveOnly;if(filterLiveOnly)filterUpcoming=false,document.getElementById('exp-upcomingBtn').classList.remove('amber');this.classList.toggle('amber',filterLiveOnly);renderScores()">● Live</button>
-            <button id="exp-upcomingBtn" class="ghost fchip" onclick="filterUpcoming=!filterUpcoming;if(filterUpcoming)filterLiveOnly=false,document.getElementById('exp-liveBtn').classList.remove('amber');this.classList.toggle('amber',filterUpcoming);renderScores()">Upcoming</button>
-            <button id="exp-hideSettledBtn" class="ghost fchip" onclick="filterHideSettled=!filterHideSettled;this.classList.toggle('amber',filterHideSettled);renderScores()" title="Hide batters whose game has ended">✓ Hide Final</button>
-            <button id="exp-confirmedBtn" class="ghost fchip" onclick="filterConfirmed=!filterConfirmed;this.classList.toggle('amber',filterConfirmed);renderScores()" title="Hide estimated lineups">✓ Confirmed</button>
-            <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
-            <button id="exp-ouBtn-over" class="ghost fchip" onclick="setScoresOuFilter('over')">▲ Over-performing</button>
-            <button id="exp-ouBtn-under" class="ghost fchip" onclick="setScoresOuFilter('under')">▼ Under-performing</button>
-          </div>
-          <div class="poolbar-row" style="flex-wrap:wrap">
-            <span class="fchip-lbl">Slot</span>
-            <button id="exp-slot-btn-0" class="fchip amber" onclick="setSlotFilter(0)" title="All batting slots">All</button>
-            <button id="exp-slot-btn-1" class="fchip ghost" onclick="setSlotFilter(1)">1</button>
-            <button id="exp-slot-btn-2" class="fchip ghost" onclick="setSlotFilter(2)">2</button>
-            <button id="exp-slot-btn-3" class="fchip ghost" onclick="setSlotFilter(3)">3</button>
-            <button id="exp-slot-btn-4" class="fchip ghost" onclick="setSlotFilter(4)">4</button>
-            <button id="exp-slot-btn-5" class="fchip ghost" onclick="setSlotFilter(5)">5</button>
-            <button id="exp-slot-btn-6" class="fchip ghost" onclick="setSlotFilter(6)">6</button>
-            <button id="exp-slot-btn-7" class="fchip ghost" onclick="setSlotFilter(7)">7</button>
-            <button id="exp-slot-btn-8" class="fchip ghost" onclick="setSlotFilter(8)">8</button>
-            <button id="exp-slot-btn-9" class="fchip ghost" onclick="setSlotFilter(9)">9</button>
-            <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
-            <button id="exp-minPBtn" class="fchip ghost" onclick="filterMinP=filterMinP?0:0.70;this.classList.toggle('amber',!!filterMinP);renderScores()" title="Only show batters with 70%+ model probability">70%+</button>
-            <button id="exp-hotBtn" class="ghost fchip" onclick="filterHotOnly=!filterHotOnly;this.classList.toggle('amber',filterHotOnly);renderScores()" title="Only show batters with 7+ hits in last 10 games">🔥 Hot</button>
-            <button id="exp-charlieBtn" class="fchip ghost" onclick="filterMinP=filterMinP?0:0.70;filterHotOnly=!filterHotOnly;setSlotFilter(1);document.getElementById('exp-minPBtn').classList.toggle('amber',!!filterMinP);document.getElementById('exp-hotBtn').classList.toggle('amber',filterHotOnly);renderScores()" title="Slot 1 · p≥70% · Hot streak">⚡ Charlie's Special</button>
-          </div>
-        </div>
       </div>
     </div>
     <div id="scores-grid"></div>
+  </div>
+
+  <!-- ALL BATTERS TAB -->
+  <div id="tab-allbatters" style="display:none;margin-top:18px">
+    <div class="card" style="margin-bottom:14px">
+      <div class="poolbar">
+        <div class="poolbar-row" style="flex-wrap:wrap">
+          <select id="exp-game-select" onchange="syncGameFilter(this.value)" style="background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:12px;font-family:var(--mono);cursor:pointer"></select>
+          <input id="exp-batter-search" type="text" placeholder="Search batter…" oninput="syncSearchFilter(this.value)" style="background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 10px;font-size:12px;font-family:var(--mono);width:140px;outline:none" />
+          <button id="exp-liveBtn" class="ghost fchip" onclick="filterLiveOnly=!filterLiveOnly;if(filterLiveOnly)filterUpcoming=false,document.getElementById('exp-upcomingBtn').classList.remove('amber');this.classList.toggle('amber',filterLiveOnly);renderScoresAllBatters()">● Live</button>
+          <button id="exp-upcomingBtn" class="ghost fchip" onclick="filterUpcoming=!filterUpcoming;if(filterUpcoming)filterLiveOnly=false,document.getElementById('exp-liveBtn').classList.remove('amber');this.classList.toggle('amber',filterUpcoming);renderScoresAllBatters()">Upcoming</button>
+          <button id="exp-hideSettledBtn" class="ghost fchip" onclick="filterHideSettled=!filterHideSettled;this.classList.toggle('amber',filterHideSettled);renderScoresAllBatters()" title="Hide batters whose game has ended">✓ Hide Final</button>
+          <button id="exp-confirmedBtn" class="ghost fchip" onclick="filterConfirmed=!filterConfirmed;this.classList.toggle('amber',filterConfirmed);renderScoresAllBatters()" title="Hide estimated lineups">✓ Confirmed</button>
+          <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
+          <button id="exp-ouBtn-over" class="ghost fchip" onclick="setScoresOuFilter('over')">▲ Over-performing</button>
+          <button id="exp-ouBtn-under" class="ghost fchip" onclick="setScoresOuFilter('under')">▼ Under-performing</button>
+        </div>
+        <div class="poolbar-row" style="flex-wrap:wrap">
+          <span class="fchip-lbl">Slot</span>
+          <button id="exp-slot-btn-0" class="fchip amber" onclick="setSlotFilter(0)" title="All batting slots">All</button>
+          <button id="exp-slot-btn-1" class="fchip ghost" onclick="setSlotFilter(1)">1</button>
+          <button id="exp-slot-btn-2" class="fchip ghost" onclick="setSlotFilter(2)">2</button>
+          <button id="exp-slot-btn-3" class="fchip ghost" onclick="setSlotFilter(3)">3</button>
+          <button id="exp-slot-btn-4" class="fchip ghost" onclick="setSlotFilter(4)">4</button>
+          <button id="exp-slot-btn-5" class="fchip ghost" onclick="setSlotFilter(5)">5</button>
+          <button id="exp-slot-btn-6" class="fchip ghost" onclick="setSlotFilter(6)">6</button>
+          <button id="exp-slot-btn-7" class="fchip ghost" onclick="setSlotFilter(7)">7</button>
+          <button id="exp-slot-btn-8" class="fchip ghost" onclick="setSlotFilter(8)">8</button>
+          <button id="exp-slot-btn-9" class="fchip ghost" onclick="setSlotFilter(9)">9</button>
+          <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
+          <button id="exp-minPBtn" class="fchip ghost" onclick="filterMinP=filterMinP?0:0.70;this.classList.toggle('amber',!!filterMinP);renderScoresAllBatters()" title="Only show batters with 70%+ model probability">70%+</button>
+          <button id="exp-hotBtn" class="ghost fchip" onclick="filterHotOnly=!filterHotOnly;this.classList.toggle('amber',filterHotOnly);renderScoresAllBatters()" title="Only show batters with 7+ hits in last 10 games">🔥 Hot</button>
+          <button id="exp-charlieBtn" class="fchip ghost" onclick="filterMinP=filterMinP?0:0.70;filterHotOnly=!filterHotOnly;setSlotFilter(1);document.getElementById('exp-minPBtn').classList.toggle('amber',!!filterMinP);document.getElementById('exp-hotBtn').classList.toggle('amber',filterHotOnly);renderScoresAllBatters()" title="Slot 1 · p≥70% · Hot streak">⚡ Charlie's Special</button>
+        </div>
+      </div>
+    </div>
+    <div id="allbatters-grid"></div>
   </div>
 
   <!-- BATTER POPUP — replaces the old Tonight-tab card; opened from any Scores
@@ -1270,7 +1289,8 @@ let filterTeam      = '';      // team abbr from clicking a Slate over/under bad
 
 function filterByTeam(team){
   filterTeam = (filterTeam === team) ? '' : team;
-  setScoresMode('all');
+  const allBattersBtn = document.querySelector('.tabs .tab[onclick*="\'allbatters\'"]');
+  switchTab('allbatters', allBattersBtn);
 }
 
 function populateGameDropdown() {
@@ -3196,12 +3216,13 @@ function renderBetsTab(){
   renderSavedBets();
   _loadBetsFromServer(); // override localStorage with server-side bets.json if available
   loadHistory(); // populate window._teamBadge/_playerArrow before Scores/Tonight need them, not just on first History-tab visit
-  switchTab('scores', document.querySelector('.tab')); // Scores is the default landing tab as of 2026-07-02 — its container defaults to display:none in HTML like any non-Tonight tab used to, so boot must explicitly switch to it
+  switchTab('scores', document.querySelector('.tabs .tab[onclick*="\'scores\'"]')); // Scores is the default landing tab as of 2026-07-02 — its container defaults to display:none in HTML like any non-Tonight tab used to, so boot must explicitly switch to it
 })();
 
 // ── tab switching ─────────────────────────────────────────────────────────────
 function renderActiveTab() {
   if(currentTab==='scores') renderScores();
+  else if(currentTab==='allbatters') renderScoresAllBatters();
   else if(currentTab==='bets') renderBetsTab();
   else render(); // history/about have no dedicated builder; render() still needs to run to keep #legs (bet slip) current
 }
@@ -3247,7 +3268,7 @@ function batterPopupHtml(l){
   const scoreColor = l.p>=0.70?'var(--good)':l.p>=0.55?'var(--amber)':'var(--sage)';
   const ppd = isPostponed(l.gameState);
   const missed = (isFinal(l.gameState)||l.subbedOut) && !l.hasHit && !ppd;
-  const hitBadge = l.hasHit?'<span class="hitbadge">HIT</span>':ppd?'<span class="hist-pending">PPD</span>':missed?'<span class="missbadge">MISS</span>':'';
+  const hitBadge = l.hasHit?'<span class="hitbadge">HIT</span>':ppd?'<span class="hist-pending">PPD</span>':missed?'<span class="missbadge">NO HIT</span>':'';
   const live = isLive(l.gameState);
   const handSpan = l.batterHand ? `<span style="font-size:12px;font-weight:400;opacity:.55;margin-left:3px">${l.batterHand}</span>` : '';
   const nameNode = l.batterId
@@ -3261,7 +3282,7 @@ function batterPopupHtml(l){
   const rest = l.bDaysRest>=8 ? (()=>{const warn=l.bDaysRest>=15;return `<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})() : '';
   const est = (l.lineupEst && !isLive(l.gameState) && !isFinal(l.gameState)) ? `<span class="estbadge">⚠ EST</span>` : '';
   const badges = [streakBadge(l.last5), rookieBadge(l.bIsRookie), thin, rest, est].filter(Boolean).join('');
-  const badgesRow = badges ? `<div class="bbadges" style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">${badges}</div>` : '';
+  const badgesRow = badges ? `<div class="bbadges" style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center">${badges}</div>` : '';
 
   const avg = l.bHitRate!=null&&!isNaN(l.bHitRate)?Number(l.bHitRate).toFixed(3).replace(/^0/,''):null;
   const xba = l.bXba!=null&&!isNaN(l.bXba)?Number(l.bXba).toFixed(3).replace(/^0/,''):null;
@@ -3312,7 +3333,7 @@ function batterPopupHtml(l){
       <div style="font-family:var(--disp);font-size:14px;font-weight:400;letter-spacing:.3px;text-transform:uppercase;color:var(--chalk);display:flex;align-items:center;justify-content:center;gap:5px">${grade}<a href="${pitcherUrl(l.pitcher)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid transparent">${esc(l.pitcher)}</a>${handLetter}</div>
       <div style="margin-top:4px;display:flex;gap:3px;justify-content:center;flex-wrap:wrap">${rookieBadge(l.pIsRookie)}${pThin}${pRest}</div>
       ${statsRow}
-      ${pitchMatchupHtml(l)}
+      <div style="display:flex;justify-content:center">${pitchMatchupHtml(l)}</div>
     </div>`;
   })() : '';
 
@@ -3334,15 +3355,16 @@ function batterPopupHtml(l){
 
   return `<div style="padding:22px 24px;text-align:center">
     <div style="font-family:var(--disp);font-size:44px;font-weight:700;color:${scoreColor};line-height:1">${scoreVal}</div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-top:8px">
+    <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-top:8px;flex-wrap:wrap">
       <span class="slot">${l.slot||'–'}</span>
       ${l.team?`<span class="teamtag" style="font-size:10px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}
       ${hitBadge}
+      ${kalshiDeltaChip(l)}
     </div>
     <div style="font-family:var(--disp);font-size:20px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);margin-top:6px;display:flex;align-items:baseline;justify-content:center;gap:6px">${nameNode}${performanceArrow(l)}</div>
     ${badgesRow}
     ${streakRow}
-    ${bstatsHtml?`<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">${bstatsHtml}${vsHtml}${spRpLine(l)}${avgAbLine(l)}</div>`:''}
+    ${bstatsHtml?`<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">${bstatsHtml}${vsHtml}<div style="display:flex;flex-direction:column;align-items:center">${spRpLine(l)}${avgAbLine(l)}</div></div>`:''}
     ${pitcherBlock}
     ${gameInfoBlock}
     ${slipBtn}
@@ -3351,50 +3373,35 @@ function batterPopupHtml(l){
 function switchTab(name, btn) {
   currentTab = name;
   document.getElementById('tab-dugout').style.display     = 'none'; // removed from nav 2026-07-02, kept for #pool/slip state only
-  document.getElementById('tab-scores').style.display    = name==='scores'    ? '' : 'none';
-  document.getElementById('tab-history').style.display   = name==='history'   ? '' : 'none';
-  document.getElementById('tab-about').style.display     = name==='about'     ? '' : 'none';
-  document.getElementById('tab-bets').style.display      = name==='bets'      ? '' : 'none';
+  document.getElementById('tab-scores').style.display     = name==='scores'     ? '' : 'none';
+  document.getElementById('tab-allbatters').style.display = name==='allbatters' ? '' : 'none';
+  document.getElementById('tab-history').style.display    = name==='history'    ? '' : 'none';
+  document.getElementById('tab-about').style.display      = name==='about'      ? '' : 'none';
+  document.getElementById('tab-bets').style.display       = name==='bets'       ? '' : 'none';
   document.querySelectorAll('.tabs .tab').forEach(b => b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   updateSlipCount();
   if(name==='history') { initCollapsibleCards(); loadHistory(); }
-  if(name==='bets' || name==='scores') startLivePolling(); else stopLivePolling();
+  if(name==='bets' || name==='scores' || name==='allbatters') startLivePolling(); else stopLivePolling();
   if(name==='bets') renderBetsTab();
-  if(name==='scores') {
-    renderScores();
+  if(name==='allbatters') renderScoresAllBatters();
+  if(name==='scores' || name==='allbatters') {
+    if(name==='scores') renderScores();
     // fetch Kalshi O/U totals (only open markets exist, so today-only; no-op for historical)
     if(!_kalshiOu.size) {
       const d = new Date().toISOString().slice(0,10);
-      Promise.all([fetchKalshiTotals(d), fetchMoneylines()]).then(()=>renderScores());
+      Promise.all([fetchKalshiTotals(d), fetchMoneylines()]).then(()=>renderActiveTab());
     }
   }
 }
 
 // ── scores tab ─────────────────────────────────────────────────────────────
-let scoresMode = 'normal'; // 'compact' | 'normal' | 'expanded'
 let scoresOuFilter = ''; // '' | 'over' | 'under'
 function setScoresOuFilter(dir){
   scoresOuFilter = scoresOuFilter === dir ? '' : dir;
   document.getElementById('exp-ouBtn-over').classList.toggle('amber', scoresOuFilter==='over');
   document.getElementById('exp-ouBtn-under').classList.toggle('amber', scoresOuFilter==='under');
-  renderScores();
-}
-function setScoresMode(mode){
-  scoresMode = mode;
-  ['compact','normal','expanded','all'].forEach(m => {
-    document.getElementById('scores-mode-'+m).classList.toggle('amber', m===mode);
-  });
-  document.getElementById('scores-all-filters').style.display = mode==='all' ? '' : 'none';
-  if(mode==='all'){
-    const s2 = document.getElementById('exp-game-select');
-    if(s2 && !s2.options.length){
-      const games = [...new Set(legs.map(l => l.matchup).filter(Boolean))].sort();
-      s2.innerHTML = '<option value="">All games</option>' + games.map(g => `<option value="${g}">${g}</option>`).join('');
-      s2.value = filterGame;
-    }
-  }
-  renderScores();
+  renderScoresAllBatters();
 }
 let scoresSort = 'time'; // 'time' | 'rating'
 let scoresLiveOnly = false;
@@ -3439,300 +3446,22 @@ function muLabel(offG, pitchG) {
   const total = offScore + pitScore;
   // mismatch delta: how far from neutral (4 = perfectly neutral midpoint of 0–8)
   const delta = total - 4;
-  if(total >= 6) return {lbl:'🔥 HIT',     col:'#4ade80', bg:'rgba(74,222,128,.11)',  border:'rgba(74,222,128,.3)',  score:total, delta};
-  if(total >= 4) return {lbl:'LEAN HIT',   col:'#34d399', bg:'rgba(52,211,153,.07)',  border:'rgba(52,211,153,.2)',  score:total, delta};
-  if(total <= 2) return {lbl:'NO HIT',     col:'#f87171', bg:'rgba(248,113,113,.11)', border:'rgba(248,113,113,.3)', score:total, delta};
+  if(total >= 6) return {lbl:'🔥 STRONG',  col:'#4ade80', bg:'rgba(74,222,128,.11)',  border:'rgba(74,222,128,.3)',  score:total, delta};
+  if(total >= 4) return {lbl:'LEAN',       col:'#34d399', bg:'rgba(52,211,153,.07)',  border:'rgba(52,211,153,.2)',  score:total, delta};
+  if(total <= 2) return {lbl:'AVOID',      col:'#f87171', bg:'rgba(248,113,113,.11)', border:'rgba(248,113,113,.3)', score:total, delta};
   return                {lbl:'NEUTRAL',    col:'var(--sage)', bg:'rgba(255,255,255,.03)', border:'var(--line)', score:total, delta};
 }
 
 function _isCardCollapsed(id){ try{ return localStorage.getItem('card_collapsed_'+id)==='1'; }catch(e){ return false; } }
 
-// ── Compact mode: a replica of the old Slate tab's design — offense grade bar,
-// top batters, full pitcher badge row, lean footer with post-game eval.
-function renderScoresCompact() {
-  const el = document.getElementById('scores-grid');
-  el.classList.add('compact-grid');
-  if(!legs.length) {
-    el.innerHTML = '<div class="card"><div class="empty">No slate loaded.</div></div>';
-    return;
-  }
-
-  const gameMap = new Map();
-  legs.forEach(l => {
-    const key = l.matchup || 'Unknown';
-    if(!gameMap.has(key)) gameMap.set(key, []);
-    gameMap.get(key).push(l);
-  });
-
-  const games = [...gameMap.entries()].filter(([,batters]) => {
-    const gs = batters[0]?.gameState || '';
-    if(scoresLiveOnly) return isLive(gs);
-    if(scoresUpcoming) return !isLive(gs) && !isFinal(gs);
-    return true;
-  }).sort((a,b) => {
-    if(scoresSort === 'rating') {
-      // rating = average lean score per game (offScore + pitScore, higher = better hit game)
-      function gameScore(batters) {
-        const offGradeLocal = avg => avg>=0.68?'A':avg>=0.63?'B':avg>=0.58?'C':avg>=0.53?'D':'F';
-        const pitchGrade = batters[0]?.pGrade || 'C';
-        const avgP = batters.reduce((s,l)=>s+(l.p||0),0) / (batters.length||1);
-        const og = offGradeLocal(avgP);
-        const offScore  = {A:4,B:3,C:2,D:1,F:0}[og]      ?? 2;
-        const pitScore  = {A:0,B:1,C:2,D:3,F:4}[pitchGrade] ?? 2;
-        return offScore + pitScore;
-      }
-      return gameScore(b[1]) - gameScore(a[1]);
-    }
-    // default: sort by start time — parse 12h "7:10 PM" to comparable minutes
-    function timeVal(t){
-      if(!t) return 9999;
-      const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
-      if(!m) return 9999;
-      let h=parseInt(m[1]), min=parseInt(m[2]), pm=m[3].toUpperCase()==='PM';
-      if(pm && h!==12) h+=12;
-      if(!pm && h===12) h=0;
-      return h*60+min;
-    }
-    return timeVal(a[1][0]?.startTime) - timeVal(b[1][0]?.startTime);
-  });
-
-  el.innerHTML = games.map(([matchup, batters]) => {
-    const [awayTeam, homeTeam] = matchup.split(' @ ').map(s => s.trim());
-    const awaySide = batters.filter(l => l.team === awayTeam).sort((a,b)=>(a.slot||9)-(b.slot||9));
-    const homeSide = batters.filter(l => l.team === homeTeam).sort((a,b)=>(a.slot||9)-(b.slot||9));
-    const startTime  = batters[0]?.startTime || '';
-    const gameState  = batters[0]?.gameState  || '';
-    const parkFactor = batters[0]?.park_factor || null;
-    const isLiveGame = gameState.toLowerCase().includes('progress');
-    const isFinalGame= gameState.toLowerCase().includes('final');
-
-    function teamStats(side) {
-      if(!side.length) return null;
-      const avg = side.reduce((s,l)=>s+(l.p||0),0)/side.length;
-      const top3 = [...side].sort((a,b)=>(b.p||0)-(a.p||0)).slice(0,3);
-      return {
-        avg, grade: offGrade(avg),
-        hot:  side.filter(l=>streakHits(l)>=7).length,
-        cold: side.filter(l=>trailMiss(l)>=3).length,
-        pitcher:      side[0]?.pitcher      || '',
-        pitcherId:    side[0]?.pitcherId    || '',
-        gamePk:       side[0]?.gamePk       || '',
-        pitcherGrade: side[0]?.pGrade       || '',
-        pitcherIsRookie: side[0]?.pIsRookie || false,
-        pitcherHand:  side[0]?.pitcherHand  || '',
-        pitcherRating:side[0]?.pRating      || null,
-        pitcherNGames:side[0]?.pNGames      || 0,
-        pitcherDaysRest:side[0]?.pDaysRest  || 0,
-        pitcherHH:    side[0]?.pHH          || null,
-        pitcherCsw:   side[0]?.pCsw         || null,
-        pitcherKbb:   side[0]?.pKbb         || null,
-        estLineup:    side.some(l=>l.lineupEst),
-        top3, side,
-      };
-    }
-
-    function teamBlock(stats, team, isHome) {
-      if(!stats) return `<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px;color:var(--sage);font-size:11px;font-family:var(--mono)">no lineup</div>`;
-      const g      = stats.grade;
-      const gc     = gradeCol(g);
-      const pct    = Math.round(stats.avg * 100);
-      const barW   = Math.round(stats.avg * 100);
-      const barCol = stats.avg>=0.65?'var(--good)':stats.avg>=0.58?'var(--amber)':'var(--bad)';
-      const pgCol  = gradeCol(stats.pitcherGrade || 'C');
-      const pgBg   = gradeBg(stats.pitcherGrade  || 'C');
-      const pitcherName = stats.pitcher ? stats.pitcher.split(' ').slice(-1)[0] : '';
-      const handTag = stats.pitcherHand ? `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${stats.pitcherHand}HP</span>` : '';
-      const muLocal = muLabel(g, stats.pitcherGrade);
-      const top3html = stats.top3.map(l => {
-        const hit = l.hasHit;
-        const nameStyle = hit ? 'text-decoration:line-through;opacity:.4' : 'opacity:.75';
-        const hitCheck = hit ? `<span style="font-family:var(--mono);font-size:9px;color:var(--good);flex:none">✓</span>` : '';
-        return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0${hit?';opacity:.55':''}">
-
-          ${l.batterId?`<a href="#" onclick="event.preventDefault();goToBatter(${l.batterId})" style="font-family:var(--mono);font-size:10px;color:var(--chalk);${nameStyle};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-decoration-line:${hit?'line-through':'none'};border-bottom:${hit?'none':'1px solid transparent'}" ${hit?'':' onmouseover="this.style.borderBottomColor=\'var(--amber)\';this.style.opacity=\'1\'" onmouseout="this.style.borderBottomColor=\'transparent\';this.style.opacity=\'.75\'"'}>${l.slot?l.slot+'. ':''}${esc(l.name.split(' ').slice(-1)[0])}</a>`:`<span style="font-family:var(--mono);font-size:10px;color:var(--chalk);${nameStyle};text-decoration-line:${hit?'line-through':'none'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${l.slot?l.slot+'. ':''}${esc(l.name.split(' ').slice(-1)[0])}</span>`}
-          ${hitCheck}
-          <span style="font-family:var(--mono);font-size:10px;color:${dotCol(l.p)};flex:none">${(l.p*100).toFixed(0)}</span>
-        </div>`;
-      }).join('');
-      const streakBadges = '';
-
-      const colBg = muLocal.lbl.includes('🔥 HIT') ? 'rgba(178,208,126,.09)'
-                  : muLocal.lbl.includes('LEAN')    ? 'linear-gradient(180deg,rgba(178,208,126,.07) 0%,transparent 100%)'
-                  : muLocal.lbl.includes('NO HIT')  ? 'rgba(218,110,81,.12)'
-                  : 'rgba(120,120,130,.04)';
-      const colBgStyle = colBg.startsWith('linear') ? `background:${colBg}` : `background:${colBg}`;
-
-      return `<div style="flex:1;min-width:0;padding:14px 14px 12px;display:flex;flex-direction:column;gap:10px;${colBgStyle}">
-        <!-- team header -->
-        <div style="display:flex;align-items:center;gap:8px">
-          ${stats.estLineup?`<span title="Estimated lineup — not yet confirmed" style="font-family:var(--mono);font-size:8px;color:var(--amber);border:1px solid rgba(235,178,105,.35);border-radius:3px;padding:1px 5px">⚠ EST</span>`:''}
-          ${teamUrl(team)?`<a href="${teamUrl(team)}" target="_blank" rel="noopener" style="font-family:var(--disp);font-size:15px;font-weight:400;color:var(--chalk);letter-spacing:.5px;text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(team)}</a>`:`<span style="font-family:var(--disp);font-size:15px;font-weight:400;color:var(--chalk);letter-spacing:.5px">${esc(team)}</span>`}
-          ${(window._teamBadge&&window._teamBadge[team]) ? `<span onclick="event.stopPropagation();filterByTeam('${team}')" style="cursor:pointer;border-radius:3px;${filterTeam===team?'outline:1px solid var(--amber)':''}" title="Click to filter All Batters to ${esc(team)}">${window._teamBadge[team]}</span>` : ''}
-          <span style="flex:1"></span>
-          <span style="font-family:var(--disp);font-size:15px;font-weight:400;color:${gc};line-height:1;text-shadow:0 0 12px ${gc}55">${pct}</span>
-        </div>
-        <!-- offense bar -->
-        <div>
-          <div style="height:3px;border-radius:2px;background:var(--field);overflow:hidden">
-            <div style="height:100%;width:${barW}%;background:${barCol};border-radius:2px;box-shadow:0 0 8px ${barCol}66;transition:width .4s"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;margin-top:4px">
-            <span style="font-family:var(--mono);font-size:9px;color:var(--sage)">avg P(hit)</span>
-            <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:${gc}">${g}</span>
-          </div>
-        </div>
-        <!-- top 3 -->
-        <div style="display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line);padding-top:8px">${top3html}</div>
-        <!-- pitcher + streaks -->
-        <div style="border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px">
-          ${pitcherName ? `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span style="font-family:var(--mono);font-size:9px;color:var(--sage)">vs</span>
-            ${stats.pitcherGrade?`<span style="font-family:var(--mono);font-size:9px;font-weight:600;border-radius:3px;padding:1px 5px;white-space:nowrap;flex:none;color:${pgCol};background:${pgBg};border:1px solid ${pgCol}55">${stats.pitcherGrade}</span>`:''}
-            <a href="${pitcherUrl(stats.pitcher)}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:10px;color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(pitcherName)}</a>
-            ${handTag}
-            <span style="flex:1"></span>
-            ${streakBadges}
-          </div>
-          <div style="display:flex;gap:5px;flex-wrap:wrap">
-            ${rookieBadge(stats.pitcherIsRookie)}
-            ${stats.pitcherNGames < 8 ? `<span title="Small sample — only ${stats.pitcherNGames} starts" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(235,178,105,.1);border:1px solid rgba(235,178,105,.3);border-radius:3px;padding:1px 5px">⚠ ${stats.pitcherNGames}G</span>` : ''}
-            ${stats.pitcherDaysRest >= 15 ? `<span title="${stats.pitcherDaysRest} days since last appearance" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(235,178,105,.1);border:1px solid rgba(235,178,105,.3);border-radius:3px;padding:1px 5px">⚠ ${stats.pitcherDaysRest}D</span>` : ''}
-            ${stats.pitcherHH != null && stats.pitcherHH >= 0.43 ? `<span title="High hard-hit rate allowed: ${(stats.pitcherHH*100).toFixed(0)}%" style="font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(231,150,110,.1);border:1px solid rgba(231,150,110,.3);border-radius:3px;padding:1px 5px">HH</span>` : ''}
-            ${stats.pitcherKbb != null && stats.pitcherKbb < 2.0 ? `<span title="Low K/BB ratio: ${stats.pitcherKbb.toFixed(1)}" style="font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(231,150,110,.1);border:1px solid rgba(231,150,110,.3);border-radius:3px;padding:1px 5px">KB</span>` : ''}
-            ${(()=>{
-              if(stats.pitcherCsw == null) return '';
-              const csw = stats.pitcherCsw * 100;
-              const [col, bg, border, label] =
-                csw >= 35 ? ['#a78bfa','rgba(167,139,250,.12)','rgba(167,139,250,.35)','DOMINANT'] :
-                csw >= 30 ? ['#67e8f9','rgba(103,232,249,.12)','rgba(103,232,249,.35)','ELITE'] :
-                csw >= 27 ? ['var(--good)','rgba(178,208,126,.1)','rgba(178,208,126,.3)','AVG'] :
-                            ['var(--bad)','rgba(231,150,110,.1)','rgba(231,150,110,.3)','WEAK'];
-              if(label==='AVG') return ''; // only flag standout (better/worse) CSW, not the middle of the pack
-              return `<span title="CSW ${csw.toFixed(0)}% — ${label}" style="font-family:var(--mono);font-size:9px;color:${col};background:${bg};border:1px solid ${border};border-radius:3px;padding:1px 5px">CSW</span>`;
-            })()}
-          </div>` : ''}
-        </div>
-      </div>`;
-    }
-
-    // game-level mu score for glow
-    const awayS = teamStats(awaySide);
-    const homeS = teamStats(homeSide);
-    const combinedAvg = ((awayS?.avg||0) + (homeS?.avg||0)) / 2;
-    const glowCol = combinedAvg >= 0.65 ? 'rgba(178,208,126,.12)' : combinedAvg >= 0.58 ? 'rgba(235,178,105,.07)' : 'rgba(231,150,110,.07)';
-    const accentCol = combinedAvg >= 0.65 ? 'var(--good)' : combinedAvg >= 0.58 ? 'var(--amber)' : 'var(--bad)';
-
-    const awayMu = awayS ? muLabel(awayS.grade, awayS.pitcherGrade) : null;
-    const homeMu = homeS ? muLabel(homeS.grade, homeS.pitcherGrade) : null;
-
-    const scoreData = (window._liveScores||new Map()).get(matchup);
-    const _fmtScore = (as, hs, away, home) => {
-      const ac=as>hs?'var(--good)':'var(--sage)', hc=hs>as?'var(--good)':'var(--sage)';
-      return `<span style="color:${ac}">${as}</span> ${esc(away)} @ ${esc(home)} <span style="color:${hc}">${hs}</span>`;
-    };
-    const scoreTag = scoreData && (isLiveGame || isFinalGame) && scoreData.as != null
-      ? _fmtScore(scoreData.as, scoreData.hs, awayTeam, homeTeam)
-      : '';
-    const stateTag = isLiveGame
-      ? `<span class="gmtag gmtag-live" style="animation:livepulse 1.2s ease-in-out infinite"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e05c5c;vertical-align:middle;margin-right:4px"></span>LIVE</span>`
-      : isFinalGame
-        ? `<span class="gmtag gmtag-final">Final</span>`
-        : startTime ? `<span style="font-family:var(--mono);font-size:10px;color:var(--chalk);opacity:.7">${esc(startTime)}</span>` : '';
-
-    function muBg(mu) { return mu ? mu.bg : 'transparent'; }
-    function muBorder(mu) { return mu ? mu.border : 'var(--line)'; }
-    function muChip(mu) {
-      if(!mu) return '';
-      const sign = mu.delta >= 0 ? '+' : '';
-      const deltaCol = mu.delta >= 2 ? 'var(--good)' : mu.delta <= -2 ? 'var(--bad)' : 'var(--sage)';
-      return `<div style="display:flex;align-items:center;justify-content:center;gap:6px">
-        <span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;color:${mu.col}">${mu.lbl}</span>
-        <span style="font-family:var(--mono);font-size:11px;font-weight:900;color:${deltaCol};background:${deltaCol === 'var(--sage)' ? 'rgba(120,120,130,.1)' : deltaCol === 'var(--good)' ? 'rgba(178,208,126,.12)' : 'rgba(218,110,81,.12)'};border:1px solid ${deltaCol}33;border-radius:5px;padding:0 6px;line-height:18px">${sign}${mu.delta}</span>
-        <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${mu.score}/8</span>
-      </div>`;
-    }
-    const muRow = (awayMu||homeMu) ? `
-      <div style="display:flex;border-top:1px solid var(--line)">
-        <div style="flex:1;padding:7px 14px;text-align:center;background:${muBg(awayMu)};border-left:3px solid ${muBorder(awayMu)}">${muChip(awayMu)}</div>
-        <div style="width:1px;background:var(--line)"></div>
-        <div style="flex:1;padding:7px 14px;text-align:center;background:${muBg(homeMu)};border-right:3px solid ${muBorder(homeMu)}">${muChip(homeMu)}</div>
-      </div>` : '';
-
-    function evalSide(side, mu) {
-      if(!mu) return '';
-      const settled = side.filter(l => isFinal(l.gameState));
-      if(!settled.length) return '';
-      const hits = settled.filter(l => l.hasHit).length;
-      const hr = hits / settled.length;
-      const hrPct = Math.round(hr * 100);
-      const lbl = mu.lbl.replace('🔥 ','');
-      const correct = (lbl==='HIT' && hr>=0.65)||(lbl==='LEAN HIT' && hr>=0.55)||
-                      (lbl==='NEUTRAL' && hr>=0.45 && hr<0.65)||(lbl==='NO HIT' && hr<0.50);
-      const icon = correct ? '✓' : '✗';
-      const col  = correct ? 'var(--good)' : '#f87171';
-      return `<div style="font-family:var(--mono);font-size:9px;display:flex;align-items:center;justify-content:center;gap:5px;padding:5px 0">
-        <span style="color:${col};font-weight:700;font-size:11px">${icon}</span>
-        <span style="color:var(--chalk)">${hits}/${settled.length} got hits</span>
-        <span style="color:var(--sage)">(${hrPct}%)</span>
-      </div>`;
-    }
-    // footer merged into one horizontal band — lean chip left of the eval
-    // result on each side, instead of two stacked full-width rows
-    const footerRow = (awayMu||homeMu) ? `
-      <div style="display:flex;border-top:1px solid var(--line)">
-        <div class="gm-footer-cell-stack" style="flex:1;padding:7px 14px;background:${muBg(awayMu)};border-left:3px solid ${muBorder(awayMu)}">${muChip(awayMu)}${isFinalGame?evalSide(awaySide,awayMu):''}</div>
-        <div style="width:1px;background:var(--line)"></div>
-        <div class="gm-footer-cell-stack" style="flex:1;padding:7px 14px;background:${muBg(homeMu)};border-right:3px solid ${muBorder(homeMu)}">${muChip(homeMu)}${isFinalGame?evalSide(homeSide,homeMu):''}</div>
-      </div>` : '';
-
-    const gamePk = batters[0]?.gamePk || '';
-    const cardId = `scoregame-${gamePk}`;
-    const storyline = gameStoryline(awaySide, homeSide, parkFactor);
-    const liveMatchupHtml = isLiveGame ? liveMatchupLine(scoreData) : '';
-
-    return `<div class="card" id="${cardId}" style="border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--card);box-shadow:0 0 0 0 transparent,inset 0 0 40px ${glowCol}">
-      <div class="gm-header">
-        <div style="padding:8px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;background:var(--raised)">
-          <div style="width:3px;height:14px;border-radius:2px;background:${accentCol};box-shadow:0 0 8px ${accentCol}88;flex:none"></div>
-          <a id="slscl-${gamePk}" href="${gameUrl(batters[0]?.gameDate,gamePk,matchup,batters[0]?.gameState)}" target="_blank" rel="noopener" style="font-family:var(--disp);font-size:12px;font-weight:400;color:var(--chalk);letter-spacing:.3px;text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='rgba(255,255,255,.3)'" onmouseout="this.style.borderBottomColor='transparent'">${scoreTag || esc(matchup)}</a>
-          <span style="flex:1"></span>
-          ${liveMatchupHtml}
-          ${isLiveGame ? '' : stateTag}
-        </div>
-        ${storyline?`<div style="padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);text-align:center"><span title="${esc(storyline.title)}" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:${storyline.color}">✦ ${storyline.label}</span></div>`:''}
-      </div>
-      <div style="display:flex">
-        ${teamBlock(awayS, awayTeam, false)}
-        <div style="width:1px;background:var(--line);flex:none"></div>
-        ${teamBlock(homeS, homeTeam, true)}
-      </div>
-      ${footerRow}
-    </div>`;
-  }).join('');
-  // lazy-fetch final scores for historical slates
-  games.forEach(([matchup, batters]) => {
-    const gamePk = batters[0]?.gamePk;
-    if(!gamePk) return;
-    const linkEl = document.getElementById(`slscl-${gamePk}`);
-    if(!linkEl || linkEl.innerHTML !== esc(matchup)) return; // already has score
-    const parts = matchup.split(' @ ');
-    fetchSlateScore(gamePk, parts[0]||'', parts[1]||'', linkEl);
-  });
-}
-
 // ── scores tab — live boxscore per game, same lean dynamics as Slate ──────────
 function renderScores() {
   const el = document.getElementById('scores-grid');
   if(!el) return;
-  el.classList.remove('compact-grid');
   if(!legs.length) {
-    el.innerHTML = '<div class="card"><div class="empty">Load a CSV on the Tonight tab first.</div></div>';
+    el.innerHTML = '<div class="card"><div class="empty">Load a CSV first.</div></div>';
     return;
   }
-  if(scoresMode === 'compact') return renderScoresCompact();
-  if(scoresMode === 'all') return renderScoresAllBatters();
-  // 'normal' and 'expanded' share the body below — 'expanded' additionally
-  // auto-shows each batter's full detail block inline (more info, same layout)
 
   // pending bet legs -> Set of "gamePk|batterId" so active bets can be highlighted
   const betKeys = new Set();
@@ -3807,20 +3536,24 @@ function renderScores() {
     const awayLeads = as!=null && hs!=null && as > hs, homeLeads = as!=null && hs!=null && hs > as;
     const tvUrl = (isLiveGame && gamePk) ? `https://www.mlb.com/tv/g${gamePk}` : '';
 
-    let midHtml;
+    let midCompact, midWide;
     if(isLiveGame && ls) {
       const half = ls.half==='Top' ? '▲' : '▼';
-      midHtml = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+      midCompact = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
         <span style="font-family:var(--mono);font-size:12px;color:var(--amber)">${half}${esc(ls.ordinal||'')}</span>
         ${_baseDiamond(ls, 22)}
         ${_outDots(ls.outs||0)}
-        ${liveMatchupLine(score)}
       </div>`;
     } else if(isFinalGame) {
-      midHtml = `<span style="font-family:var(--disp);font-size:12px;letter-spacing:.5px;color:var(--sage);opacity:.7">FINAL</span>`;
+      midCompact = `<span style="font-family:var(--disp);font-size:12px;letter-spacing:.5px;color:var(--sage);opacity:.7">FINAL</span>`;
     } else {
-      midHtml = `<span style="font-family:var(--mono);font-size:11px;color:var(--sage)">${esc(startTime)}</span>`;
+      midCompact = `<span style="font-family:var(--mono);font-size:11px;color:var(--sage)">${esc(startTime)}</span>`;
     }
+    // wide breakpoints: a real inning-by-inning line score grid instead of
+    // the compact diamond+outs indicator, for live/final games only
+    const grid = (isLiveGame||isFinalGame) ? lineScoreGrid(ls, awayTeam, homeTeam) : '';
+    midWide = grid || midCompact;
+    const midHtml = `<div class="gm-mid-compact">${midCompact}</div><div class="gm-mid-wide">${midWide}</div>`;
 
     // per-side HIT/LEAN/NO HIT label — same dynamics as Slate, computed per
     // side (each side's own offense grade vs the pitcher IT is facing, via
@@ -3848,11 +3581,11 @@ function renderScores() {
       const pDaysRest = side[0]?.pDaysRest || 0;
       const pHH = side[0]?.pHH, pKbb = side[0]?.pKbb, pCsw = side[0]?.pCsw;
 
-      // same background color coding Slate uses for HIT/LEAN HIT/NO HIT/NEUTRAL
+      // same background color coding used for STRONG/LEAN/AVOID/NEUTRAL
       const colBg = !mu ? 'rgba(120,120,130,.04)'
-                  : mu.lbl.includes('🔥 HIT') ? 'rgba(178,208,126,.09)'
+                  : mu.lbl.includes('STRONG') ? 'rgba(178,208,126,.09)'
                   : mu.lbl.includes('LEAN')   ? 'linear-gradient(180deg,rgba(178,208,126,.07) 0%,transparent 100%)'
-                  : mu.lbl.includes('NO HIT') ? 'rgba(218,110,81,.12)'
+                  : mu.lbl.includes('AVOID')  ? 'rgba(218,110,81,.12)'
                   : 'rgba(120,120,130,.04)';
 
       const headerRow = `<div style="display:flex;align-items:center;gap:8px;padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)">
@@ -3860,7 +3593,6 @@ function renderScores() {
         <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:28px;text-align:right;flex:none">Scr</span>
         <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:14px;flex:none">#</span>
         <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);flex:1">Name</span>
-        <span class="scores-extra-col" style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);flex:none">Edge</span>
         <span class="scores-hab-col" style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:34px;text-align:right;flex:none">${(isLiveGame||isFinalGame)?'H-AB':''}</span>
       </div>`;
 
@@ -3877,20 +3609,18 @@ function renderScores() {
         }
         const zebraBg = idx%2===1 ? 'rgba(255,255,255,.015)' : 'transparent';
         const restBg = isBet ? 'rgba(235,178,105,.09)' : zebraBg;
-        const showDetail = scoresMode === 'expanded'; // Expanded = Normal + more info, shown inline for every row
+        const noHit = isFinalGame && !hit;
         const clickAttr = l.batterId ? `onclick="goToBatter('${l.batterId}')" style="cursor:pointer;` : `style="`;
         return `<div ${clickAttr}display:flex;align-items:center;gap:8px;padding:4px 10px;background:${restBg};border-left:2px solid ${isBet?'var(--amber)':'transparent'};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='${restBg}'">
           <span style="flex:none;width:12px;text-align:center" title="Trending vs. model expectation">${performanceArrow(l)}</span>
           <span style="font-family:var(--mono);font-size:10px;color:${nameCol};flex:none;width:28px;text-align:right">${Math.round((l.p||0)*100)}</span>
           <span style="font-family:var(--mono);font-size:9px;color:var(--sage);flex:none;width:14px">${l.slot||''}</span>
           <span style="font-family:var(--mono);font-size:11px;color:${nameCol};${hit?'text-decoration:line-through;opacity:.45':''};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
-          ${hit?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:9px;color:var(--good);flex:none">✓</span>`:''}
+          ${noHit?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:8px;color:var(--bad);opacity:.75;flex:none">NO HIT</span>`:''}
           ${isBet?`<span class="scores-bet-col" title="In your bet slip" style="font-size:10px;flex:none">🎫</span>`:''}
-          <span class="scores-extra-col" style="display:flex;align-items:center;gap:4px;flex:none">${kalshiDeltaChip(l)}</span>
           <span class="scores-hab-col" style="font-family:var(--mono);font-size:10px;color:${boxCol};flex:none;width:34px;text-align:right">${(isLiveGame||isFinalGame)?boxTxt:''}</span>
           ${(!l.hasHit&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}
-        </div>
-        ${showDetail?battingDetailBlock(l):''}`;
+        </div>`;
       }).join('');
 
       return `<div style="flex:1;min-width:0;${colBg.startsWith('linear')?`background:${colBg}`:`background:${colBg}`}">
@@ -3966,8 +3696,8 @@ function renderScores() {
       const hr = hits / settled.length;
       const hrPct = Math.round(hr * 100);
       const lbl = mu.lbl.replace('🔥 ','');
-      const correct = (lbl==='HIT' && hr>=0.65)||(lbl==='LEAN HIT' && hr>=0.55)||
-                      (lbl==='NEUTRAL' && hr>=0.45 && hr<0.65)||(lbl==='NO HIT' && hr<0.50);
+      const correct = (lbl==='STRONG' && hr>=0.65)||(lbl==='LEAN' && hr>=0.55)||
+                      (lbl==='NEUTRAL' && hr>=0.45 && hr<0.65)||(lbl==='AVOID' && hr<0.50);
       const icon = correct ? '✓' : '✗';
       const col  = correct ? 'var(--good)' : '#f87171';
       return `<div style="font-family:var(--mono);font-size:9px;display:flex;align-items:center;gap:5px">
@@ -4015,12 +3745,10 @@ function renderScores() {
       </div>
     </div>`;
 
-    const _park = parkInfo(homeTeam);
+    // live pitcher-vs-batter readout replaces Gameday/park/MLB.TV links —
+    // only has content while the game is actually live
     const fieldInfo = `<div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;padding:8px 10px;min-width:0;flex:1">
-      <a href="${gameUrl(batters[0]?.gameDate,gamePk,matchup,gameState)}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:10px;color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">Gameday ↗</a>
-      ${_park?`<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.8">${esc(_park.name)}${_park.roof?' 🏟':' ⛳'}</span>`:''}
-      ${parkFactor!=null?`<span style="font-family:var(--mono);font-size:9px;color:${parkFactor>=1.06?'var(--amber)':parkFactor<=0.94?'var(--bad)':'var(--sage)'}">PF ${Number(parkFactor).toFixed(2)}</span>`:''}
-      ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:9px;color:#e05c5c;text-decoration:none"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#e05c5c;vertical-align:middle;margin-right:3px"></span>MLB.TV ↗</a>`:''}
+      ${isLiveGame ? liveMatchupLine(score, {big:true}) : ''}
     </div>`;
 
     const storyline = gameStoryline(awaySide, homeSide, parkFactor);
@@ -4029,10 +3757,10 @@ function renderScores() {
     return `<div class="card gamecard-collapsible${collapsed?' collapsed':''}" id="${cardId}" style="padding:0;overflow:hidden">
       <div class="gm-header" onclick="if(!event.target.closest('a'))toggleCard('${cardId}')">
         ${storyline?`<div style="padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);text-align:center"><span title="${esc(storyline.title)}" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:${storyline.color}">✦ ${storyline.label}</span></div>`:''}
-        <div style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
+        <div class="gm-scoreboard" style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
           ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" title="Watch on MLB.TV" style="text-decoration:none;color:inherit;display:flex">${scoreBlock}</a>`:scoreBlock}
           <div style="width:1px;background:var(--line)"></div>
-          <div style="display:flex;align-items:center;justify-content:center;padding:8px 8px;min-width:0;flex:none">${midHtml}</div>
+          <div class="gm-mid-wrap" style="display:flex;align-items:center;justify-content:center;padding:8px 8px;min-width:0;flex:none">${midHtml}</div>
           <div style="width:1px;background:var(--line)"></div>
           ${fieldInfo}
         </div>
@@ -4054,15 +3782,21 @@ function renderScores() {
 
 // ── All Batters mode: flat, filterable table of every batter today — no per-game grouping,
 // reuses the same slotVisible() filter conditions plus the over/under team filter
+// ── All Batters: a real spreadsheet — every stat field as its own column,
+// no chips/badges/gimmicks. Fixed sort by score descending.
 function renderScoresAllBatters() {
-  const el = document.getElementById('scores-grid');
-  const betKeys = new Set();
-  (savedBets||[]).forEach(b => {
-    if(b.status !== 'pending') return;
-    (b.legs||[]).forEach(bl => {
-      if(bl.gamePk && bl.batterId) betKeys.add(String(bl.gamePk)+'|'+String(bl.batterId));
-    });
-  });
+  const el = document.getElementById('allbatters-grid');
+  if(!el) return;
+  if(!legs.length) {
+    el.innerHTML = '<div class="card"><div class="empty">Load a CSV first.</div></div>';
+    return;
+  }
+  const s2 = document.getElementById('exp-game-select');
+  if(s2 && !s2.options.length){
+    const games = [...new Set(legs.map(l => l.matchup).filter(Boolean))].sort();
+    s2.innerHTML = '<option value="">All games</option>' + games.map(g => `<option value="${g}">${g}</option>`).join('');
+    s2.value = filterGame;
+  }
   const rows = legs
     .filter(l => slotVisible(l))
     .filter(l => !scoresOuFilter || (window._teamOu && window._teamOu[l.team]===scoresOuFilter))
@@ -4071,35 +3805,48 @@ function renderScoresAllBatters() {
     el.innerHTML = '<div class="card"><div class="empty">No batters match this filter.</div></div>';
     return;
   }
-  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden">
-    <div style="display:flex;align-items:center;gap:8px;padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)">
-      <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:12px;flex:none"></span>
-      <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:28px;text-align:right;flex:none">Scr</span>
-      <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:14px;flex:none">#</span>
-      <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:44px;flex:none">Team</span>
-      <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);flex:1">Name</span>
-      <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);flex:none">vs Pitcher</span>
-      <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);flex:none">Edge</span>
-    </div>
-    ${rows.map((l,idx) => {
-      const isBet = betKeys.has(String(l.gamePk||'')+'|'+String(l.batterId||''));
-      const nameCol = dotCol(l.p||0);
-      const zebraBg = idx%2===1 ? 'rgba(255,255,255,.015)' : 'transparent';
-      const restBg = isBet ? 'rgba(235,178,105,.09)' : zebraBg;
-      const pitcherName = l.pitcher ? l.pitcher.split(' ').slice(-1)[0] : '';
-      const clickAttr = l.batterId ? `onclick="goToBatter('${l.batterId}')" style="cursor:pointer;` : `style="`;
-      return `<div ${clickAttr}display:flex;align-items:center;gap:8px;padding:4px 10px;background:${restBg};border-left:2px solid ${isBet?'var(--amber)':'transparent'};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='${restBg}'">
-        <span style="flex:none;width:12px;text-align:center" title="Trending vs. model expectation">${performanceArrow(l)}</span>
-        <span style="font-family:var(--mono);font-size:10px;color:${nameCol};flex:none;width:28px;text-align:right">${Math.round((l.p||0)*100)}</span>
-        <span style="font-family:var(--mono);font-size:9px;color:var(--sage);flex:none;width:14px">${l.slot||''}</span>
-        <span class="teamtag" style="${teamTagStyle(l.team)};flex:none;width:44px;text-align:center">${esc(l.team)}</span>
-        <span style="font-family:var(--mono);font-size:11px;color:${nameCol};${l.hasHit?'text-decoration:line-through;opacity:.45':''};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
-        ${isBet?`<span title="In your bet slip" style="font-size:10px;flex:none">🎫</span>`:''}
-        <span style="font-family:var(--mono);font-size:10px;color:var(--sage);flex:none;white-space:nowrap">${esc(pitcherName)}</span>
-        <span style="display:flex;align-items:center;gap:4px;flex:none">${kalshiDeltaChip(l)}</span>
-        ${(!l.hasHit&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}
-      </div>`;
-    }).join('')}
+  const num = (v,d) => v!=null && !isNaN(v) ? Number(v).toFixed(d??3).replace(/^0\./,'.').replace(/^-0\./,'-.') : '—';
+  const pct = (v,d) => v!=null && !isNaN(v) ? (Number(v)*100).toFixed(d??0) : '—';
+  const cols = [
+    ['Scr',    l => Math.round((l.p||0)*100),                          'right'],
+    ['#',      l => l.slot||'',                                        'center'],
+    ['Team',   l => esc(l.team||''),                                   'center'],
+    ['Name',   null,                                                   'left'], // special-cased below
+    ['Pitcher',l => esc(l.pitcher ? l.pitcher.split(' ').slice(-1)[0] : ''), 'left'],
+    ['P.Grd',  l => l.pGrade||'—',                                     'center'],
+    ['P.CSW',  l => pct(l.pCsw),                                       'right'],
+    ['P.K/BB', l => num(l.pKbb,2),                                     'right'],
+    ['P.HH%',  l => pct(l.pHH),                                        'right'],
+    ['P.Rest', l => l.pDaysRest??'—',                                  'right'],
+    ['P.Rk',   l => l.pIsRookie?'Y':'',                                'center'],
+    ['AVG',    l => num(l.bHitRate),                                   'right'],
+    ['xBA',    l => num(l.bXba),                                       'right'],
+    ['HH%',    l => pct(l.bHH),                                        'right'],
+    ['BABIP',  l => num(l.bBabip),                                     'right'],
+    ['vsL',    l => num(l.vsL),                                        'right'],
+    ['vsR',    l => num(l.vsR),                                        'right'],
+    ['Split',  l => l.splitDiff!=null ? (l.splitDiff>=0?'+':'')+pct(l.splitDiff,1) : '—', 'right'],
+    ['SP',     l => num(l.bHitRateVsSp),                                'right'],
+    ['RP',     l => num(l.bHitRateVsRp),                                'right'],
+    ['BvP',    l => l.bvpAb ? `${num(l.bvpAvg)} (${l.bvpAb})` : '—',    'right'],
+    ['AB/G',   l => l.bAvgAb!=null ? Number(l.bAvgAb).toFixed(1) : '—', 'right'],
+    ['Rest',   l => l.bDaysRest??'—',                                  'right'],
+    ['Rk',     l => l.bIsRookie?'Y':'',                                'center'],
+    ['ParkF',  l => l.parkFactor!=null ? Number(l.parkFactor).toFixed(2) : '—', 'right'],
+  ];
+  const thead = `<tr>${cols.map(([lbl,,align])=>`<th style="text-align:${align}">${lbl}</th>`).join('')}<th></th></tr>`;
+  const tbody = rows.map(l => {
+    const noHit = isFinal(l.gameState) && !l.hasHit;
+    const nameCell = `<td style="text-align:left;cursor:${l.batterId?'pointer':'default'}" ${l.batterId?`onclick="goToBatter('${l.batterId}')"`:''}>
+      <span style="${l.hasHit?'text-decoration:line-through;opacity:.45':''}">${esc(l.name)}</span>
+      ${noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
+    </td>`;
+    const cells = cols.map(([lbl,fn,align]) => lbl==='Name' ? nameCell : `<td style="text-align:${align}">${fn(l)}</td>`).join('');
+    const slipCell = `<td>${(!l.hasHit&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}</td>`;
+    return `<tr>${cells}${slipCell}</tr>`;
+  }).join('');
+  el.innerHTML = `<div class="card" style="overflow-x:auto;padding:0">
+    <table class="allbatters-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>
   </div>`;
 }
 
@@ -4235,8 +3982,16 @@ function populateDateFilter() {
   const sel = document.getElementById('h-date-filter');
   const current = sel.value;
   const dates = [...new Set(historyRows.map(r => r.date))].sort().reverse();
-  sel.innerHTML = '<option value="">All dates</option>' +
-    dates.map(d => `<option value="${d}"${d===current?' selected':''}>${d}</option>`).join('');
+  const opts = dates.map(d => `<option value="${d}">${d}</option>`).join('');
+  sel.innerHTML = '<option value="">All dates</option>' + opts;
+  sel.value = current;
+  const gsel = document.getElementById('global-date-picker');
+  if(gsel){ const gcur = gsel.value; gsel.innerHTML = '<option value="">📅 All dates</option>' + opts; gsel.value = gcur; }
+}
+// tab-bar date picker (next to History) — mirrors into History's own filter and re-renders
+function syncHistoryDate(val){
+  const sel = document.getElementById('h-date-filter');
+  if(sel){ sel.value = val; renderHistory(); }
 }
 
 function updateDebugFab() {
@@ -4276,11 +4031,13 @@ function scrollToScoreGame(gamePk){
     setTimeout(()=>{ el.style.boxShadow = prevShadow; }, 1400);
   };
   const needsTabSwitch = currentTab !== 'scores';
-  const needsModeSwitch = scoresMode === 'all'; // 'all' has no per-game cards to jump to
-  if(needsModeSwitch) setScoresMode('normal');
-  if(needsTabSwitch) switchTab('scores', document.querySelector('.tab'));
-  if(needsTabSwitch || needsModeSwitch) setTimeout(jump, 120);
-  else jump();
+  if(needsTabSwitch) {
+    const scoresBtn = document.querySelector('.tabs .tab[onclick*="\'scores\'"]');
+    switchTab('scores', scoresBtn);
+    setTimeout(jump, 120);
+  } else {
+    jump();
+  }
 }
 function initCollapsibleCards() {
   ['h-daily-card','h-team-card','h-cal-card','h-slot-card'].forEach(id => {
@@ -4660,29 +4417,6 @@ function renderSlotChart() {
   }).catch(()=>{});
 }
 
-function loadSlateDate(date){
-  if(!date) return;
-  const today=new Date().toLocaleDateString('en-CA');
-  window._tickerDate = date === today ? null : date;
-  if(window.refreshTicker) window.refreshTicker();
-  const url = date===today ? '/csv' : '/slate/'+date;
-  fetch(url).then(r=>r.ok?r.text():null).then(text=>{
-    if(!text){alert('No slate found for '+date);return;}
-    const fresh=parseCSV(text);
-    if(fresh.length){
-      _mergeFresh(fresh);
-      updateSavedBadge();
-      toggleImportPanel(false);
-      populateGameDropdown();
-      renderActiveTab();
-      const lbl=document.getElementById('dsLabel');
-      if(lbl) lbl.textContent = date===today ? 'Live slate' : 'Slate: '+date;
-      const gp=document.getElementById('global-date-picker');
-      if(gp) gp.value=date;
-    }
-  }).catch(()=>alert('Failed to load slate for '+date));
-}
-
 // Base diamond + out dots — shared by the ticker and the Scores tab's
 // TV-scoreboard card header. Takes {onFirst,onSecond,onThird} (flat, not
 // nested under .offense) so both callers can pass their own linescore shape.
@@ -4702,8 +4436,9 @@ function _outDots(outs){
 
 // live pitcher + current batter, with real-time box-score stats — shared by
 // Scores' Compact and Normal scoreboard bars
-function liveMatchupLine(score){
+function liveMatchupLine(score, opts){
   if(!score) return '';
+  const big = opts?.big;
   const gpk = score.gamePk;
   const bs = gpk ? _bsCache.get(gpk) : null;
   const pit = score.pitcher, bat = score.batter;
@@ -4717,20 +4452,51 @@ function liveMatchupLine(score){
   const pitchCount = pitStats?.pitches ?? null;
   const pitER = pitStats?.er ?? null;
   const batLine = batStats ? `${batStats.hits??0}-${batStats.atBats??0}` : null;
-  return `<div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px">
-    ${pitName?`<span style="color:var(--chalk)"><span style="color:var(--sage);opacity:.6">P </span>${esc(pitName)}${pitchCount!==null?` <span style="color:var(--sage)">${pitchCount}p</span>`:''}${pitER!==null?` <span style="color:${pitER>0?'var(--bad)':'var(--sage)'}">${pitER}ER</span>`:''}</span>`:''}
+  const fs = big ? '11px' : '9px';
+  const pitNode = pitName ? `<a href="${pitcherUrl(pit.fullName)}" target="_blank" rel="noopener" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">P </span>${esc(pitName)}</a>${pitchCount!==null?` <span style="color:var(--sage)">${pitchCount}p</span>`:''}${pitER!==null?` <span style="color:${pitER>0?'var(--bad)':'var(--sage)'}">${pitER}ER</span>`:''}` : '';
+  const batNode = batName ? `${batId?`<a href="#" onclick="event.preventDefault();goToBatter('${batId}')" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}</a>`:`<span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}`}${batLine?` <span style="color:var(--amber)">${batLine}</span>`:''}` : '';
+  return `<div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:${fs};flex-wrap:wrap;justify-content:${big?'flex-end':'flex-start'}">
+    ${pitNode}
     ${pitName&&batName?'<span style="opacity:.3">vs</span>':''}
-    ${batName?`<span style="color:var(--chalk)"><span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}${batLine?` <span style="color:var(--amber)">${batLine}</span>`:''}</span>`:''}
+    ${batNode}
   </div>`;
 }
+
+// classic inning-by-inning line score grid — wide-breakpoint replacement for
+// the compact diamond+outs indicator, data already free from the linescore hydration
+function lineScoreGrid(ls, awayTeam, homeTeam){
+  if(!ls || !ls.innings || !ls.innings.length) return '';
+  const nInn = Math.max(9, ls.innings.length);
+  const head = Array.from({length:nInn}, (_,i)=>`<th>${i+1}</th>`).join('');
+  const rowCells = (side) => Array.from({length:nInn}, (_,i)=>{
+    const inn = ls.innings[i];
+    const v = inn ? inn[side] : null;
+    return `<td>${v??''}</td>`;
+  }).join('');
+  return `<table class="linescore-grid">
+    <thead><tr><th></th>${head}<th>R</th><th>H</th><th>E</th></tr></thead>
+    <tbody>
+      <tr><td>${esc(awayTeam)}</td>${rowCells('away')}<td>${ls.awayR??''}</td><td>${ls.awayH??''}</td><td>${ls.awayE??''}</td></tr>
+      <tr><td>${esc(homeTeam)}</td>${rowCells('home')}<td>${ls.homeR??''}</td><td>${ls.homeH??''}</td><td>${ls.homeE??''}</td></tr>
+    </tbody>
+  </table>`;
+}
+
+// MLB's live schedule API returns team abbreviations that don't always match
+// the backend pipeline's convention (confirmed via statsapi.mlb.com/api/v1/teams:
+// live API says "AZ" for Arizona, backend/CSV says "ARI") — any matchup-string
+// cache key built from the live API without this alias silently never matches
+// the CSV's l.matchup, so that game's score stays stuck at the "-" placeholder
+// forever even though its gameState (synced separately, by gamePk) updates fine.
+function canonTeamAbbr(abbr){ return abbr==='AZ' ? 'ARI' : abbr; }
 
 // ── mlb live ticker ───────────────────────────────────────────────────────
 (function(){
   let _timer = null;
 
   function fmt(g){
-    const away = g.teams.away.team.abbreviation;
-    const home = g.teams.home.team.abbreviation;
+    const away = canonTeamAbbr(g.teams.away.team.abbreviation);
+    const home = canonTeamAbbr(g.teams.home.team.abbreviation);
     const as = g.teams.away.score ?? null;
     const hs = g.teams.home.score ?? null;
     const state = g.status.abstractGameState;
@@ -4836,7 +4602,7 @@ function liveMatchupLine(score){
       const trackedGamePks = new Set(legs.filter(l=>l.inSlip).map(l=>String(l.gamePk)).filter(Boolean));
       const trackedMatchups = new Set(legs.filter(l=>l.inSlip).map(l=>l.matchup).filter(Boolean));
       function gameIsTracked(g){
-        const away=g.teams.away.team.abbreviation, home=g.teams.home.team.abbreviation;
+        const away=canonTeamAbbr(g.teams.away.team.abbreviation), home=canonTeamAbbr(g.teams.home.team.abbreviation);
         return trackedGamePks.has(String(g.gamePk)) || trackedMatchups.has(`${away} @ ${home}`);
       }
       function gameSortKey(g){
@@ -4861,8 +4627,8 @@ function liveMatchupLine(score){
       // store scores + live linescore data for slate cards
       window._liveScores = new Map();
       games.forEach(g => {
-        const away = g.teams.away.team.abbreviation;
-        const home = g.teams.home.team.abbreviation;
+        const away = canonTeamAbbr(g.teams.away.team.abbreviation);
+        const home = canonTeamAbbr(g.teams.home.team.abbreviation);
         const as = g.teams.away.score ?? null;
         const hs = g.teams.home.score ?? null;
         const state = g.status.abstractGameState;      // 'Live' | 'Preview' | 'Final'
@@ -4903,6 +4669,13 @@ function liveMatchupLine(score){
             onThird:  !!ld.offense?.third,
             awayH: ld.teams?.away?.hits ?? null,
             homeH: ld.teams?.home?.hits ?? null,
+            awayR: ld.teams?.away?.runs ?? null,
+            homeR: ld.teams?.home?.runs ?? null,
+            awayE: ld.teams?.away?.errors ?? null,
+            homeE: ld.teams?.home?.errors ?? null,
+            // full inning-by-inning line score — free from the same hydration
+            // this ticker already fetches, used for the wide-breakpoint boxscore grid
+            innings: (ld.innings||[]).map(i => ({ num: i.num, away: i.away?.runs ?? null, home: i.home?.runs ?? null })),
           });
           const newState = absState === 'final' ? (g.status?.detailedState || 'Final') : absState === 'live' ? 'In Progress' : '';
           if(newState) legs.forEach(l => { if(String(l.gamePk)===gpk) l.gameState=newState; });
@@ -4970,6 +4743,13 @@ function liveMatchupLine(score){
   }
 
   window.refreshTicker = refresh;
+
+  // Backgrounded tabs get their setTimeout chain throttled by the browser,
+  // so a game going live while the tab isn't focused can sit stale well past
+  // the normal 45s cycle — force an immediate catch-up on refocus.
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible') refresh();
+  });
 
   window.tickerToggleDate = function(){
     const now = new Date();
