@@ -412,7 +412,8 @@
   .allbatters-table tbody tr:nth-child(even){background:rgba(255,255,255,.015)}
   .allbatters-table tbody tr:hover{background:rgba(255,255,255,.06)}
   .gm-score-stacked{display:flex}
-  .gm-score-wide{display:none}
+  .gm-score-stacked .teamtag{font-size:14px}
+  .gm-mid-wrap{padding:8px 20px;margin-right:10px}
   .gm-inning-box{display:none}
   .gm-matchup-mid{align-items:flex-end}
   .linescore-grid{border-collapse:collapse;font-family:var(--mono);font-size:10px;color:var(--chalk)}
@@ -420,17 +421,10 @@
   .linescore-grid td{padding:1px 6px;text-align:center}
   .linescore-grid td:first-child{text-align:left;color:var(--sage);padding-right:10px}
   .linescore-grid td:nth-last-child(3){border-left:1px solid var(--line);font-weight:700;color:var(--chalk)}
-  /* top strip (scoreboard bar) spacing/type-size — widened a step earlier than
-     the mid-section content swap below, so 820-900 already reads like the
-     wide layout even though the line score grid doesn't kick in until 900 */
-  @media(min-width:820px){
-    .gm-scoreboard{gap:10px}
-    .gm-scoreboard .teamtag{font-size:14px!important}
-    .gm-mid-wrap{padding:8px 20px!important}
-  }
+  /* left side of the scoreboard bar (diamond block + score block) is now one
+     consistent look at every width — the mid-section content swap (line score
+     grid, matchup alignment) below is the only remaining responsive piece */
   @media(min-width:900px){
-    .gm-score-stacked{display:none}
-    .gm-score-wide{display:flex}
     .gm-inning-box{display:flex!important}
     .gm-matchup-mid{align-items:center}
   }
@@ -573,6 +567,7 @@
   <div class="tabs">
     <button class="tab active" onclick="switchTab('scores',this)">Scores</button>
     <button class="tab" onclick="switchTab('allbatters',this)">All Batters</button>
+    <button class="tab" onclick="switchTab('verdict',this)">Verdict</button>
     <div class="tabs-spacer"></div>
     <button class="tab" onclick="switchTab('bets',this)">Bets<span id="tab-bets-badge" style="display:none;font-family:var(--mono);font-size:9px;opacity:.6;margin-left:5px;font-weight:400"></span></button>
     <button class="tab" onclick="switchTab('history',this)">History</button>
@@ -630,6 +625,11 @@
       </div>
     </div>
     <div id="allbatters-grid"></div>
+  </div>
+
+  <!-- VERDICT TAB — prototype, additive only -->
+  <div id="tab-verdict" style="display:none;margin-top:18px">
+    <div id="verdict-grid"></div>
   </div>
 
   <!-- BATTER POPUP — replaces the old Tonight-tab card; opened from any Scores
@@ -3253,6 +3253,7 @@ function renderBetsTab(){
 function renderActiveTab() {
   if(currentTab==='scores') renderScores();
   else if(currentTab==='allbatters') renderScoresAllBatters();
+  else if(currentTab==='verdict') renderVerdict();
   else if(currentTab==='bets') renderBetsTab();
   else render(); // history/about have no dedicated builder; render() still needs to run to keep #legs (bet slip) current
 }
@@ -3405,6 +3406,7 @@ function switchTab(name, btn) {
   document.getElementById('tab-dugout').style.display     = 'none'; // removed from nav 2026-07-02, kept for #pool/slip state only
   document.getElementById('tab-scores').style.display     = name==='scores'     ? '' : 'none';
   document.getElementById('tab-allbatters').style.display = name==='allbatters' ? '' : 'none';
+  document.getElementById('tab-verdict').style.display    = name==='verdict'    ? '' : 'none';
   document.getElementById('tab-history').style.display    = name==='history'    ? '' : 'none';
   document.getElementById('tab-about').style.display      = name==='about'      ? '' : 'none';
   document.getElementById('tab-bets').style.display       = name==='bets'       ? '' : 'none';
@@ -3412,10 +3414,11 @@ function switchTab(name, btn) {
   if(btn) btn.classList.add('active');
   updateSlipCount();
   if(name==='history') { initCollapsibleCards(); loadHistory(); }
-  if((name==='bets' || name==='scores' || name==='allbatters') && !viewingDate) startLivePolling(); else stopLivePolling();
+  if((name==='bets' || name==='scores' || name==='allbatters' || name==='verdict') && !viewingDate) startLivePolling(); else stopLivePolling();
   if(name==='bets') renderBetsTab();
   if(name==='allbatters') renderScoresAllBatters();
-  if(name==='scores' || name==='allbatters') {
+  if(name==='verdict') renderVerdict();
+  if(name==='scores' || name==='allbatters' || name==='verdict') {
     if(name==='scores') renderScores();
     // fetch Kalshi O/U totals (only open markets exist, so today-only; no-op for historical)
     if(!_kalshiOu.size) {
@@ -3485,65 +3488,9 @@ function muLabel(offG, pitchG) {
 function _isCardCollapsed(id){ try{ return localStorage.getItem('card_collapsed_'+id)==='1'; }catch(e){ return false; } }
 
 // ── scores tab — live boxscore per game, same lean dynamics as Slate ──────────
-function renderScores() {
-  const el = document.getElementById('scores-grid');
-  if(!el) return;
-  if(!legs.length) {
-    el.innerHTML = '<div class="card"><div class="empty">Load a CSV first.</div></div>';
-    return;
-  }
-
-  // pending bet legs -> Set of "gamePk|batterId" so active bets can be highlighted
-  const betKeys = new Set();
-  (savedBets||[]).forEach(b => {
-    if(b.status !== 'pending') return;
-    (b.legs||[]).forEach(bl => {
-      if(bl.gamePk && bl.batterId) betKeys.add(String(bl.gamePk)+'|'+String(bl.batterId));
-    });
-  });
-
-  const gameMap = new Map();
-  legs.forEach(l => {
-    const key = l.matchup || 'Unknown';
-    if(!gameMap.has(key)) gameMap.set(key, []);
-    gameMap.get(key).push(l);
-  });
-
-  const games = [...gameMap.entries()].filter(([,batters]) => {
-    const gs = batters[0]?.gameState || '';
-    if(scoresLiveOnly) return isLive(gs);
-    if(scoresUpcoming) return !isLive(gs) && !isFinal(gs);
-    return true;
-  }).sort((a,b) => {
-    if(scoresSort === 'rating') {
-      function gameScore(bat) {
-        const pitchGrade = bat[0]?.pGrade || 'C';
-        const avgP = bat.reduce((s,l)=>s+(l.p||0),0) / (bat.length||1);
-        const og = offGrade(avgP);
-        const offScore = {A:4,B:3,C:2,D:1,F:0}[og] ?? 2;
-        const pitScore  = {A:0,B:1,C:2,D:3,F:4}[pitchGrade] ?? 2;
-        return offScore + pitScore;
-      }
-      return gameScore(b[1]) - gameScore(a[1]);
-    }
-    function timeVal(t){
-      if(!t) return 9999;
-      const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
-      if(!m) return 9999;
-      let h=parseInt(m[1]), min=parseInt(m[2]), pm=m[3].toUpperCase()==='PM';
-      if(pm && h!==12) h+=12;
-      if(!pm && h===12) h=0;
-      return h*60+min;
-    }
-    return timeVal(a[1][0]?.startTime) - timeVal(b[1][0]?.startTime);
-  });
-
-  if(!games.length) {
-    el.innerHTML = '<div class="card"><div class="empty">No games match this filter.</div></div>';
-    return;
-  }
-
-  el.innerHTML = games.map(([matchup, batters]) => {
+// full per-game card — extracted so the new Verdict tab can reuse the exact
+// same live/final rendering without duplicating this logic
+function buildScoreCard(matchup, batters, betKeys) {
     const [awayTeam, homeTeam] = matchup.split(' @ ').map(s => s.trim());
     const awaySide = batters.filter(l => l.team === awayTeam).sort((a,b)=>(a.slot||9)-(b.slot||9));
     const homeSide = batters.filter(l => l.team === homeTeam).sort((a,b)=>(a.slot||9)-(b.slot||9));
@@ -3700,7 +3647,12 @@ function renderScores() {
                 return `<span title="CSW ${csw.toFixed(0)}% — ${label}" style="font-family:var(--mono);font-size:9px;color:${col};background:${bg};border:1px solid ${border};border-radius:3px;padding:1px 5px">CSW</span>`;
               })()}
             </div>
-          </div>` : ''}
+          </div>` : `<div class="pitcher-bar">
+            <div class="pbar-id">
+              <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">vs</span>
+              <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.6;font-style:italic">TBD</span>
+            </div>
+          </div>`}
         </div>
         ${headerRow}
         ${rows}
@@ -3769,41 +3721,28 @@ function renderScores() {
     // each side's lineup table header instead ("Estimated Lineup" vs "Confirmed Lineup")
     const awayOu = (window._teamBadge && window._teamBadge[awayTeam]) || '';
     const homeOu = (window._teamBadge && window._teamBadge[homeTeam]) || '';
+    // normalized to one consistent look at every width — used to swap for a
+    // horizontal ticker at 900px+, abandoned in favor of a single stacked
+    // layout everywhere (see .gm-score-stacked/.gm-mid-wrap CSS)
     const scoreStacked = `<div class="gm-score-stacked" style="flex-direction:column;justify-content:center;padding:8px 10px;min-width:100px;flex:none">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:6px">
         <span style="display:flex;align-items:center;gap:5px">
           ${awayOu}
-          <span class="teamtag" style="${teamTagStyle(awayTeam)};font-size:12px">${esc(awayTeam)}</span>
+          <span class="teamtag" style="${teamTagStyle(awayTeam)}">${esc(awayTeam)}</span>
         </span>
-        <span style="font-family:var(--disp);${awayIsRecord?'font-size:11px;font-weight:400':'font-size:15px;font-weight:600'};line-height:1;color:${awayIsRecord?'var(--sage)':awayLeads?'var(--amber)':'var(--chalk)'}" title="${awayIsRecord?'Season record':''}">${awayDisp}</span>
+        <span style="font-family:var(--disp);${awayIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${awayIsRecord?'var(--sage)':awayLeads?'var(--amber)':'var(--chalk)'}" title="${awayIsRecord?'Season record':''}">${awayDisp}</span>
       </div>
       <div style="height:1px;background:var(--line)"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:6px">
         <span style="display:flex;align-items:center;gap:5px">
           ${homeOu}
-          <span class="teamtag" style="${teamTagStyle(homeTeam)};font-size:12px">${esc(homeTeam)}</span>
+          <span class="teamtag" style="${teamTagStyle(homeTeam)}">${esc(homeTeam)}</span>
         </span>
-        <span style="font-family:var(--disp);${homeIsRecord?'font-size:11px;font-weight:400':'font-size:15px;font-weight:600'};line-height:1;color:${homeIsRecord?'var(--sage)':homeLeads?'var(--amber)':'var(--chalk)'}" title="${homeIsRecord?'Season record':''}">${homeDisp}</span>
+        <span style="font-family:var(--disp);${homeIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${homeIsRecord?'var(--sage)':homeLeads?'var(--amber)':'var(--chalk)'}" title="${homeIsRecord?'Season record':''}">${homeDisp}</span>
       </div>
     </div>`;
 
-    // wide breakpoint: single horizontal ticker — away tag/score – home score/tag,
-    // reading outward from center (OU badge is each team's outermost element)
-    const scoreWide = `<div class="gm-score-wide" style="align-items:center;justify-content:center;gap:10px;padding:8px 14px;flex:none">
-      <span style="display:flex;align-items:center;gap:6px">
-        ${awayOu}
-        <span class="teamtag" style="${teamTagStyle(awayTeam)}">${esc(awayTeam)}</span>
-      </span>
-      <span style="font-family:var(--disp);${awayIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${awayIsRecord?'var(--sage)':awayLeads?'var(--amber)':'var(--chalk)'}" title="${awayIsRecord?'Season record':''}">${awayDisp}</span>
-      <span style="font-family:var(--disp);font-size:14px;color:var(--sage);opacity:.6">–</span>
-      <span style="font-family:var(--disp);${homeIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${homeIsRecord?'var(--sage)':homeLeads?'var(--amber)':'var(--chalk)'}" title="${homeIsRecord?'Season record':''}">${homeDisp}</span>
-      <span style="display:flex;align-items:center;gap:6px">
-        <span class="teamtag" style="${teamTagStyle(homeTeam)}">${esc(homeTeam)}</span>
-        ${homeOu}
-      </span>
-    </div>`;
-
-    const scoreBlock = scoreStacked + scoreWide;
+    const scoreBlock = scoreStacked;
 
     // live pitcher-vs-batter readout replaces Gameday/park/MLB.TV links —
     // only has content while the game is actually live. Sits in the middle
@@ -3825,7 +3764,7 @@ function renderScores() {
       <div class="gm-header" onclick="if(${collapsible} && !event.target.closest('a'))toggleCard('${cardId}')" style="${collapsible?'':'cursor:default'}">
         ${storyline?`<div style="padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);text-align:center"><span title="${esc(storyline.title)}" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:${storyline.color}">✦ ${storyline.label}</span></div>`:''}
         <div class="gm-scoreboard" style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
-          <div class="gm-mid-wrap" style="display:flex;align-items:center;justify-content:center;padding:8px 8px;min-width:0;flex:none">${diamondBlock}</div>
+          <div class="gm-mid-wrap" style="display:flex;align-items:center;justify-content:center;min-width:0;flex:none">${diamondBlock}</div>
           <div style="width:1px;background:var(--line)"></div>
           ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" title="Watch on MLB.TV" style="text-decoration:none;color:inherit;display:flex">${scoreBlock}</a>`:scoreBlock}
           <div style="width:1px;background:var(--line)"></div>
@@ -3845,7 +3784,146 @@ function renderScores() {
       ${muRow}
       ${evalRow}
     </div>`;
-  }).join('');
+  }
+
+// ── Verdict tab (prototype, additive only — does not change Scores' own
+// rendering) — pregame shows just the score header + a lean-label verdict
+// per side; once a game goes live or is final, delegates to the exact same
+// buildScoreCard() Scores itself uses ──────────────────────────────────────
+function _verdictLabelPill(mu){
+  if(!mu) return '';
+  return `<span style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.5px;color:${mu.col};background:${mu.bg};border:1px solid ${mu.border};border-radius:4px;padding:2px 7px">${mu.lbl}</span>`;
+}
+
+function buildVerdictCard(matchup, batters, betKeys) {
+  const [awayTeam, homeTeam] = matchup.split(' @ ').map(s => s.trim());
+  const gameState = batters[0]?.gameState || '';
+  const ls = _liveLinescore.get(String(batters[0]?.gamePk || ''));
+  const isLiveGame  = ls ? ls.isLive  : isLive(gameState);
+  const isFinalGame = ls ? ls.isFinal : isFinal(gameState);
+
+  if(isLiveGame || isFinalGame) return buildScoreCard(matchup, batters, betKeys);
+
+  // pregame minimal card: score header + team lean pills only
+  const awaySide = batters.filter(l => l.team === awayTeam);
+  const homeSide = batters.filter(l => l.team === homeTeam);
+  const awayAvg = awaySide.length ? awaySide.reduce((s,l)=>s+(l.p||0),0)/awaySide.length : 0;
+  const homeAvg = homeSide.length ? homeSide.reduce((s,l)=>s+(l.p||0),0)/homeSide.length : 0;
+  const awayMu  = awaySide.length ? muLabel(offGrade(awayAvg), awaySide[0]?.pGrade || 'C') : null;
+  const homeMu  = homeSide.length ? muLabel(offGrade(homeAvg), homeSide[0]?.pGrade || 'C') : null;
+  const startTime = batters[0]?.startTime || '';
+  const awayOu = (window._teamBadge && window._teamBadge[awayTeam]) || '';
+  const homeOu = (window._teamBadge && window._teamBadge[homeTeam]) || '';
+
+  // small, intentional duplication of scoreStacked's markup — not worth
+  // extracting further for a prototype; skips season-record/live-score
+  // display here (just start time) to avoid re-deriving the
+  // window._liveScores lookup a second time
+  const scoreStacked = `<div class="gm-score-stacked" style="flex-direction:column;justify-content:center;padding:8px 10px;min-width:100px;flex:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:6px">
+      <span style="display:flex;align-items:center;gap:5px">${awayOu}<span class="teamtag" style="${teamTagStyle(awayTeam)}">${esc(awayTeam)}</span></span>
+    </div>
+    <div style="height:1px;background:var(--line)"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:6px">
+      <span style="display:flex;align-items:center;gap:5px">${homeOu}<span class="teamtag" style="${teamTagStyle(homeTeam)}">${esc(homeTeam)}</span></span>
+    </div>
+  </div>`;
+
+  return `<div class="card" style="padding:0;overflow:hidden">
+    <div class="gm-scoreboard" style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
+      <div class="gm-mid-wrap" style="display:flex;align-items:center;justify-content:center;min-width:0;flex:none">
+        <span style="font-family:var(--mono);font-size:11px;color:var(--sage)">${esc(startTime)}</span>
+      </div>
+      <div style="width:1px;background:var(--line)"></div>
+      ${scoreStacked}
+    </div>
+    <div style="display:flex;border-top:1px solid var(--line)">
+      <div style="flex:1;padding:10px 14px;text-align:center">${_verdictLabelPill(awayMu)}</div>
+      <div style="width:1px;background:var(--line)"></div>
+      <div style="flex:1;padding:10px 14px;text-align:center">${_verdictLabelPill(homeMu)}</div>
+    </div>
+  </div>`;
+}
+
+function renderVerdict() {
+  const el = document.getElementById('verdict-grid');
+  if(!el) return;
+  if(!legs.length) { el.innerHTML = '<div class="card"><div class="empty">Load a CSV first.</div></div>'; return; }
+  const betKeys = new Set();
+  (savedBets||[]).forEach(b => {
+    if(b.status !== 'pending') return;
+    (b.legs||[]).forEach(bl => { if(bl.gamePk && bl.batterId) betKeys.add(String(bl.gamePk)+'|'+String(bl.batterId)); });
+  });
+  const gameMap = new Map();
+  legs.forEach(l => {
+    const key = l.matchup || 'Unknown';
+    if(!gameMap.has(key)) gameMap.set(key, []);
+    gameMap.get(key).push(l);
+  });
+  const games = [...gameMap.entries()];
+  if(!games.length) { el.innerHTML = '<div class="card"><div class="empty">No games today.</div></div>'; return; }
+  el.innerHTML = games.map(([matchup, batters]) => buildVerdictCard(matchup, batters, betKeys)).join('');
+}
+
+function renderScores() {
+  const el = document.getElementById('scores-grid');
+  if(!el) return;
+  if(!legs.length) {
+    el.innerHTML = '<div class="card"><div class="empty">Load a CSV first.</div></div>';
+    return;
+  }
+
+  // pending bet legs -> Set of "gamePk|batterId" so active bets can be highlighted
+  const betKeys = new Set();
+  (savedBets||[]).forEach(b => {
+    if(b.status !== 'pending') return;
+    (b.legs||[]).forEach(bl => {
+      if(bl.gamePk && bl.batterId) betKeys.add(String(bl.gamePk)+'|'+String(bl.batterId));
+    });
+  });
+
+  const gameMap = new Map();
+  legs.forEach(l => {
+    const key = l.matchup || 'Unknown';
+    if(!gameMap.has(key)) gameMap.set(key, []);
+    gameMap.get(key).push(l);
+  });
+
+  const games = [...gameMap.entries()].filter(([,batters]) => {
+    const gs = batters[0]?.gameState || '';
+    if(scoresLiveOnly) return isLive(gs);
+    if(scoresUpcoming) return !isLive(gs) && !isFinal(gs);
+    return true;
+  }).sort((a,b) => {
+    if(scoresSort === 'rating') {
+      function gameScore(bat) {
+        const pitchGrade = bat[0]?.pGrade || 'C';
+        const avgP = bat.reduce((s,l)=>s+(l.p||0),0) / (bat.length||1);
+        const og = offGrade(avgP);
+        const offScore = {A:4,B:3,C:2,D:1,F:0}[og] ?? 2;
+        const pitScore  = {A:0,B:1,C:2,D:3,F:4}[pitchGrade] ?? 2;
+        return offScore + pitScore;
+      }
+      return gameScore(b[1]) - gameScore(a[1]);
+    }
+    function timeVal(t){
+      if(!t) return 9999;
+      const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if(!m) return 9999;
+      let h=parseInt(m[1]), min=parseInt(m[2]), pm=m[3].toUpperCase()==='PM';
+      if(pm && h!==12) h+=12;
+      if(!pm && h===12) h=0;
+      return h*60+min;
+    }
+    return timeVal(a[1][0]?.startTime) - timeVal(b[1][0]?.startTime);
+  });
+
+  if(!games.length) {
+    el.innerHTML = '<div class="card"><div class="empty">No games match this filter.</div></div>';
+    return;
+  }
+
+  el.innerHTML = games.map(([matchup, batters]) => buildScoreCard(matchup, batters, betKeys)).join('');
 }
 
 // ── All Batters mode: flat, filterable table of every batter today — no per-game grouping,
