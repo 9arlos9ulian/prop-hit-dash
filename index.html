@@ -411,9 +411,10 @@
   .allbatters-table td{padding:3px 8px;color:var(--chalk);border-bottom:1px solid rgba(255,255,255,.04)}
   .allbatters-table tbody tr:nth-child(even){background:rgba(255,255,255,.015)}
   .allbatters-table tbody tr:hover{background:rgba(255,255,255,.06)}
-  .gm-mid-wide{display:none}
   .gm-score-stacked{display:flex}
   .gm-score-wide{display:none}
+  .gm-inning-box{display:none}
+  .gm-matchup-mid{align-items:flex-end}
   .linescore-grid{border-collapse:collapse;font-family:var(--mono);font-size:10px;color:var(--chalk)}
   .linescore-grid th{color:var(--sage);font-weight:400;font-size:8px;padding:1px 6px;text-align:center}
   .linescore-grid td{padding:1px 6px;text-align:center}
@@ -428,10 +429,10 @@
     .gm-mid-wrap{padding:8px 20px!important}
   }
   @media(min-width:900px){
-    .gm-mid-compact{display:none}
-    .gm-mid-wide{display:block}
     .gm-score-stacked{display:none}
     .gm-score-wide{display:flex}
+    .gm-inning-box{display:flex!important}
+    .gm-matchup-mid{align-items:center}
   }
   #scores-grid{display:flex;flex-direction:column;gap:14px}
 
@@ -3563,24 +3564,33 @@ function renderScores() {
     const homeIsRecord = hs==null && !!score?.homeRecord;
     const tvUrl = (isLiveGame && gamePk) ? `https://www.mlb.com/tv/g${gamePk}` : '';
 
-    let midCompact, midWide;
+    // diamond/time block — always shown, leftmost in the scoreboard bar,
+    // independent of the inning box (which used to share this slot and only
+    // appear at wide breakpoints, swapping the diamond out entirely)
+    let diamondInner;
     if(isLiveGame && ls) {
       const half = ls.half==='Top' ? '▲' : '▼';
-      midCompact = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+      diamondInner = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
         <span style="font-family:var(--mono);font-size:12px;color:var(--amber)">${half}${esc(ls.ordinal||'')}</span>
         ${_baseDiamond(ls, 22)}
         ${_outDots(ls.outs||0)}
       </div>`;
     } else if(isFinalGame) {
-      midCompact = `<span style="font-family:var(--disp);font-size:12px;letter-spacing:.5px;color:var(--sage);opacity:.7">FINAL</span>`;
+      diamondInner = `<span style="font-family:var(--disp);font-size:12px;letter-spacing:.5px;color:var(--sage);opacity:.7">FINAL</span>`;
     } else {
-      midCompact = `<span style="font-family:var(--mono);font-size:11px;color:var(--sage)">${esc(startTime)}</span>`;
+      diamondInner = `<span style="font-family:var(--mono);font-size:11px;color:var(--sage)">${esc(startTime)}</span>`;
     }
-    // wide breakpoints: a real inning-by-inning line score grid instead of
-    // the compact diamond+outs indicator, for live/final games only
-    const grid = (isLiveGame||isFinalGame) ? lineScoreGrid(ls, awayTeam, homeTeam) : '';
-    midWide = grid || midCompact;
-    const midHtml = `<div class="gm-mid-compact">${midCompact}</div><div class="gm-mid-wide">${midWide}</div>`;
+    const diamondBlock = `<div class="gm-diamond-block">${diamondInner}</div>`;
+
+    // inning box — floats right, only rendered at wide breakpoints (900px+).
+    // Real inning-by-inning grid once the game has started; before that,
+    // shows the Kalshi moneyline favorite instead of sitting empty.
+    const kw = _kalshiWinner.get(matchup);
+    const inningBox = (isLiveGame||isFinalGame)
+      ? lineScoreGrid(ls, awayTeam, homeTeam)
+      : (kw ? `<div style="font-family:var(--mono);font-size:10px;color:var(--sage);text-align:right;white-space:nowrap">
+          <span style="opacity:.6">Kalshi</span> <span style="color:var(--chalk);font-weight:600">${esc(kw.favTeam)}</span> <span style="color:var(--amber)">${esc(kw.favOddsStr)}</span>
+        </div>` : '');
 
     // per-side HIT/LEAN/NO HIT label — same dynamics as Slate, computed per
     // side (each side's own offense grade vs the pitcher IT is facing, via
@@ -3789,8 +3799,11 @@ function renderScores() {
     const scoreBlock = scoreStacked + scoreWide;
 
     // live pitcher-vs-batter readout replaces Gameday/park/MLB.TV links —
-    // only has content while the game is actually live
-    const fieldInfo = `<div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;padding:8px 10px;min-width:0;flex:1">
+    // only has content while the game is actually live. Sits in the middle
+    // of the bar at wide breakpoints (next to the inning box on the right),
+    // right-aligned at narrow widths where there's no inning box to share
+    // the row with.
+    const fieldInfo = `<div class="gm-matchup-mid" style="display:flex;flex-direction:column;justify-content:center;gap:3px;padding:8px 10px;min-width:0;flex:1">
       ${isLiveGame ? liveMatchupLine(score, {big:true}) : ''}
     </div>`;
 
@@ -3805,11 +3818,12 @@ function renderScores() {
       <div class="gm-header" onclick="if(${collapsible} && !event.target.closest('a'))toggleCard('${cardId}')" style="${collapsible?'':'cursor:default'}">
         ${storyline?`<div style="padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);text-align:center"><span title="${esc(storyline.title)}" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:${storyline.color}">✦ ${storyline.label}</span></div>`:''}
         <div class="gm-scoreboard" style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
+          <div class="gm-mid-wrap" style="display:flex;align-items:center;justify-content:center;padding:8px 8px;min-width:0;flex:none">${diamondBlock}</div>
+          <div style="width:1px;background:var(--line)"></div>
           ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" title="Watch on MLB.TV" style="text-decoration:none;color:inherit;display:flex">${scoreBlock}</a>`:scoreBlock}
           <div style="width:1px;background:var(--line)"></div>
-          <div class="gm-mid-wrap" style="display:flex;align-items:center;justify-content:center;padding:8px 8px;min-width:0;flex:none">${midHtml}</div>
-          <div style="width:1px;background:var(--line)"></div>
           ${fieldInfo}
+          <div class="gm-inning-box" style="align-items:center;justify-content:flex-end;padding:8px 10px">${inningBox}</div>
         </div>
       </div>
       <div class="scores-mobile-tabs" style="border-bottom:1px solid var(--line)">
