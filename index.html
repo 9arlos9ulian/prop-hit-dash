@@ -3862,35 +3862,35 @@ function renderScoresAllBatters() {
   // park factor: same >=1.10/<=0.90 extremes gameStoryline uses — favorable/unfavorable for a batter
   const parkCol = v => v==null||isNaN(v) ? 'var(--sage)' : v>=1.10 ? 'var(--good)' : v<=0.90 ? 'var(--bad)' : 'var(--chalk)';
   const cols = [
-    ['Pick',   null,                                                   'center'], // special-cased below
-    ['Scr',    l => Math.round((l.p||0)*100),                          'right',   l => dotCol(l.p||0)],
-    ['#',      l => l.slot||'',                                        'center'],
-    ['Team',   null,                                                   'center'], // special-cased below
-    ['Name',   null,                                                   'left'], // special-cased below (colored)
-    ['AVG',    l => num(l.bHitRate),                                   'right',   l => hiLoCol(l.bHitRate,.300,.230)],
-    ['xBA',    l => num(l.bXba),                                       'right',   l => hiLoCol(l.bXba,.290,.220)],
-    ['HH%',    l => pct(l.bHH),                                        'right',   l => hiLoCol(l.bHH!=null?l.bHH*100:null,50,30)],
-    ['BABIP',  l => num(l.bBabip),                                     'right',   l => babipCol(l.bBabip)],
-    ['vsL',    l => num(l.vsL),                                        'right',   l => hitRateCol(l.vsL)],
-    ['vsR',    l => num(l.vsR),                                        'right',   l => hitRateCol(l.vsR)],
-    ['Split',  l => l.splitDiff!=null ? (l.splitDiff>=0?'+':'')+pct(l.splitDiff,1) : '—', 'right', l => splitCol(l.splitDiff)],
-    ['SP',     l => num(l.bHitRateVsSp),                                'right',   l => hitRateCol(l.bHitRateVsSp)],
-    ['RP',     l => num(l.bHitRateVsRp),                                'right',   l => hitRateCol(l.bHitRateVsRp)],
-    ['BvP',    l => l.bvpAb ? `${num(l.bvpAvg)} (${l.bvpAb})` : '—',    'right',   l => l.bvpAb ? hitRateCol(l.bvpAvg) : 'var(--sage)'],
-    ['AB/G',   l => l.bAvgAb!=null ? Number(l.bAvgAb).toFixed(1) : '—', 'right',   l => abgCol(l.bAvgAb)],
-    ['Rest',   l => l.bDaysRest??'—',                                  'right',   l => bRestCol(l.bDaysRest)],
-    ['Rk',     l => l.bIsRookie?'Y':'',                                'center'],
-    ['ParkF',  l => l.parkFactor!=null ? Number(l.parkFactor).toFixed(2) : '—', 'right', l => parkCol(l.parkFactor)],
-    ['P.Team', l => esc(pitcherTeam(l)),                                'center'], // special-cased below (colored)
-    ['Pitcher',l => esc(l.pitcher ? l.pitcher.split(' ').slice(-1)[0] : ''), 'left'],
-    ['P.Grd',  l => l.pGrade||'—',                                     'center',  l => l.pGrade ? gradeCol(l.pGrade) : 'var(--sage)'],
-    ['P.CSW',  l => pct(l.pCsw),                                       'right',   l => hiLoCol(l.pCsw!=null?l.pCsw*100:null,30,24)],
-    ['P.K/BB', l => num(l.pKbb,2),                                     'right',   l => hiLoCol(l.pKbb,3.0,1.5)],
-    ['P.HH%',  l => pct(l.pHH),                                        'right',   l => l.pHH==null||isNaN(l.pHH) ? 'var(--sage)' : (l.pHH*100)>=44 ? 'var(--bad)' : (l.pHH*100)<=30 ? 'var(--good)' : 'var(--chalk)'],
-    ['P.Rest', l => l.pDaysRest??'—',                                  'right',   l => pRestCol(l.pDaysRest)],
-    ['P.Rk',   l => l.pIsRookie?'Y':'',                                'center'],
+    ['Pick',   null,                                                   'center', null, 'Add or remove this batter from your bet slip'],
+    ['Scr',    l => Math.round((l.p||0)*100),                          'right',   l => dotCol(l.p||0), 'Model probability of ≥1 hit tonight. Green ≥70%, amber ≥55%, red below'],
+    ['#',      l => l.slot||'',                                        'center', null, 'Batting order slot (1-9)'],
+    ['Team',   null,                                                   'center', null, "Batter's team"],
+    ['Name',   null,                                                   'left', null, 'Batter name, colored by score tier — click to expand full detail'],
+    ['AVG',    l => num(l.bHitRate),                                   'right',   l => hiLoCol(l.bHitRate,.300,.230), 'Trailing batting average over recent games. Green ≥.300, red ≤.230'],
+    ['xBA',    l => num(l.bXba),                                       'right',   l => hiLoCol(l.bXba,.290,.220), 'Expected batting average from quality of contact (exit velo + launch angle). Green ≥.290, red ≤.220'],
+    ['HH%',    l => pct(l.bHH),                                        'right',   l => hiLoCol(l.bHH!=null?l.bHH*100:null,50,30), 'Hard-hit rate (95+ mph exit velocity). Green ≥50%, red ≤30%'],
+    ['BABIP',  l => num(l.bBabip),                                     'right',   l => babipCol(l.bBabip), 'Batting average on balls in play. Amber ≥.350 (running hot, due for regression), green ≤.250 (running cold, could bounce back) — neither is inherently good or bad, just a signal of luck'],
+    ['vsL',    l => num(l.vsL),                                        'right',   l => hitRateCol(l.vsL), 'Hit rate vs left-handed pitching. Green ≥.300, red ≤.230'],
+    ['vsR',    l => num(l.vsR),                                        'right',   l => hitRateCol(l.vsR), 'Hit rate vs right-handed pitching. Green ≥.300, red ≤.230'],
+    ['Split',  l => l.splitDiff!=null ? (l.splitDiff>=0?'+':'')+pct(l.splitDiff,1) : '—', 'right', l => splitCol(l.splitDiff), 'Platoon split — difference between vsL and vsR hit rate. Amber if ≥10pp (notable platoon weakness worth watching), green if <3pp (equally dangerous either way)'],
+    ['SP',     l => num(l.bHitRateVsSp),                                'right',   l => hitRateCol(l.bHitRateVsSp), 'Hit rate vs starting pitchers. Green ≥.300, red ≤.230'],
+    ['RP',     l => num(l.bHitRateVsRp),                                'right',   l => hitRateCol(l.bHitRateVsRp), 'Hit rate vs relief pitchers. Green ≥.300, red ≤.230'],
+    ['BvP',    l => l.bvpAb ? `${num(l.bvpAvg)} (${l.bvpAb})` : '—',    'right',   l => l.bvpAb ? hitRateCol(l.bvpAvg) : 'var(--sage)', 'Career average vs tonight’s starting pitcher, with AB count in parens. Sample is usually tiny (single digits) — treat as a footnote, not a real signal. Green ≥.300, red ≤.230'],
+    ['AB/G',   l => l.bAvgAb!=null ? Number(l.bAvgAb).toFixed(1) : '—', 'right',   l => abgCol(l.bAvgAb), 'Average at-bats per game played. Green ≥4.2 (everyday, top-of-order role), red ≤3.3 (limited playing time — fewer chances at a hit)'],
+    ['Rest',   l => l.bDaysRest??'—',                                  'right',   l => bRestCol(l.bDaysRest), "Days since the batter's last game. Amber ≥8d worth noting, red ≥15d (extended layoff, possible rust)"],
+    ['Rk',     l => l.bIsRookie?'Y':'',                                'center', null, "Batter is a rookie this season (Y = yes) — informational only, not good or bad"],
+    ['ParkF',  l => l.parkFactor!=null ? Number(l.parkFactor).toFixed(2) : '—', 'right', l => parkCol(l.parkFactor), "Tonight's park factor for hits. Green ≥1.10 (hitter-friendly park), red ≤0.90 (pitcher-friendly park)"],
+    ['P.Team', l => esc(pitcherTeam(l)),                                'center', null, "The opposing team (pitcher's team)"],
+    ['Pitcher',l => esc(l.pitcher ? l.pitcher.split(' ').slice(-1)[0] : ''), 'left', null, "Tonight's starting pitcher"],
+    ['P.Grd',  l => l.pGrade||'—',                                     'center',  l => l.pGrade ? gradeCol(l.pGrade) : 'var(--sage)', "Pitcher's overall grade, A (best) to F (worst) — color matches the letter"],
+    ['P.CSW',  l => pct(l.pCsw),                                       'right',   l => hiLoCol(l.pCsw!=null?l.pCsw*100:null,30,24), "Pitcher's called-strike + whiff rate (stuff quality). Green ≥30%, red ≤24%"],
+    ['P.K/BB', l => num(l.pKbb,2),                                     'right',   l => hiLoCol(l.pKbb,3.0,1.5), "Pitcher's strikeout-to-walk ratio (command). Green ≥3.0, red ≤1.5"],
+    ['P.HH%',  l => pct(l.pHH),                                        'right',   l => l.pHH==null||isNaN(l.pHH) ? 'var(--sage)' : (l.pHH*100)>=44 ? 'var(--bad)' : (l.pHH*100)<=30 ? 'var(--good)' : 'var(--chalk)', 'Hard-hit rate the pitcher allows. Lower is better for the pitcher (worse for the batter) — green ≤30% allowed, red ≥44% allowed'],
+    ['P.Rest', l => l.pDaysRest??'—',                                  'right',   l => pRestCol(l.pDaysRest), "Days since the pitcher's last outing. Amber if ≤2d (short rest — bullpen arm or opener) or ≥18d (possible IL return); otherwise normal rotation rest"],
+    ['P.Rk',   l => l.pIsRookie?'Y':'',                                'center', null, "Pitcher is a rookie this season (Y = yes) — informational only, not good or bad"],
   ];
-  const thead = `<tr>${cols.map(([lbl,,align])=>`<th style="text-align:${align}">${lbl}</th>`).join('')}</tr>`;
+  const thead = `<tr>${cols.map(([lbl,,align,,tip])=>`<th style="text-align:${align};cursor:help" title="${esc(tip||'')}">${lbl}</th>`).join('')}</tr>`;
   const tbody = rows.map(l => {
     const noHit = isFinal(l.gameState) && !l.hasHit;
     const pickCell = `<td style="text-align:center">${(!l.hasHit&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}</td>`;
