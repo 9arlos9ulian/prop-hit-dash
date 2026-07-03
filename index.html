@@ -1006,6 +1006,7 @@ function _centsToAmerican(p) {
 
 async function fetchKalshiTotals(dateStr) {
   // dateStr: 'YYYY-MM-DD' — only show live O/U for today's slate
+  if(!_onServer) return; // /kalshi/* is a server.py CORS proxy, not published to the public mirror
   try {
     const res = await fetch('/kalshi/totals');
     if(!res.ok) return;
@@ -1037,6 +1038,7 @@ async function fetchKalshiTotals(dateStr) {
 
 async function fetchMoneylines() {
   // Kalshi KXMLB series — MLB game winner markets
+  if(!_onServer) return; // /kalshi/* is a server.py CORS proxy, not published to the public mirror
   try {
     const res = await fetch('/kalshi/winner');
     if(!res.ok) return;
