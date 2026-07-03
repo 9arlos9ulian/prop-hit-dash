@@ -3228,6 +3228,10 @@ function renderBetsTab(){
   renderSavedBets();
   _loadBetsFromServer(); // override localStorage with server-side bets.json if available
   loadHistory(); // populate window._teamBadge/_playerArrow before Scores/Tonight need them, not just on first History-tab visit
+  // the date-picker's real job (swapping Scores/All Batters to a past day's full
+  // lineups) is local-server-only — see syncHistoryDate()'s !_onServer guard —
+  // so just hide it on the public site instead of showing a control that does nothing there
+  if(!_onServer){ const gsel = document.getElementById('global-date-picker'); if(gsel) gsel.style.display = 'none'; }
   switchTab('scores', document.querySelector('.tabs .tab[onclick*="\'scores\'"]')); // Scores is the default landing tab as of 2026-07-02 — its container defaults to display:none in HTML like any non-Tonight tab used to, so boot must explicitly switch to it
 })();
 
