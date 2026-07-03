@@ -396,6 +396,11 @@
   .gamecard-collapsible.collapsed>*:not(.gm-header){display:none!important}
   .gm-footer-cell{display:flex;align-items:center;justify-content:center;gap:12px}
   @media(max-width:480px){.gm-footer-cell{flex-direction:column;gap:4px}}
+  #scores-grid{display:flex;flex-direction:column;gap:14px}
+  /* Compact mode: multi-column card grid instead of one stacked column */
+  #scores-grid.compact-grid{display:grid;grid-template-columns:1fr;align-items:start}
+  @media(min-width:720px){#scores-grid.compact-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:1400px){#scores-grid.compact-grid{grid-template-columns:repeat(3,1fr)}}
 
   /* ── batter popup ── */
   #batter-popup-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
@@ -589,7 +594,7 @@
         </div>
       </div>
     </div>
-    <div id="scores-grid" style="display:flex;flex-direction:column;gap:14px"></div>
+    <div id="scores-grid"></div>
   </div>
 
   <!-- BATTER POPUP — replaces the old Tonight-tab card; opened from any Scores
@@ -3442,6 +3447,7 @@ function _isCardCollapsed(id){ try{ return localStorage.getItem('card_collapsed_
 // top batters, full pitcher badge row, lean footer with post-game eval.
 function renderScoresCompact() {
   const el = document.getElementById('scores-grid');
+  el.classList.add('compact-grid');
   if(!legs.length) {
     el.innerHTML = '<div class="card"><div class="empty">No slate loaded.</div></div>';
     return;
@@ -3715,6 +3721,7 @@ function renderScoresCompact() {
 function renderScores() {
   const el = document.getElementById('scores-grid');
   if(!el) return;
+  el.classList.remove('compact-grid');
   if(!legs.length) {
     el.innerHTML = '<div class="card"><div class="empty">Load a CSV on the Tonight tab first.</div></div>';
     return;
