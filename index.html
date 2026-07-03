@@ -3605,9 +3605,9 @@ function renderScores() {
                   : 'rgba(120,120,130,.04)';
 
       const headerRow = `<div style="display:flex;align-items:center;gap:8px;padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)">
+        <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:14px;flex:none">#</span>
         <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:12px;flex:none"></span>
         <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:28px;text-align:right;flex:none">Scr</span>
-        <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:14px;flex:none">#</span>
         <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);flex:1">Name</span>
         <span class="scores-hab-col" style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:34px;text-align:right;flex:none">${(isLiveGame||isFinalGame)?'H-AB':''}</span>
       </div>`;
@@ -3628,9 +3628,9 @@ function renderScores() {
         const noHit = isFinalGame && !hit;
         const clickAttr = l.batterId ? `onclick="goToBatter('${l.batterId}')" style="cursor:pointer;` : `style="`;
         return `<div ${clickAttr}display:flex;align-items:center;gap:8px;padding:4px 10px;background:${restBg};border-left:2px solid ${isBet?'var(--amber)':'transparent'};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='${restBg}'">
+          <span style="font-family:var(--mono);font-size:9px;color:var(--sage);flex:none;width:14px">${l.slot||''}</span>
           <span style="flex:none;width:12px;text-align:center" title="Trending vs. model expectation">${performanceArrow(l)}</span>
           <span style="font-family:var(--mono);font-size:10px;color:${nameCol};flex:none;width:28px;text-align:right">${Math.round((l.p||0)*100)}</span>
-          <span style="font-family:var(--mono);font-size:9px;color:var(--sage);flex:none;width:14px">${l.slot||''}</span>
           <span style="font-family:var(--mono);font-size:11px;color:${nameCol};${hit?'text-decoration:line-through;opacity:.45':''};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
           ${noHit?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:8px;color:var(--bad);opacity:.75;flex:none">NO HIT</span>`:''}
           ${isBet?`<span class="scores-bet-col" title="In your bet slip" style="font-size:10px;flex:none">🎫</span>`:''}
