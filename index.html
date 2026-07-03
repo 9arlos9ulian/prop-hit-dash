@@ -1700,12 +1700,12 @@ function pitchDominantBadge(l){
   // same dominant-family classification as pitchMatchupHtml — heavily favored
   // pitch mix only, no per-batter rate (this is shown once per side, not per batter)
   const fb=l.pUseFb, bb=l.pUseBb, os=l.pUseOs;
-  let label=null, pct=null;
-  if(fb!=null&&fb>=0.55){label='FB-HEAVY';pct=fb;}
-  else if(bb!=null&&bb>=0.40){label='BRK-HEAVY';pct=bb;}
-  else if(os!=null&&os>=0.30){label='OFF-HEAVY';pct=os;}
+  let label=null, full=null, pct=null;
+  if(fb!=null&&fb>=0.55){label='FB-H';full='Fastball-heavy';pct=fb;}
+  else if(bb!=null&&bb>=0.40){label='BRK-H';full='Breaking-ball-heavy';pct=bb;}
+  else if(os!=null&&os>=0.30){label='OFF-H';full='Offspeed-heavy';pct=os;}
   if(!label) return '';
-  return `<span title="${Math.round(pct*100)}% usage — a heavily favored pitch mix" style="font-family:var(--mono);font-size:9px;color:#a78bfa;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.35);border-radius:3px;padding:1px 5px">${label} ${Math.round(pct*100)}%</span>`;
+  return `<span title="${full} — ${Math.round(pct*100)}% usage, a heavily favored pitch mix" style="font-family:var(--mono);font-size:9px;color:#a78bfa;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.35);border-radius:3px;padding:1px 5px">${label} ${Math.round(pct*100)}%</span>`;
 }
 function avgAbLine(l){
   if(l.bAvgAb==null||isNaN(l.bAvgAb)||!l.bGamesPlayed||l.bGamesPlayed<10) return '';
