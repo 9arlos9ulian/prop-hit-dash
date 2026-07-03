@@ -3526,16 +3526,6 @@ function buildScoreCard(matchup, batters, betKeys) {
     }
     const diamondBlock = `<div class="gm-diamond-block">${diamondInner}</div>`;
 
-    // inning box — floats right, only rendered at wide breakpoints (900px+).
-    // Real inning-by-inning grid once the game has started; before that,
-    // shows the Kalshi moneyline favorite instead of sitting empty.
-    const kw = _kalshiWinner.get(matchup);
-    const inningBox = (isLiveGame||isFinalGame)
-      ? lineScoreGrid(ls, awayTeam, homeTeam)
-      : (kw ? `<div style="font-family:var(--mono);font-size:10px;color:var(--sage);text-align:right;white-space:nowrap">
-          <span style="opacity:.6">Kalshi</span> <span style="color:var(--chalk);font-weight:600">${esc(kw.favTeam)}</span> <span style="color:var(--amber)">${esc(kw.favOddsStr)}</span>
-        </div>` : '');
-
     // per-side HIT/LEAN/NO HIT label — same dynamics as Slate, computed per
     // side (each side's own offense grade vs the pitcher IT is facing, via
     // side[0].pGrade — already the opposing-pitcher grade in the data)
@@ -3543,6 +3533,18 @@ function buildScoreCard(matchup, batters, betKeys) {
     const homeAvg = homeSide.length ? homeSide.reduce((s,l)=>s+(l.p||0),0)/homeSide.length : 0;
     const awayMu  = awaySide.length ? muLabel(offGrade(awayAvg), awaySide[0]?.pGrade || 'C') : null;
     const homeMu  = homeSide.length ? muLabel(offGrade(homeAvg), homeSide[0]?.pGrade || 'C') : null;
+
+    // inning box — floats right, only rendered at wide breakpoints (900px+).
+    // Real inning-by-inning grid once the game has started; before that, a
+    // compact head-to-head lean comparison (the footer below always shows
+    // the full chip regardless) fills the space instead of sitting empty.
+    const inningBox = (isLiveGame||isFinalGame)
+      ? lineScoreGrid(ls, awayTeam, homeTeam)
+      : (awayMu && homeMu ? `<div style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;white-space:nowrap">
+          <span style="color:${awayMu.col}">${esc(awayTeam)} ${esc(awayMu.lbl.replace('🔥 ',''))}</span>
+          <span style="color:var(--sage);opacity:.4">vs</span>
+          <span style="color:${homeMu.col}">${esc(homeTeam)} ${esc(homeMu.lbl.replace('🔥 ',''))}</span>
+        </div>` : '');
 
     function sortedSide(side){
       const arr = [...side];
