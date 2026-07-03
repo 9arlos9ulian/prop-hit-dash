@@ -419,14 +419,19 @@
   .linescore-grid td{padding:1px 6px;text-align:center}
   .linescore-grid td:first-child{text-align:left;color:var(--sage);padding-right:10px}
   .linescore-grid td:nth-last-child(3){border-left:1px solid var(--line);font-weight:700;color:var(--chalk)}
+  /* top strip (scoreboard bar) spacing/type-size — widened a step earlier than
+     the mid-section content swap below, so 820-900 already reads like the
+     wide layout even though the line score grid doesn't kick in until 900 */
+  @media(min-width:820px){
+    .gm-scoreboard{gap:10px}
+    .gm-scoreboard .teamtag{font-size:14px!important}
+    .gm-mid-wrap{padding:8px 20px!important}
+  }
   @media(min-width:900px){
     .gm-mid-compact{display:none}
     .gm-mid-wide{display:block}
     .gm-score-stacked{display:none}
     .gm-score-wide{display:flex}
-    .gm-scoreboard{gap:10px}
-    .gm-scoreboard .teamtag{font-size:14px!important}
-    .gm-mid-wrap{padding:8px 20px!important}
   }
   #scores-grid{display:flex;flex-direction:column;gap:14px}
 
