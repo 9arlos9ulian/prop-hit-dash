@@ -3635,7 +3635,7 @@ function renderScores() {
           ${noHit?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:8px;color:var(--bad);opacity:.75;flex:none">NO HIT</span>`:''}
           ${isBet?`<span class="scores-bet-col" title="In your bet slip" style="font-size:10px;flex:none">🎫</span>`:''}
           <span class="scores-hab-col" style="font-family:var(--mono);font-size:10px;color:${boxCol};flex:none;width:34px;text-align:right">${(isLiveGame||isFinalGame)?boxTxt:''}</span>
-          ${(!l.hasHit&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}
+          ${(!l.hasHit&&!isFinalGame&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}
         </div>`;
       }).join('');
 
@@ -3903,7 +3903,7 @@ function renderScoresAllBatters() {
   const thead = `<tr>${cols.map(([lbl,,align,,tip])=>`<th style="text-align:${align};cursor:help" title="${esc(tip||'')}">${lbl}</th>`).join('')}</tr>`;
   const tbody = rows.map(l => {
     const noHit = isFinal(l.gameState) && !l.hasHit;
-    const pickCell = `<td style="text-align:center">${(!l.hasHit&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}</td>`;
+    const pickCell = `<td style="text-align:center">${(!l.hasHit&&!isFinal(l.gameState)&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}</td>`;
     const teamCell = `<td style="text-align:center">${l.team?`<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}</td>`;
     const pTeam = pitcherTeam(l);
     const pTeamCell = `<td style="text-align:center">${pTeam?`<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(pTeam)}">${esc(pTeam)}</span>`:''}</td>`;
