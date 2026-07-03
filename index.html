@@ -390,9 +390,9 @@
   .card-collapsible>h2::after{content:'▾';font-size:12px;color:var(--sage);opacity:.6;transition:transform .2s;margin-left:8px;flex-shrink:0}
   .card-collapsible.collapsed>h2::after{transform:rotate(-90deg)}
   .card-collapsible.collapsed>*:not(h2){display:none!important}
+  .gm-header{box-shadow:0 4px 10px -4px rgba(0,0,0,.6);position:relative;z-index:1;transition:box-shadow .2s}
   .gamecard-collapsible>.gm-header{cursor:pointer;user-select:none}
-  .gamecard-collapsible>.gm-header::after{content:'▾';font-size:11px;color:var(--sage);opacity:.6;transition:transform .2s;margin-left:6px}
-  .gamecard-collapsible.collapsed>.gm-header::after{transform:rotate(-90deg)}
+  .gamecard-collapsible.collapsed>.gm-header{box-shadow:0 2px 6px -2px rgba(0,0,0,.5)}
   .gamecard-collapsible.collapsed>*:not(.gm-header){display:none!important}
   .gm-footer-cell{display:flex;align-items:center;justify-content:center;gap:12px}
   @media(max-width:480px){.gm-footer-cell{flex-direction:column;gap:4px}}
@@ -3687,12 +3687,11 @@ function renderScoresCompact() {
 
     const gamePk = batters[0]?.gamePk || '';
     const cardId = `scoregame-${gamePk}`;
-    const collapsed = _isCardCollapsed(cardId);
     const storyline = gameStoryline(awaySide, homeSide, parkFactor);
     const liveMatchupHtml = isLiveGame ? liveMatchupLine(scoreData) : '';
 
-    return `<div class="card gamecard-collapsible${collapsed?' collapsed':''}" id="${cardId}" style="border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--card);box-shadow:0 0 0 0 transparent,inset 0 0 40px ${glowCol}">
-      <div class="gm-header" onclick="if(!event.target.closest('a'))toggleCard('${cardId}')">
+    return `<div class="card" id="${cardId}" style="border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--card);box-shadow:0 0 0 0 transparent,inset 0 0 40px ${glowCol}">
+      <div class="gm-header">
         <div style="padding:8px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;background:var(--raised)">
           <div style="width:3px;height:14px;border-radius:2px;background:${accentCol};box-shadow:0 0 8px ${accentCol}88;flex:none"></div>
           <a id="slscl-${gamePk}" href="${gameUrl(batters[0]?.gameDate,gamePk,matchup,batters[0]?.gameState)}" target="_blank" rel="noopener" style="font-family:var(--disp);font-size:12px;font-weight:400;color:var(--chalk);letter-spacing:.3px;text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='rgba(255,255,255,.3)'" onmouseout="this.style.borderBottomColor='transparent'">${scoreTag || esc(matchup)}</a>
