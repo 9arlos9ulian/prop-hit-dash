@@ -4105,12 +4105,62 @@ function loadHistoricalSlate(date){
       populateGameDropdown();
       updateDebugFab();
       renderActiveTab();
+      loadHistoricalScores(date); // one-shot fetch of that day's real final scores
     })
     .catch(err => {
       alert('Could not load '+date+': '+err.message);
       const gsel = document.getElementById('global-date-picker');
       if(gsel) gsel.value = viewingDate || new Date().toLocaleDateString('en-CA');
     });
+}
+
+// one-shot fetch of a past date's real final scores/linescore — populates the
+// same _liveScores/_liveLinescore maps the live ticker writes, using the exact
+// same shape, so the existing Scores/All Batters render code needs no changes
+// to display them. Not recurring: a finished game's score won't change, so
+// there's nothing to poll (unlike the live ticker's 45s loop).
+async function loadHistoricalScores(date){
+  try {
+    const r = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&hydrate=linescore(offense,defense),team&date=${date}`);
+    if(!r.ok) return;
+    const data = await r.json();
+    const games = data.dates?.[0]?.games || [];
+    if(!window._liveScores) window._liveScores = new Map();
+    games.forEach(g => {
+      const away = canonTeamAbbr(g.teams.away.team.abbreviation);
+      const home = canonTeamAbbr(g.teams.home.team.abbreviation);
+      const gpk  = String(g.gamePk);
+      const state = g.status.abstractGameState;
+      const detailedState = g.status.detailedState;
+      const absState = (state||'').toLowerCase();
+      const ld = g.linescore || {};
+      window._liveScores.set(`${date}|${away} @ ${home}`, {
+        as: g.teams.away.score ?? null,
+        hs: g.teams.home.score ?? null,
+        state, detailedState, gamePk: gpk,
+        inning:  ld.currentInning || 0,
+        ordinal: ld.currentInningOrdinal || '',
+        half:    ld.inningHalf || '',
+        outs:    ld.outs || 0,
+        awayH: ld.teams?.away?.hits ?? null,
+        homeH: ld.teams?.home?.hits ?? null,
+        pitcher: ld.defense?.pitcher || null,
+        batter:  ld.offense?.batter  || null,
+      });
+      _liveLinescore.set(gpk, {
+        inning:  ld.currentInning || 0, ordinal: ld.currentInningOrdinal || '',
+        half:    ld.inningHalf || '',   outs:    ld.outs || 0,
+        isLive:  absState === 'live',   isFinal: absState === 'final',
+        onFirst:  !!ld.offense?.first, onSecond: !!ld.offense?.second, onThird: !!ld.offense?.third,
+        awayH: ld.teams?.away?.hits ?? null,  homeH: ld.teams?.home?.hits ?? null,
+        awayR: ld.teams?.away?.runs ?? null,  homeR: ld.teams?.home?.runs ?? null,
+        awayE: ld.teams?.away?.errors ?? null, homeE: ld.teams?.home?.errors ?? null,
+        innings: (ld.innings||[]).map(i => ({ num: i.num, away: i.away?.runs ?? null, home: i.home?.runs ?? null })),
+      });
+      if(absState === 'final') legs.forEach(l => { if(String(l.gamePk)===gpk && !isFinal(l.gameState)) l.gameState = detailedState || 'Final'; });
+    });
+    if(viewingDate === date) renderActiveTab(); // only redraw if the user hasn't navigated away since
+  } catch(_){}
 }
 
 // return from a historical archive view back to the live, currently-updating slate
@@ -4752,8 +4802,10 @@ function canonTeamAbbr(abbr){ return abbr==='AZ' ? 'ARI' : abbr; }
         <span style="font-family:var(--disp);font-size:16px;font-weight:400;line-height:1;color:${chipActive?'var(--amber)':'var(--chalk)'}">${chipDay}</span>
         <span style="font-family:var(--mono);font-size:8px;letter-spacing:.8px;color:${chipActive?'var(--amber)':'var(--sage)'};opacity:.8">${chipMon}</span>
       </span>`;
-      // store scores + live linescore data for slate cards
-      window._liveScores = new Map();
+      // store scores + live linescore data for slate cards — lazy-init only
+      // (never wholesale-reset) so historical entries loadHistoricalScores()
+      // wrote for a date being browsed via History survive this 45s tick
+      if(!window._liveScores) window._liveScores = new Map();
       games.forEach(g => {
         const away = canonTeamAbbr(g.teams.away.team.abbreviation);
         const home = canonTeamAbbr(g.teams.home.team.abbreviation);
@@ -4820,6 +4872,12 @@ function canonTeamAbbr(abbr){ return abbr==='AZ' ? 'ARI' : abbr; }
       // If the CSV is from a different date than today (stale online), fetch that date's
       // schedule so legs get correct Final states even without a local server.
       // gameDate in CSV is DD/MM — convert to YYYY-MM-DD for statsapi
+      // Skipped entirely while viewingDate is set: that's a deliberate History
+      // archive browse, not a stale-cache accident, and loadHistoricalScores()
+      // already fetches that date's real scores as a one-shot — letting this
+      // recurring block also fire on every 45s tick caused a fetchLiveGameData()
+      // <-> refreshTicker() <-> refresh() feedback loop that re-rendered the
+      // page continuously (the flashing stat-line bug).
       function csvDateToISO(d) {
         if(!d) return '';
         const p = d.split('/');
@@ -4827,7 +4885,7 @@ function canonTeamAbbr(abbr){ return abbr==='AZ' ? 'ARI' : abbr; }
         return d; // already ISO
       }
       const csvDates = [...new Set(legs.map(l=>csvDateToISO(l.gameDate)).filter(Boolean))];
-      const staleDates = csvDates.filter(d => d && d !== today);
+      const staleDates = viewingDate ? [] : csvDates.filter(d => d && d !== today);
       if(staleDates.length) {
         staleDates.forEach(async staleDate => {
           try {
@@ -4857,7 +4915,10 @@ function canonTeamAbbr(abbr){ return abbr==='AZ' ? 'ARI' : abbr; }
           } catch(_){}
         });
       }
-      renderActiveTab();
+      // don't redraw the active tab for this tick if the user is browsing a
+      // historical date — nothing in today's ticker fetch is relevant to what's
+      // on screen, and redrawing anyway just flickers the page every 45s
+      if(!viewingDate) renderActiveTab();
 
       // Pre-fetch boxscores for live games so fmt() can read pitcher/batter stats synchronously
       const liveGames = games.filter(g => g.status.abstractGameState === 'Live');
