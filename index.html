@@ -800,6 +800,7 @@
   <div id="debug-fab">
     <div class="dbg-dot" id="dbg-dot"></div>
     <span id="dbg-label">loading…</span>
+    <span id="dbg-bp" style="border-left:1px solid var(--line);padding-left:6px;margin-left:2px"></span>
   </div>
 
   <div id="slip-fab" onclick="toggleSlip()">
@@ -4232,7 +4233,22 @@ function updateDebugFab() {
   const isStale = csvISO.length && !csvISO.includes(today);
   dot.className = 'dbg-dot' + (viewingDate ? '' : isStale ? ' stale' : legs.length ? ' live' : '');
   lbl.textContent = `slate ${dateStr} · ${src}${ageStr?' · '+ageStr:''}`;
+  updateDebugBreakpoint();
 }
+
+// every real @media breakpoint used anywhere in this file, kept in sync manually —
+// shown live in the debug fab so viewport width can be referenced precisely
+// when giving layout instructions (e.g. "at 900px+...") instead of guessing
+const BREAKPOINTS = [480, 600, 640, 820, 900, 1100];
+function updateDebugBreakpoint(){
+  const bpEl = document.getElementById('dbg-bp');
+  if(!bpEl) return;
+  const w = window.innerWidth;
+  const lo = [...BREAKPOINTS].reverse().find(b => w >= b) ?? 0;
+  const hi = BREAKPOINTS.find(b => b > w);
+  bpEl.textContent = `${w}px (${lo}${hi?'–'+hi:'+'})`;
+}
+window.addEventListener('resize', updateDebugBreakpoint);
 
 function toggleCard(id) {
   const el = document.getElementById(id);
