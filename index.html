@@ -3492,7 +3492,7 @@ function buildScoreCard(matchup, batters, betKeys) {
 
     const ls    = _liveLinescore.get(gamePk);
     const gameDate = shortDateToISO(batters[0]?.gameDate);
-    const score = window._liveScores ? window._liveScores.get(`${gameDate}|${matchup}`) : null;
+    const score = window._liveScores ? window._liveScores.get(`${gameDate}|${canonMatchup(matchup)}`) : null;
     const isLiveGame  = ls ? ls.isLive  : isLive(gameState);
     const isFinalGame = ls ? ls.isFinal : isFinal(gameState);
     const box = (isLiveGame||isFinalGame) && gamePk ? _bsCache.get(gamePk) : null;
@@ -4738,6 +4738,16 @@ function lineScoreGrid(ls, awayTeam, homeTeam){
 // the CSV's l.matchup, so that game's score stays stuck at the "-" placeholder
 // forever even though its gameState (synced separately, by gamePk) updates fine.
 function canonTeamAbbr(abbr){ return abbr==='AZ' ? 'ARI' : abbr; }
+// window._liveScores keys are built from the live/historical schedule fetches,
+// which always canonicalize team abbreviations (AZ -> ARI) — but a matchup
+// string read straight off the CSV (e.g. "MIL @ AZ") isn't, so looking it up
+// verbatim never matched for Arizona games. Canonicalize both sides before
+// building/reading a _liveScores key from a raw matchup string.
+function canonMatchup(matchup){
+  const [away, home] = (matchup||'').split(' @ ').map(s => s.trim());
+  if(!away || !home) return matchup;
+  return `${canonTeamAbbr(away)} @ ${canonTeamAbbr(home)}`;
+}
 
 // ── mlb live ticker ───────────────────────────────────────────────────────
 (function(){
@@ -4885,7 +4895,13 @@ function canonTeamAbbr(abbr){ return abbr==='AZ' ? 'ARI' : abbr; }
         const state = g.status.abstractGameState;      // 'Live' | 'Preview' | 'Final'
         const detailedState = g.status.detailedState;  // 'In Progress' | 'Final' | 'Scheduled' …
         const ls = g.linescore || {};
-        const gd = (g.gameDate||'').slice(0,10);
+        // use the requested schedule date, not g.gameDate — late-night/West
+        // Coast games' gameDate (a UTC timestamp) often rolls to the next
+        // calendar day even though the API correctly filed them under
+        // `today`'s schedule; slicing g.gameDate here mismatched the key
+        // renderScores() looks up under (today's actual local date), so
+        // those games' score/record never resolved
+        const gd = today;
         const awayRec = g.teams.away.leagueRecord;
         const homeRec = g.teams.home.leagueRecord;
         window._liveScores.set(`${gd}|${away} @ ${home}`, {
@@ -4937,7 +4953,7 @@ function canonTeamAbbr(abbr){ return abbr==='AZ' ? 'ARI' : abbr; }
         });
         // also sync by matchup string for legs that may lack gamePk
         legs.forEach(l => {
-          const score = window._liveScores.get(`${shortDateToISO(l.gameDate)}|${l.matchup}`);
+          const score = window._liveScores.get(`${shortDateToISO(l.gameDate)}|${canonMatchup(l.matchup)}`);
           if(!score) return;
           if(score.state === 'Live' && !l.gameState.toLowerCase().includes('progress')) l.gameState = 'In Progress';
           else if(score.state === 'Final' && !isFinal(l.gameState)) l.gameState = score.detailedState || 'Final';
