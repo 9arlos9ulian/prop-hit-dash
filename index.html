@@ -3615,11 +3615,12 @@ function renderScores() {
                   : mu.lbl.includes('AVOID')  ? 'rgba(218,110,81,.12)'
                   : 'rgba(120,120,130,.04)';
 
+      const lineupLbl = side[0]?.lineupEst ? 'Estimated Lineup' : 'Confirmed Lineup';
       const headerRow = `<div style="display:flex;align-items:center;gap:8px;padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)">
         <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:14px;flex:none">#</span>
         <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:12px;flex:none"></span>
         <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:28px;text-align:right;flex:none">Scr</span>
-        <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);flex:1">Name</span>
+        <span style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:${side[0]?.lineupEst?'var(--amber)':'var(--sage)'};flex:1">${lineupLbl}</span>
         <span class="scores-hab-col" style="font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);width:34px;text-align:right;flex:none">${(isLiveGame||isFinalGame)?'H-AB':''}</span>
       </div>`;
 
@@ -3747,9 +3748,8 @@ function renderScores() {
     // by a line on each side, then the "tonight" field info (Gameday +
     // MLB.TV links, park, PF, weather) where the lean badge used to sit —
     // the lean label now lives in the footer below, matching Slate.
-    const _showEst = !isLiveGame && !isFinalGame;
-    const awayEst = _showEst && awaySide[0]?.lineupEst ? `<span title="Estimated lineup — not yet confirmed" style="font-family:var(--mono);font-size:8px;color:var(--amber);border:1px solid rgba(235,178,105,.35);border-radius:3px;padding:1px 4px">EST</span>` : '';
-    const homeEst = _showEst && homeSide[0]?.lineupEst ? `<span title="Estimated lineup — not yet confirmed" style="font-family:var(--mono);font-size:8px;color:var(--amber);border:1px solid rgba(235,178,105,.35);border-radius:3px;padding:1px 4px">EST</span>` : '';
+    // EST badge removed from the scoreboard header — that info now lives in
+    // each side's lineup table header instead ("Estimated Lineup" vs "Confirmed Lineup")
     const awayOu = (window._teamBadge && window._teamBadge[awayTeam]) || '';
     const homeOu = (window._teamBadge && window._teamBadge[homeTeam]) || '';
     const scoreStacked = `<div class="gm-score-stacked" style="flex-direction:column;justify-content:center;padding:8px 10px;min-width:100px;flex:none">
@@ -3757,7 +3757,6 @@ function renderScores() {
         <span style="display:flex;align-items:center;gap:5px">
           ${awayOu}
           <span class="teamtag" style="${teamTagStyle(awayTeam)};font-size:12px">${esc(awayTeam)}</span>
-          ${awayEst}
         </span>
         <span style="font-family:var(--disp);${awayIsRecord?'font-size:11px;font-weight:400':'font-size:15px;font-weight:600'};line-height:1;color:${awayIsRecord?'var(--sage)':awayLeads?'var(--amber)':'var(--chalk)'}" title="${awayIsRecord?'Season record':''}">${awayDisp}</span>
       </div>
@@ -3766,7 +3765,6 @@ function renderScores() {
         <span style="display:flex;align-items:center;gap:5px">
           ${homeOu}
           <span class="teamtag" style="${teamTagStyle(homeTeam)};font-size:12px">${esc(homeTeam)}</span>
-          ${homeEst}
         </span>
         <span style="font-family:var(--disp);${homeIsRecord?'font-size:11px;font-weight:400':'font-size:15px;font-weight:600'};line-height:1;color:${homeIsRecord?'var(--sage)':homeLeads?'var(--amber)':'var(--chalk)'}" title="${homeIsRecord?'Season record':''}">${homeDisp}</span>
       </div>
@@ -3778,14 +3776,12 @@ function renderScores() {
       <span style="display:flex;align-items:center;gap:6px">
         ${awayOu}
         <span class="teamtag" style="${teamTagStyle(awayTeam)}">${esc(awayTeam)}</span>
-        ${awayEst}
       </span>
       <span style="font-family:var(--disp);${awayIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${awayIsRecord?'var(--sage)':awayLeads?'var(--amber)':'var(--chalk)'}" title="${awayIsRecord?'Season record':''}">${awayDisp}</span>
       <span style="font-family:var(--disp);font-size:14px;color:var(--sage);opacity:.6">–</span>
       <span style="font-family:var(--disp);${homeIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${homeIsRecord?'var(--sage)':homeLeads?'var(--amber)':'var(--chalk)'}" title="${homeIsRecord?'Season record':''}">${homeDisp}</span>
       <span style="display:flex;align-items:center;gap:6px">
         <span class="teamtag" style="${teamTagStyle(homeTeam)}">${esc(homeTeam)}</span>
-        ${homeEst}
         ${homeOu}
       </span>
     </div>`;
