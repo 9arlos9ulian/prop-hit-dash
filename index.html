@@ -396,6 +396,10 @@
   .gamecard-collapsible.collapsed>*:not(.gm-header){display:none!important}
   .gm-footer-cell{display:flex;align-items:center;justify-content:center;gap:12px}
   @media(max-width:480px){.gm-footer-cell{flex-direction:column;gap:4px}}
+  /* Compact mode's footer cells are always narrower (2-3 per row grid), so
+     stack the lean chip above the eval result unconditionally, not just on
+     narrow viewports like .gm-footer-cell does */
+  .gm-footer-cell-stack{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
   #scores-grid{display:flex;flex-direction:column;gap:14px}
   /* Compact mode: multi-column card grid instead of one stacked column */
   #scores-grid.compact-grid{display:grid;grid-template-columns:1fr;align-items:start}
@@ -3676,9 +3680,9 @@ function renderScoresCompact() {
     // result on each side, instead of two stacked full-width rows
     const footerRow = (awayMu||homeMu) ? `
       <div style="display:flex;border-top:1px solid var(--line)">
-        <div class="gm-footer-cell" style="flex:1;padding:7px 14px;background:${muBg(awayMu)};border-left:3px solid ${muBorder(awayMu)}">${muChip(awayMu)}${isFinalGame?evalSide(awaySide,awayMu):''}</div>
+        <div class="gm-footer-cell-stack" style="flex:1;padding:7px 14px;background:${muBg(awayMu)};border-left:3px solid ${muBorder(awayMu)}">${muChip(awayMu)}${isFinalGame?evalSide(awaySide,awayMu):''}</div>
         <div style="width:1px;background:var(--line)"></div>
-        <div class="gm-footer-cell" style="flex:1;padding:7px 14px;background:${muBg(homeMu)};border-right:3px solid ${muBorder(homeMu)}">${muChip(homeMu)}${isFinalGame?evalSide(homeSide,homeMu):''}</div>
+        <div class="gm-footer-cell-stack" style="flex:1;padding:7px 14px;background:${muBg(homeMu)};border-right:3px solid ${muBorder(homeMu)}">${muChip(homeMu)}${isFinalGame?evalSide(homeSide,homeMu):''}</div>
       </div>` : '';
 
     const gamePk = batters[0]?.gamePk || '';
