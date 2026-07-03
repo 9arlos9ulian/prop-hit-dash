@@ -3807,18 +3807,16 @@ function renderScoresAllBatters() {
   }
   const num = (v,d) => v!=null && !isNaN(v) ? Number(v).toFixed(d??3).replace(/^0\./,'.').replace(/^-0\./,'-.') : '—';
   const pct = (v,d) => v!=null && !isNaN(v) ? (Number(v)*100).toFixed(d??0) : '—';
+  const pitcherTeam = l => {
+    const [away,home] = (l.matchup||'').split(' @ ').map(s=>s.trim());
+    return l.team===away ? home : l.team===home ? away : '';
+  };
   const cols = [
+    ['Pick',   null,                                                   'center'], // special-cased below
     ['Scr',    l => Math.round((l.p||0)*100),                          'right'],
     ['#',      l => l.slot||'',                                        'center'],
-    ['Team',   l => esc(l.team||''),                                   'center'],
+    ['Team',   null,                                                   'center'], // special-cased below
     ['Name',   null,                                                   'left'], // special-cased below
-    ['Pitcher',l => esc(l.pitcher ? l.pitcher.split(' ').slice(-1)[0] : ''), 'left'],
-    ['P.Grd',  l => l.pGrade||'—',                                     'center'],
-    ['P.CSW',  l => pct(l.pCsw),                                       'right'],
-    ['P.K/BB', l => num(l.pKbb,2),                                     'right'],
-    ['P.HH%',  l => pct(l.pHH),                                        'right'],
-    ['P.Rest', l => l.pDaysRest??'—',                                  'right'],
-    ['P.Rk',   l => l.pIsRookie?'Y':'',                                'center'],
     ['AVG',    l => num(l.bHitRate),                                   'right'],
     ['xBA',    l => num(l.bXba),                                       'right'],
     ['HH%',    l => pct(l.bHH),                                        'right'],
@@ -3833,17 +3831,28 @@ function renderScoresAllBatters() {
     ['Rest',   l => l.bDaysRest??'—',                                  'right'],
     ['Rk',     l => l.bIsRookie?'Y':'',                                'center'],
     ['ParkF',  l => l.parkFactor!=null ? Number(l.parkFactor).toFixed(2) : '—', 'right'],
+    ['P.Team', l => esc(pitcherTeam(l)),                                'center'], // special-cased below (colored)
+    ['Pitcher',l => esc(l.pitcher ? l.pitcher.split(' ').slice(-1)[0] : ''), 'left'],
+    ['P.Grd',  l => l.pGrade||'—',                                     'center'],
+    ['P.CSW',  l => pct(l.pCsw),                                       'right'],
+    ['P.K/BB', l => num(l.pKbb,2),                                     'right'],
+    ['P.HH%',  l => pct(l.pHH),                                        'right'],
+    ['P.Rest', l => l.pDaysRest??'—',                                  'right'],
+    ['P.Rk',   l => l.pIsRookie?'Y':'',                                'center'],
   ];
-  const thead = `<tr>${cols.map(([lbl,,align])=>`<th style="text-align:${align}">${lbl}</th>`).join('')}<th></th></tr>`;
+  const thead = `<tr>${cols.map(([lbl,,align])=>`<th style="text-align:${align}">${lbl}</th>`).join('')}</tr>`;
   const tbody = rows.map(l => {
     const noHit = isFinal(l.gameState) && !l.hasHit;
+    const pickCell = `<td style="text-align:center">${(!l.hasHit&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}</td>`;
+    const teamCell = `<td style="text-align:center">${l.team?`<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}</td>`;
+    const pTeam = pitcherTeam(l);
+    const pTeamCell = `<td style="text-align:center">${pTeam?`<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(pTeam)}">${esc(pTeam)}</span>`:''}</td>`;
     const nameCell = `<td style="text-align:left;cursor:${l.batterId?'pointer':'default'}" ${l.batterId?`onclick="goToBatter('${l.batterId}')"`:''}>
       <span style="${l.hasHit?'text-decoration:line-through;opacity:.45':''}">${esc(l.name)}</span>
       ${noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
     </td>`;
-    const cells = cols.map(([lbl,fn,align]) => lbl==='Name' ? nameCell : `<td style="text-align:${align}">${fn(l)}</td>`).join('');
-    const slipCell = `<td>${(!l.hasHit&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}</td>`;
-    return `<tr>${cells}${slipCell}</tr>`;
+    const cells = cols.map(([lbl,fn,align]) => lbl==='Pick' ? pickCell : lbl==='Team' ? teamCell : lbl==='P.Team' ? pTeamCell : lbl==='Name' ? nameCell : `<td style="text-align:${align}">${fn(l)}</td>`).join('');
+    return `<tr>${cells}</tr>`;
   }).join('');
   el.innerHTML = `<div class="card" style="overflow-x:auto;padding:0">
     <table class="allbatters-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>
