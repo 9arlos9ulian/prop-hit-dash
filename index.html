@@ -4173,6 +4173,15 @@ async function loadHistoricalScores(date){
       if(absState === 'final') legs.forEach(l => { if(String(l.gamePk)===gpk && !isFinal(l.gameState)) l.gameState = detailedState || 'Final'; });
     });
     if(viewingDate === date) renderActiveTab(); // only redraw if the user hasn't navigated away since
+
+    // per-batter final AB line ("H-AB" in the Scores card) reads _bsCache,
+    // which is normally only filled for today's live/final games — fetch it
+    // for this date's games too so the historical view isn't stuck on "—"
+    const finalGamePks = games.filter(g => (g.status?.abstractGameState||'').toLowerCase()==='final').map(g => String(g.gamePk));
+    if(finalGamePks.length){
+      await Promise.all(finalGamePks.map(gpk => _fetchBoxscore(gpk).catch(()=>null)));
+      if(viewingDate === date) renderActiveTab();
+    }
   } catch(_){}
 }
 
