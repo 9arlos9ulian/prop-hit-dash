@@ -406,6 +406,8 @@
   .allbatters-table tbody tr:nth-child(even){background:rgba(255,255,255,.015)}
   .allbatters-table tbody tr:hover{background:rgba(255,255,255,.06)}
   .gm-mid-wide{display:none}
+  .gm-score-stacked{display:flex}
+  .gm-score-wide{display:none}
   .linescore-grid{border-collapse:collapse;font-family:var(--mono);font-size:10px;color:var(--chalk)}
   .linescore-grid th{color:var(--sage);font-weight:400;font-size:8px;padding:1px 6px;text-align:center}
   .linescore-grid td{padding:1px 6px;text-align:center}
@@ -414,6 +416,8 @@
   @media(min-width:900px){
     .gm-mid-compact{display:none}
     .gm-mid-wide{display:block}
+    .gm-score-stacked{display:none}
+    .gm-score-wide{display:flex}
     .gm-scoreboard{gap:10px}
     .gm-scoreboard .teamtag{font-size:14px!important}
     .gm-mid-wrap{padding:8px 20px!important}
@@ -3722,7 +3726,7 @@ function renderScores() {
     const homeEst = _showEst && homeSide[0]?.lineupEst ? `<span title="Estimated lineup — not yet confirmed" style="font-family:var(--mono);font-size:8px;color:var(--amber);border:1px solid rgba(235,178,105,.35);border-radius:3px;padding:1px 4px">EST</span>` : '';
     const awayOu = (window._teamBadge && window._teamBadge[awayTeam]) || '';
     const homeOu = (window._teamBadge && window._teamBadge[homeTeam]) || '';
-    const scoreBlock = `<div style="display:flex;flex-direction:column;justify-content:center;padding:8px 10px;min-width:100px;flex:none">
+    const scoreStacked = `<div class="gm-score-stacked" style="flex-direction:column;justify-content:center;padding:8px 10px;min-width:100px;flex:none">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:6px">
         <span style="display:flex;align-items:center;gap:5px">
           ${awayOu}
@@ -3741,6 +3745,26 @@ function renderScores() {
         <span style="font-family:var(--disp);font-size:15px;font-weight:600;line-height:1;color:${homeLeads?'var(--amber)':'var(--chalk)'}">${hs??'-'}</span>
       </div>
     </div>`;
+
+    // wide breakpoint: single horizontal ticker — away tag/score – home score/tag,
+    // reading outward from center (OU badge is each team's outermost element)
+    const scoreWide = `<div class="gm-score-wide" style="align-items:center;justify-content:center;gap:10px;padding:8px 14px;flex:none">
+      <span style="display:flex;align-items:center;gap:6px">
+        ${awayOu}
+        <span class="teamtag" style="${teamTagStyle(awayTeam)}">${esc(awayTeam)}</span>
+        ${awayEst}
+      </span>
+      <span style="font-family:var(--disp);font-size:20px;font-weight:600;line-height:1;color:${awayLeads?'var(--amber)':'var(--chalk)'}">${as??'-'}</span>
+      <span style="font-family:var(--disp);font-size:14px;color:var(--sage);opacity:.6">–</span>
+      <span style="font-family:var(--disp);font-size:20px;font-weight:600;line-height:1;color:${homeLeads?'var(--amber)':'var(--chalk)'}">${hs??'-'}</span>
+      <span style="display:flex;align-items:center;gap:6px">
+        <span class="teamtag" style="${teamTagStyle(homeTeam)}">${esc(homeTeam)}</span>
+        ${homeEst}
+        ${homeOu}
+      </span>
+    </div>`;
+
+    const scoreBlock = scoreStacked + scoreWide;
 
     // live pitcher-vs-batter readout replaces Gameday/park/MLB.TV links —
     // only has content while the game is actually live
