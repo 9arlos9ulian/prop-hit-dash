@@ -3811,38 +3811,53 @@ function renderScoresAllBatters() {
     const [away,home] = (l.matchup||'').split(' @ ').map(s=>s.trim());
     return l.team===away ? home : l.team===home ? away : '';
   };
-  // same good/bad thresholds already used elsewhere (bstat/pstat helpers) —
-  // reused here rather than invented, so the table agrees with the card/popup views
+  // color ranges — reused verbatim where a threshold already exists elsewhere
+  // (bstat/pstat helpers, dotCol, gameStoryline's rest/park thresholds) so the
+  // table agrees with the card/popup/Scores views; new ranges defined only
+  // where nothing existed yet, documented inline
   const hiLoCol = (v,hi,lo) => v==null||isNaN(v) ? 'var(--sage)' : v>=hi ? 'var(--good)' : v<=lo ? 'var(--bad)' : 'var(--chalk)';
-  const scoreCol = p => p>=0.70?'var(--good)':p>=0.55?'var(--amber)':'var(--sage)';
   const babipCol = v => v==null||isNaN(v) ? 'var(--sage)' : v>=0.350 ? 'var(--amber)' : v<=0.250 ? 'var(--good)' : 'var(--chalk)';
+  // new range: hit-rate-shaped stats (vsL/vsR/SP/RP/BvP) reuse AVG's .300/.230 split
+  const hitRateCol = v => hiLoCol(v,.300,.230);
+  // new range: |split| points — a wide platoon split is worth flagging regardless
+  // of direction (amber), a tiny one means the batter is equally dangerous either way (good)
+  const splitCol = v => v==null||isNaN(v) ? 'var(--sage)' : Math.abs(v*100)>=10 ? 'var(--amber)' : Math.abs(v*100)<3 ? 'var(--good)' : 'var(--chalk)';
+  // new range: at-bats per game — below ~3.3 means real playing-time risk (batting low/frequently subbed)
+  const abgCol = v => v==null||isNaN(v) ? 'var(--sage)' : v>=4.2 ? 'var(--good)' : v<=3.3 ? 'var(--bad)' : 'var(--chalk)';
+  // batter rest: same 8d/15d thresholds as the existing restbadge (8d=worth noting, 15d=warn)
+  const bRestCol = v => v==null ? 'var(--sage)' : v>=15 ? 'var(--bad)' : v>=8 ? 'var(--amber)' : 'var(--chalk)';
+  // pitcher rest: same thresholds as the existing pitcher restbadge (<=2d=short-rest/bullpen-arm
+  // warning, >=18d=possible IL return warning) — both ends are a caution flag, not "good"
+  const pRestCol = v => v==null ? 'var(--sage)' : v>=18 ? 'var(--bad)' : (v>0 && v<=2) ? 'var(--amber)' : 'var(--chalk)';
+  // park factor: same >=1.10/<=0.90 extremes gameStoryline uses — favorable/unfavorable for a batter
+  const parkCol = v => v==null||isNaN(v) ? 'var(--sage)' : v>=1.10 ? 'var(--good)' : v<=0.90 ? 'var(--bad)' : 'var(--chalk)';
   const cols = [
     ['Pick',   null,                                                   'center'], // special-cased below
-    ['Scr',    l => Math.round((l.p||0)*100),                          'right',   l => scoreCol(l.p||0)],
+    ['Scr',    l => Math.round((l.p||0)*100),                          'right',   l => dotCol(l.p||0)],
     ['#',      l => l.slot||'',                                        'center'],
     ['Team',   null,                                                   'center'], // special-cased below
-    ['Name',   null,                                                   'left'], // special-cased below
+    ['Name',   null,                                                   'left'], // special-cased below (colored)
     ['AVG',    l => num(l.bHitRate),                                   'right',   l => hiLoCol(l.bHitRate,.300,.230)],
     ['xBA',    l => num(l.bXba),                                       'right',   l => hiLoCol(l.bXba,.290,.220)],
     ['HH%',    l => pct(l.bHH),                                        'right',   l => hiLoCol(l.bHH!=null?l.bHH*100:null,50,30)],
     ['BABIP',  l => num(l.bBabip),                                     'right',   l => babipCol(l.bBabip)],
-    ['vsL',    l => num(l.vsL),                                        'right'],
-    ['vsR',    l => num(l.vsR),                                        'right'],
-    ['Split',  l => l.splitDiff!=null ? (l.splitDiff>=0?'+':'')+pct(l.splitDiff,1) : '—', 'right'],
-    ['SP',     l => num(l.bHitRateVsSp),                                'right'],
-    ['RP',     l => num(l.bHitRateVsRp),                                'right'],
-    ['BvP',    l => l.bvpAb ? `${num(l.bvpAvg)} (${l.bvpAb})` : '—',    'right'],
-    ['AB/G',   l => l.bAvgAb!=null ? Number(l.bAvgAb).toFixed(1) : '—', 'right'],
-    ['Rest',   l => l.bDaysRest??'—',                                  'right'],
+    ['vsL',    l => num(l.vsL),                                        'right',   l => hitRateCol(l.vsL)],
+    ['vsR',    l => num(l.vsR),                                        'right',   l => hitRateCol(l.vsR)],
+    ['Split',  l => l.splitDiff!=null ? (l.splitDiff>=0?'+':'')+pct(l.splitDiff,1) : '—', 'right', l => splitCol(l.splitDiff)],
+    ['SP',     l => num(l.bHitRateVsSp),                                'right',   l => hitRateCol(l.bHitRateVsSp)],
+    ['RP',     l => num(l.bHitRateVsRp),                                'right',   l => hitRateCol(l.bHitRateVsRp)],
+    ['BvP',    l => l.bvpAb ? `${num(l.bvpAvg)} (${l.bvpAb})` : '—',    'right',   l => l.bvpAb ? hitRateCol(l.bvpAvg) : 'var(--sage)'],
+    ['AB/G',   l => l.bAvgAb!=null ? Number(l.bAvgAb).toFixed(1) : '—', 'right',   l => abgCol(l.bAvgAb)],
+    ['Rest',   l => l.bDaysRest??'—',                                  'right',   l => bRestCol(l.bDaysRest)],
     ['Rk',     l => l.bIsRookie?'Y':'',                                'center'],
-    ['ParkF',  l => l.parkFactor!=null ? Number(l.parkFactor).toFixed(2) : '—', 'right'],
+    ['ParkF',  l => l.parkFactor!=null ? Number(l.parkFactor).toFixed(2) : '—', 'right', l => parkCol(l.parkFactor)],
     ['P.Team', l => esc(pitcherTeam(l)),                                'center'], // special-cased below (colored)
     ['Pitcher',l => esc(l.pitcher ? l.pitcher.split(' ').slice(-1)[0] : ''), 'left'],
     ['P.Grd',  l => l.pGrade||'—',                                     'center',  l => l.pGrade ? gradeCol(l.pGrade) : 'var(--sage)'],
     ['P.CSW',  l => pct(l.pCsw),                                       'right',   l => hiLoCol(l.pCsw!=null?l.pCsw*100:null,30,24)],
     ['P.K/BB', l => num(l.pKbb,2),                                     'right',   l => hiLoCol(l.pKbb,3.0,1.5)],
     ['P.HH%',  l => pct(l.pHH),                                        'right',   l => l.pHH==null||isNaN(l.pHH) ? 'var(--sage)' : (l.pHH*100)>=44 ? 'var(--bad)' : (l.pHH*100)<=30 ? 'var(--good)' : 'var(--chalk)'],
-    ['P.Rest', l => l.pDaysRest??'—',                                  'right'],
+    ['P.Rest', l => l.pDaysRest??'—',                                  'right',   l => pRestCol(l.pDaysRest)],
     ['P.Rk',   l => l.pIsRookie?'Y':'',                                'center'],
   ];
   const thead = `<tr>${cols.map(([lbl,,align])=>`<th style="text-align:${align}">${lbl}</th>`).join('')}</tr>`;
@@ -3853,7 +3868,7 @@ function renderScoresAllBatters() {
     const pTeam = pitcherTeam(l);
     const pTeamCell = `<td style="text-align:center">${pTeam?`<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(pTeam)}">${esc(pTeam)}</span>`:''}</td>`;
     const nameCell = `<td style="text-align:left;cursor:${l.batterId?'pointer':'default'}" ${l.batterId?`onclick="goToBatter('${l.batterId}')"`:''}>
-      <span style="${l.hasHit?'text-decoration:line-through;opacity:.45':''}">${esc(l.name)}</span>
+      <span style="color:${dotCol(l.p||0)};${l.hasHit?'text-decoration:line-through;opacity:.45':''}">${esc(l.name)}</span>
       ${noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
     </td>`;
     const cells = cols.map(([lbl,fn,align,colorFn]) => lbl==='Pick' ? pickCell : lbl==='Team' ? teamCell : lbl==='P.Team' ? pTeamCell : lbl==='Name' ? nameCell : `<td style="text-align:${align};${colorFn?`color:${colorFn(l)}`:''}">${fn(l)}</td>`).join('');
