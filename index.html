@@ -3556,6 +3556,11 @@ function renderScores() {
     const as = (isLiveGame||isFinalGame) ? (score?.as ?? null) : null;
     const hs = (isLiveGame||isFinalGame) ? (score?.hs ?? null) : null;
     const awayLeads = as!=null && hs!=null && as > hs, homeLeads = as!=null && hs!=null && hs > as;
+    // before first pitch, show each team's season record instead of a bare "-"
+    const awayDisp = as ?? score?.awayRecord ?? '-';
+    const homeDisp = hs ?? score?.homeRecord ?? '-';
+    const awayIsRecord = as==null && !!score?.awayRecord;
+    const homeIsRecord = hs==null && !!score?.homeRecord;
     const tvUrl = (isLiveGame && gamePk) ? `https://www.mlb.com/tv/g${gamePk}` : '';
 
     let midCompact, midWide;
@@ -3754,7 +3759,7 @@ function renderScores() {
           <span class="teamtag" style="${teamTagStyle(awayTeam)};font-size:12px">${esc(awayTeam)}</span>
           ${awayEst}
         </span>
-        <span style="font-family:var(--disp);font-size:15px;font-weight:600;line-height:1;color:${awayLeads?'var(--amber)':'var(--chalk)'}">${as??'-'}</span>
+        <span style="font-family:var(--disp);${awayIsRecord?'font-size:11px;font-weight:400':'font-size:15px;font-weight:600'};line-height:1;color:${awayIsRecord?'var(--sage)':awayLeads?'var(--amber)':'var(--chalk)'}" title="${awayIsRecord?'Season record':''}">${awayDisp}</span>
       </div>
       <div style="height:1px;background:var(--line)"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:6px">
@@ -3763,7 +3768,7 @@ function renderScores() {
           <span class="teamtag" style="${teamTagStyle(homeTeam)};font-size:12px">${esc(homeTeam)}</span>
           ${homeEst}
         </span>
-        <span style="font-family:var(--disp);font-size:15px;font-weight:600;line-height:1;color:${homeLeads?'var(--amber)':'var(--chalk)'}">${hs??'-'}</span>
+        <span style="font-family:var(--disp);${homeIsRecord?'font-size:11px;font-weight:400':'font-size:15px;font-weight:600'};line-height:1;color:${homeIsRecord?'var(--sage)':homeLeads?'var(--amber)':'var(--chalk)'}" title="${homeIsRecord?'Season record':''}">${homeDisp}</span>
       </div>
     </div>`;
 
@@ -3775,9 +3780,9 @@ function renderScores() {
         <span class="teamtag" style="${teamTagStyle(awayTeam)}">${esc(awayTeam)}</span>
         ${awayEst}
       </span>
-      <span style="font-family:var(--disp);font-size:20px;font-weight:600;line-height:1;color:${awayLeads?'var(--amber)':'var(--chalk)'}">${as??'-'}</span>
+      <span style="font-family:var(--disp);${awayIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${awayIsRecord?'var(--sage)':awayLeads?'var(--amber)':'var(--chalk)'}" title="${awayIsRecord?'Season record':''}">${awayDisp}</span>
       <span style="font-family:var(--disp);font-size:14px;color:var(--sage);opacity:.6">–</span>
-      <span style="font-family:var(--disp);font-size:20px;font-weight:600;line-height:1;color:${homeLeads?'var(--amber)':'var(--chalk)'}">${hs??'-'}</span>
+      <span style="font-family:var(--disp);${homeIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${homeIsRecord?'var(--sage)':homeLeads?'var(--amber)':'var(--chalk)'}" title="${homeIsRecord?'Season record':''}">${homeDisp}</span>
       <span style="display:flex;align-items:center;gap:6px">
         <span class="teamtag" style="${teamTagStyle(homeTeam)}">${esc(homeTeam)}</span>
         ${homeEst}
@@ -4165,6 +4170,8 @@ async function loadHistoricalScores(date){
         homeH: ld.teams?.home?.hits ?? null,
         pitcher: ld.defense?.pitcher || null,
         batter:  ld.offense?.batter  || null,
+        awayRecord: g.teams.away.leagueRecord ? `${g.teams.away.leagueRecord.wins}-${g.teams.away.leagueRecord.losses}` : null,
+        homeRecord: g.teams.home.leagueRecord ? `${g.teams.home.leagueRecord.wins}-${g.teams.home.leagueRecord.losses}` : null,
       });
       _liveLinescore.set(gpk, {
         inning:  ld.currentInning || 0, ordinal: ld.currentInningOrdinal || '',
@@ -4872,6 +4879,8 @@ function canonTeamAbbr(abbr){ return abbr==='AZ' ? 'ARI' : abbr; }
         const detailedState = g.status.detailedState;  // 'In Progress' | 'Final' | 'Scheduled' …
         const ls = g.linescore || {};
         const gd = (g.gameDate||'').slice(0,10);
+        const awayRec = g.teams.away.leagueRecord;
+        const homeRec = g.teams.home.leagueRecord;
         window._liveScores.set(`${gd}|${away} @ ${home}`, {
           as, hs, state, detailedState,
           gamePk: String(g.gamePk),
@@ -4883,6 +4892,8 @@ function canonTeamAbbr(abbr){ return abbr==='AZ' ? 'ARI' : abbr; }
           homeH: ls.teams?.home?.hits ?? null,
           pitcher: ls.defense?.pitcher || null,
           batter:  ls.offense?.batter  || null,
+          awayRecord: awayRec ? `${awayRec.wins}-${awayRec.losses}` : null,
+          homeRecord: homeRec ? `${homeRec.wins}-${homeRec.losses}` : null,
         });
       });
       // Sync live game state + linescore back to leg objects so the Tonight tab stays current.
