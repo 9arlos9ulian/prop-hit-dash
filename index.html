@@ -997,10 +997,16 @@ const _MLB_ABBREV = {"Arizona Diamondbacks":"ARI","Atlanta Braves":"ATL","Baltim
 
 function _parseKalshiTeams(eventTicker, prefix) {
   // e.g. KXMLBTOTAL-26JUN271310NYYBOS → away='NYY', home='BOS'
+  // Team codes are 2-4 letters with no fixed width (SD/SF/TB/KC/AZ vs
+  // STL/CHC/HOU/etc.), so a naive fixed-split guess silently mis-parses
+  // combos like "SDLAD" into "SDL"/"AD" — validate both halves against the
+  // real 30-team set (PARK_INFO's keys) instead of guessing by length.
   const raw = (eventTicker.split('-')[1]||'').slice(11);
-  for(const split of [3,2,4]){
-    const a=raw.slice(0,split), h=raw.slice(split);
-    if(a && h && h.length>=2 && h.length<=4) return {away:a, home:h};
+  for(let split=2; split<=raw.length-2; split++){
+    // canonTeamAbbr: Kalshi uses "AZ" for Arizona same as the MLB schedule
+    // API does, while this app's canonical key (PARK_INFO, CSV) is "ARI"
+    const a=canonTeamAbbr(raw.slice(0,split)), h=canonTeamAbbr(raw.slice(split));
+    if(PARK_INFO[a] && PARK_INFO[h]) return {away:a, home:h};
   }
   return null;
 }
@@ -1044,7 +1050,8 @@ async function fetchKalshiTotals(dateStr) {
 }
 
 async function fetchMoneylines() {
-  // Kalshi KXMLB series — MLB game winner markets
+  // Kalshi KXMLBGAME series — per-game MLB winner markets (server.py proxies
+  // /kalshi/winner to that series; KXMLB alone is the season championship futures)
   if(!_onServer) return; // /kalshi/* is a server.py CORS proxy, not published to the public mirror
   try {
     const res = await fetch('/kalshi/winner');
