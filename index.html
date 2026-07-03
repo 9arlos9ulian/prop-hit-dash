@@ -552,6 +552,9 @@
         <span class="header-badge">LIVE</span>
       </div>
       <div style="display:flex;align-items:baseline;gap:14px;align-self:flex-end">
+        <select id="global-date-picker" class="header-about-link" onchange="syncHistoryDate(this.value)" style="background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:11px;font-family:var(--mono);cursor:pointer;align-self:center">
+          <option value="">📅 Date</option>
+        </select>
         <button class="header-about-link" onclick="switchTab('about',null)">README ↗</button>
         <button id="emailToggleBtn" class="header-about-link" onclick="toggleEmailNotify()" title="Send email with current slate data">Send Email</button>
       </div>
@@ -562,14 +565,11 @@
   <div id="mlb-ticker"><div id="ticker-track"><span class="sc-card"><span class="sc-inn sc-inn-pre">Loading…</span></span></div></div>
 
   <div class="tabs">
-    <button class="tab" onclick="switchTab('history',this)">History</button>
-    <select id="global-date-picker" onchange="syncHistoryDate(this.value)" style="margin-left:6px;background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:11px;font-family:var(--mono);cursor:pointer;align-self:center">
-      <option value="">📅 Date</option>
-    </select>
     <button class="tab active" onclick="switchTab('scores',this)">Scores</button>
     <button class="tab" onclick="switchTab('allbatters',this)">All Batters</button>
-    <button class="tab" onclick="switchTab('bets',this)">Bets<span id="tab-bets-badge" style="display:none;font-family:var(--mono);font-size:9px;opacity:.6;margin-left:5px;font-weight:400"></span></button>
     <div class="tabs-spacer"></div>
+    <button class="tab" onclick="switchTab('bets',this)">Bets<span id="tab-bets-badge" style="display:none;font-family:var(--mono);font-size:9px;opacity:.6;margin-left:5px;font-weight:400"></span></button>
+    <button class="tab" onclick="switchTab('history',this)">History</button>
   </div>
 
   <!-- SCORES TAB -->
@@ -1292,6 +1292,10 @@ function toggleCharlie(){
 let filterGame      = '';      // matchup string, '' = all
 let filterSearch    = '';      // batter name substring, '' = all
 let filterTeam      = '';      // team abbr from clicking a Slate over/under badge, '' = all
+let viewingDate     = '';      // '' = live today's slate in `legs`; else 'YYYY-MM-DD' = a slates/*.csv archive is loaded.
+                                // Deliberately NOT consumed by slotVisible() — swapping `legs` wholesale (see
+                                // loadHistoricalSlate/restoreLiveSlate) means the renderers need no date filter of their own.
+let _archiveDates   = [];      // dates confirmed available as slates/*.csv, populated once via /slates
 
 function filterByTeam(team){
   filterTeam = (filterTeam === team) ? '' : team;
@@ -3388,7 +3392,7 @@ function switchTab(name, btn) {
   if(btn) btn.classList.add('active');
   updateSlipCount();
   if(name==='history') { initCollapsibleCards(); loadHistory(); }
-  if(name==='bets' || name==='scores' || name==='allbatters') startLivePolling(); else stopLivePolling();
+  if((name==='bets' || name==='scores' || name==='allbatters') && !viewingDate) startLivePolling(); else stopLivePolling();
   if(name==='bets') renderBetsTab();
   if(name==='allbatters') renderScoresAllBatters();
   if(name==='scores' || name==='allbatters') {
@@ -4038,19 +4042,93 @@ function loadHistoryFile(input) {
 }
 
 function populateDateFilter() {
-  const sel = document.getElementById('h-date-filter');
-  const current = sel.value;
-  const dates = [...new Set(historyRows.map(r => r.date))].sort().reverse();
-  const opts = dates.map(d => `<option value="${d}">${d}</option>`).join('');
-  sel.innerHTML = '<option value="">All dates</option>' + opts;
-  sel.value = current;
+  mergeDatePickerOptions();
+}
+
+// single source of truth for both date pickers — merges picks_log.csv history
+// dates and the slates/*.csv archive dates (populated separately, see the
+// /slates fetch below) into one deduplicated, sorted list, so a date appearing
+// in both sources doesn't show up twice regardless of which source resolves first
+function mergeDatePickerOptions() {
+  const historyDates = [...new Set(historyRows.map(r => r.date))];
+  const all = [...new Set([...historyDates, ..._archiveDates])].sort().reverse();
+  const today = new Date().toLocaleDateString('en-CA');
+
+  const hsel = document.getElementById('h-date-filter');
+  if(hsel){
+    const cur = hsel.value;
+    hsel.innerHTML = '<option value="">All dates</option>' + all.map(d => `<option value="${d}">${d}</option>`).join('');
+    hsel.value = cur;
+  }
+
   const gsel = document.getElementById('global-date-picker');
-  if(gsel){ const gcur = gsel.value; gsel.innerHTML = '<option value="">📅 All dates</option>' + opts; gsel.value = gcur; }
+  if(gsel){
+    const cur = gsel.value || viewingDate || today;
+    gsel.innerHTML = '<option value="">📅 Date</option>' +
+      all.map(d => `<option value="${d}">${d===today?'Today ('+d+')':d}</option>`).join('');
+    gsel.value = [...gsel.options].some(o=>o.value===cur) ? cur : (viewingDate || '');
+  }
 }
 // tab-bar date picker (next to History) — mirrors into History's own filter and re-renders
 function syncHistoryDate(val){
-  const sel = document.getElementById('h-date-filter');
-  if(sel){ sel.value = val; renderHistory(); }
+  const gsel = document.getElementById('global-date-picker');
+  if(gsel) gsel.value = val;
+  const hsel = document.getElementById('h-date-filter');
+  if(hsel){ hsel.value = val; renderHistory(); } // unchanged existing behavior — History filters independently
+
+  const today = new Date().toLocaleDateString('en-CA');
+  const target = val === today ? '' : val; // "today" and "" (reset) both mean "live"
+  if(target === viewingDate) return; // re-picking the date already showing — no-op
+
+  if(legs.some(l => l.inSlip) &&
+     !confirm('You have unsaved picks in your slip — switching dates will clear them. Continue?')) {
+    if(gsel) gsel.value = viewingDate || today; // revert the picker, nothing else changes
+    return;
+  }
+
+  if(target) loadHistoricalSlate(target); else restoreLiveSlate();
+}
+
+// load a past day's full slate from the slates/*.csv archive (local server only) —
+// straight replace, not _mergeFresh: every row is a different game/day, there's
+// nothing from the live board to reconcile against (parseCSV already initializes
+// each row's session fields like inSlip on its own)
+function loadHistoricalSlate(date){
+  fetch('/slate/' + date)
+    .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+    .then(text => {
+      const fresh = parseCSV(text);
+      if(!fresh.length) throw new Error('empty CSV');
+      legs = fresh;
+      viewingDate = date;
+      stopLivePolling(); // finished day, nothing live to poll
+      populateGameDropdown();
+      updateDebugFab();
+      renderActiveTab();
+    })
+    .catch(err => {
+      alert('Could not load '+date+': '+err.message);
+      const gsel = document.getElementById('global-date-picker');
+      if(gsel) gsel.value = viewingDate || new Date().toLocaleDateString('en-CA');
+    });
+}
+
+// return from a historical archive view back to the live, currently-updating slate
+function restoreLiveSlate(){
+  const was = !!viewingDate;
+  viewingDate = '';
+  if(!was) return; // today was already showing, true no-op
+  const csvUrl = _onServer ? '/csv' : './tonight_p_hit.csv';
+  fetch(csvUrl+'?t='+Date.now())
+    .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+    .then(text => {
+      legs = parseCSV(text); // clean restore, not a merge against stale historical legs
+      populateGameDropdown();
+      updateDebugFab();
+      startLivePolling();
+      renderActiveTab();
+    })
+    .catch(err => alert('Could not restore live slate: '+err.message));
 }
 
 function updateDebugFab() {
@@ -4066,7 +4144,7 @@ function updateDebugFab() {
   const today = new Date().toLocaleDateString('en-CA');
   const csvISO = csvDates.map(d=>{ const p=d.split('/'); return p.length===2?`${new Date().getFullYear()}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`:d; });
   const isStale = csvISO.length && !csvISO.includes(today);
-  dot.className = 'dbg-dot' + (isStale ? ' stale' : legs.length ? ' live' : '');
+  dot.className = 'dbg-dot' + (viewingDate ? '' : isStale ? ' stale' : legs.length ? ' live' : '');
   lbl.textContent = `slate ${dateStr} · ${src}${ageStr?' · '+ageStr:''}`;
 }
 
@@ -4428,7 +4506,7 @@ function renderSlotChart() {
   const csvUrl  = isLocal ? '/csv' : './tonight_p_hit.csv';
 
   fetch(csvUrl+'?t='+Date.now()).then(r=>r.ok?r.text():null).then(text=>{
-    if(!text) return;
+    if(!text || viewingDate) return; // don't clobber a historical view with live data
     const fresh=parseCSV(text);
     if(fresh.length){
       _mergeFresh(fresh);
@@ -4441,6 +4519,7 @@ function renderSlotChart() {
   }).catch(()=>{});
 
   setInterval(() => {
+    if(viewingDate) return; // don't clobber a historical view with live data
     fetch(csvUrl+'?t='+Date.now()).then(r=>r.ok?r.text():null).then(text=>{
       if(!text) return;
       const fresh = parseCSV(text);
@@ -4461,18 +4540,8 @@ function renderSlotChart() {
   // populate the date pickers (local server only)
   if(_onServer) fetch('/slates').then(r=>r.ok?r.json():null).then(dates=>{
     if(!dates||!dates.length) return;
-    const today=new Date().toLocaleDateString('en-CA');
-    const sel=document.getElementById('global-date-picker');
-    if(sel){
-      dates.forEach(d=>{
-        const opt=document.createElement('option');
-        opt.value=d;
-        opt.textContent=d===today?'Today ('+d+')':d;
-        if(d===today) opt.selected=true;
-        sel.appendChild(opt);
-      });
-      sel.style.display='';
-    }
+    _archiveDates = dates;
+    mergeDatePickerOptions();
   }).catch(()=>{});
 }
 
