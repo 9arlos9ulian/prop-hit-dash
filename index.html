@@ -552,7 +552,7 @@
         <span class="header-badge">LIVE</span>
       </div>
       <div style="display:flex;align-items:baseline;gap:14px;align-self:flex-end">
-        <select id="global-date-picker" class="header-about-link" onchange="syncHistoryDate(this.value)" style="background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:11px;font-family:var(--mono);cursor:pointer;align-self:center">
+        <select id="global-date-picker" class="header-about-link" onchange="syncHistoryDate(this.value)" style="background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:11px;font-family:var(--mono);cursor:pointer;align-self:center" title="Filters History everywhere. On the public site it can't also load that day's full Scores/All Batters lineups — that needs the local dashboard."
           <option value="">📅 Date</option>
         </select>
         <button class="header-about-link" onclick="switchTab('about',null)">README ↗</button>
@@ -4075,6 +4075,13 @@ function syncHistoryDate(val){
   if(gsel) gsel.value = val;
   const hsel = document.getElementById('h-date-filter');
   if(hsel){ hsel.value = val; renderHistory(); } // unchanged existing behavior — History filters independently
+
+  // full-slate date swap (Scores/All Batters showing that day's lineups) needs
+  // /slate/<date> — a local-server-only route backed by slates/*.csv, never
+  // published to the public GitHub Pages mirror. On the public site, the date
+  // picker only re-filters History (done above); it can't swap Scores/All
+  // Batters, so stop here instead of hitting a 404.
+  if(!_onServer) return;
 
   const today = new Date().toLocaleDateString('en-CA');
   const target = val === today ? '' : val; // "today" and "" (reset) both mean "live"
