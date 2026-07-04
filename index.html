@@ -422,6 +422,9 @@
      selector, only loses to !important) */
   .gm-matchup-line{flex-direction:column!important;align-items:flex-end!important;gap:2px!important}
   .gm-matchup-line .mml-vs{display:none}
+  @media(min-width:600px){
+    .gm-matchup-line{align-items:center!important}
+  }
   @media(max-width:600px){
     /* the earlier "big dead gap" turned out to be a different bug (each
        stat span was breaking onto its own line instead of one line per
