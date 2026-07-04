@@ -3753,6 +3753,18 @@ function muLabel(offG, pitchG) {
 // (first visit, or a game not seen before) collapses by default.
 function _isCardCollapsed(id){ try{ const v = localStorage.getItem('card_collapsed_'+id); return v===null ? true : v==='1'; }catch(e){ return true; } }
 
+// "pin to top" — persists per gamePk (naturally scoped per day, since each
+// day's games get fresh gamePks), read here and applied as the primary sort
+// key in renderScores(). Toggled only from the pregame center gutter (see
+// buildScoreCard's pregameCenter) — a game already pinned before first pitch
+// stays pinned once live, this just stops offering the toggle UI then.
+function _isGamePinned(gamePk){ try{ return localStorage.getItem('scores_pinned_'+gamePk) === '1'; }catch(e){ return false; } }
+function toggleGamePin(gamePk){
+  const next = !_isGamePinned(gamePk);
+  try{ localStorage.setItem('scores_pinned_'+gamePk, next?'1':'0'); }catch(e){}
+  renderScores();
+}
+
 // ── scores tab — live boxscore per game, same lean dynamics as Slate ──────────
 // full per-game card, called from renderScores()'s map below
 function buildScoreCard(matchup, batters, betKeys) {
@@ -3915,8 +3927,11 @@ function buildScoreCard(matchup, batters, betKeys) {
     // same spot (and using the same 1px divider) the lineup split below
     // uses, so the vertical line runs continuously from header to lineup.
     const isWarmup = !!(ls && ls.isWarmup);
+    const isPinned = _isGamePinned(gamePk);
+    const pinBtn = `<span onclick="event.stopPropagation();toggleGamePin('${gamePk}')" title="${isPinned?'Unpin':'Pin to top'}" style="cursor:pointer;font-size:12px;display:block;margin:2px 0;color:${isPinned?'var(--amber)':'var(--sage)'};opacity:${isPinned?'1':'.4'}">${isPinned?'★':'☆'}</span>`;
     const pregameCenter = `<div class="gm-pregame-center">
       ${isWarmup?`<span style="font-family:var(--mono);font-size:10px;color:var(--amber)">Warm</span>`:startTime?`<span style="font-family:var(--mono);font-size:10px;color:var(--sage);white-space:nowrap">${esc(startTime)}</span>`:''}
+      ${pinBtn}
       ${kou?`<span class="gm-pregame-ou">${ouBtn('over', true)}</span>`:''}
     </div>`;
     const scoreboardPregame = `<div class="gm-scoreboard-pregame">
@@ -4201,6 +4216,13 @@ function renderScores() {
     if(scoresUpcoming) return !isLive(gs) && !isFinal(gs);
     return true;
   }).sort((a,b) => {
+    // pinned games always float to the top, regardless of sort mode — the
+    // chosen sort (Time/Best Lean) still governs order within the pinned
+    // group and within the rest, same "tracked-first" shape as the live
+    // ticker's gameSortKey().
+    const pa = _isGamePinned(String(a[1][0]?.gamePk||'')) ? 0 : 1;
+    const pb = _isGamePinned(String(b[1][0]?.gamePk||'')) ? 0 : 1;
+    if(pa !== pb) return pa - pb;
     if(scoresSort === 'rating') {
       function gameScore(bat) {
         const pitchGrade = bat[0]?.pGrade || 'C';
