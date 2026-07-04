@@ -416,6 +416,10 @@
   .gm-mid-wrap{padding:8px 20px;margin-right:10px}
   .gm-inning-box{display:none}
   .gm-matchup-mid{align-items:flex-end}
+  @media(max-width:600px){
+    .gm-matchup-line{flex-direction:column;align-items:flex-end;gap:2px!important}
+    .gm-matchup-line .mml-vs{display:none}
+  }
   .linescore-grid{border-collapse:collapse;font-family:var(--mono);font-size:10px;color:var(--chalk)}
   .linescore-grid th{color:var(--sage);font-weight:400;font-size:8px;padding:1px 6px;text-align:center}
   .linescore-grid td{padding:1px 6px;text-align:center}
@@ -4731,9 +4735,9 @@ function liveMatchupLine(score, opts){
   const fs = big ? '11px' : '9px';
   const pitNode = pitName ? `<a href="${pitcherUrl(pit.fullName)}" target="_blank" rel="noopener" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">P </span>${esc(pitName)}</a>${pitchCount!==null?` <span style="color:var(--sage)">${pitchCount}p</span>`:''}${pitER!==null?` <span style="color:${pitER>0?'var(--bad)':'var(--sage)'}">${pitER}ER</span>`:''}` : '';
   const batNode = batName ? `${batId?`<a href="#" onclick="event.preventDefault();goToBatter('${batId}')" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}</a>`:`<span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}`}${batLine?` <span style="color:var(--amber)">${batLine}</span>`:''}${paHistory.length?` <span style="color:var(--sage);opacity:.7">(${paHistory.join(', ')})</span>`:''}` : '';
-  return `<div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:${fs};flex-wrap:wrap;justify-content:${big?'flex-end':'flex-start'}">
+  return `<div class="gm-matchup-line" style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:${fs};flex-wrap:wrap;justify-content:${big?'flex-end':'flex-start'}">
     ${pitNode}
-    ${pitName&&batName?'<span style="opacity:.3">vs</span>':''}
+    ${pitName&&batName?'<span class="mml-vs" style="opacity:.3">vs</span>':''}
     ${batNode}
   </div>`;
 }
