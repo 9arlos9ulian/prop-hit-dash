@@ -644,6 +644,8 @@
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
           <button id="scores-live-btn" class="ghost fchip" onclick="scoresLiveOnly=!scoresLiveOnly;scoresUpcoming=false;this.classList.toggle('amber',scoresLiveOnly);document.getElementById('scores-upcoming-btn').classList.remove('amber');renderScores()">● Live</button>
           <button id="scores-upcoming-btn" class="ghost fchip" onclick="scoresUpcoming=!scoresUpcoming;scoresLiveOnly=false;this.classList.toggle('amber',scoresUpcoming);document.getElementById('scores-live-btn').classList.remove('amber');renderScores()">Upcoming</button>
+          <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
+          <button id="scores-collapse-toggle" class="ghost fchip" onclick="toggleAllScoreCards()">Expand All</button>
         </div>
       </div>
     </div>
@@ -3745,7 +3747,10 @@ function muLabel(offG, pitchG) {
   return                {lbl:'NEUTRAL',    col:'var(--sage)', bg:'rgba(255,255,255,.03)', border:'var(--line)', score:total, delta};
 }
 
-function _isCardCollapsed(id){ try{ return localStorage.getItem('card_collapsed_'+id)==='1'; }catch(e){ return false; } }
+// default is collapsed — a card only counts as expanded once the user has
+// explicitly expanded it at least once (stored '0'); no stored value at all
+// (first visit, or a game not seen before) collapses by default.
+function _isCardCollapsed(id){ try{ const v = localStorage.getItem('card_collapsed_'+id); return v===null ? true : v==='1'; }catch(e){ return true; } }
 
 // ── scores tab — live boxscore per game, same lean dynamics as Slate ──────────
 // full per-game card, called from renderScores()'s map below
@@ -4224,6 +4229,7 @@ function renderScores() {
   }
 
   el.innerHTML = games.map(([matchup, batters]) => buildScoreCard(matchup, batters, betKeys)).join('');
+  updateCollapseAllLabel();
 }
 
 // ── All Batters mode: flat, filterable table of every batter today — no per-game grouping,
@@ -4662,6 +4668,33 @@ function toggleCard(id) {
   if(!el) return;
   el.classList.toggle('collapsed');
   try { localStorage.setItem('card_collapsed_'+id, el.classList.contains('collapsed')?'1':'0'); } catch(e){}
+  updateCollapseAllLabel();
+}
+
+// bulk expand/collapse every game card currently in Scores — target state is
+// the opposite of whatever's currently showing (if any card is expanded,
+// "Expand All" collapses nothing; button label always names the action it's
+// about to take, computed from the majority state below).
+function toggleAllScoreCards(){
+  const cards = [...document.querySelectorAll('#scores-grid .gamecard-collapsible')];
+  if(!cards.length) return;
+  const expandAll = cards.some(c => c.classList.contains('collapsed'));
+  cards.forEach(c => {
+    c.classList.toggle('collapsed', !expandAll);
+    try { localStorage.setItem('card_collapsed_'+c.id, expandAll?'0':'1'); } catch(e){}
+  });
+  updateCollapseAllLabel();
+}
+
+// button always names the action it's about to perform: if every visible
+// card is already collapsed, offer "Expand All"; otherwise "Collapse All".
+function updateCollapseAllLabel(){
+  const btn = document.getElementById('scores-collapse-toggle');
+  if(!btn) return;
+  const cards = [...document.querySelectorAll('#scores-grid .gamecard-collapsible')];
+  if(!cards.length) return;
+  const allCollapsed = cards.every(c => c.classList.contains('collapsed'));
+  btn.textContent = allCollapsed ? 'Expand All' : 'Collapse All';
 }
 
 // ticker game chip → jump to that game's card in Scores
