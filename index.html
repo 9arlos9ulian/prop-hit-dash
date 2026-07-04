@@ -470,6 +470,11 @@
      20x20 boxes (same size as .row-icon-btn) so the two icon columns line up
      on the same side/size across the TEAM and RECORD rows. */
   .th-sqbtn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+  /* lean badge — the whole grade+label+%+delta lean reading as one pill,
+     colored by muLabel()'s STRONG/LEAN/NEUTRAL/AVOID bg+border+col so the
+     lean reads as a single at-a-glance chip instead of two lines of plain
+     colored text. */
+  .th-lean-badge{display:flex;flex-direction:column;gap:1px;padding:3px 8px;border-radius:6px;line-height:1.3;min-width:0}
   .gm-pregame-center{flex:none;width:78px;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:4px;padding:6px 4px;text-align:center}
   .gm-pregame-ou{display:flex;flex-direction:column;gap:3px}
   /* the shared ouBtn() markup is sized for the wide bottom TOTAL row
@@ -3870,16 +3875,16 @@ function buildScoreCard(matchup, batters, betKeys) {
       const leanCol = mu ? (()=>{
         const avgPct = Math.round((avg||0)*100);
         const avgGrade = offGrade(avg||0);
-        const avgCol = gradeCol(avgGrade);
         const sign = mu.delta >= 0 ? '+' : '';
-        const deltaCol = mu.delta >= 2 ? 'var(--good)' : mu.delta <= -2 ? 'var(--bad)' : 'var(--sage)';
         return `<span class="th-col">
-          <span class="th-s3" style="display:flex;align-items:center;gap:5px">
-            <span style="color:${avgCol}">${avgGrade}</span>
-            <span style="color:${mu.col}">${esc(mu.lbl.replace('🔥 ',''))}</span>
-          </span>
-          <span class="th-s3" style="color:${deltaCol}">
-            <span style="color:var(--chalk)">${avgPct}%</span> ${sign}${mu.delta}
+          <span class="th-lean-badge" style="background:${mu.bg};border:1px solid ${mu.border};color:${mu.col}">
+            <span class="th-s3" style="display:flex;align-items:center;gap:5px;color:inherit">
+              <span>${avgGrade}</span>
+              <span>${esc(mu.lbl.replace('🔥 ',''))}</span>
+            </span>
+            <span class="th-s3" style="color:inherit;opacity:.85">
+              ${avgPct}% ${sign}${mu.delta}
+            </span>
           </span>
         </span>`;
       })() : '<span class="th-col"></span>';
