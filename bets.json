@@ -7,7 +7,7 @@
     "odds": 549,
     "payout": 54.95,
     "trueP": 0.15396597669348294,
-    "status": "pending",
+    "status": "lost",
     "legs": [
       {
         "name": "Brandon Lowe",
@@ -21,7 +21,7 @@
         "pitcherHand": "R",
         "batterId": "664040",
         "gamePk": "822716",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "betType": "ml",
@@ -34,7 +34,7 @@
         "gameDate": "2026-07-04",
         "gamePk": "822716",
         "p": 0.4,
-        "outcome": null
+        "outcome": "lost"
       },
       {
         "betType": "ou",
@@ -47,7 +47,7 @@
         "gameDate": "2026-07-04",
         "gamePk": "822716",
         "p": 0.54,
-        "outcome": null
+        "outcome": "won"
       }
     ]
   }
