@@ -416,9 +416,13 @@
   .gm-mid-wrap{padding:8px 20px;margin-right:10px}
   .gm-inning-box{display:none}
   .gm-matchup-mid{align-items:flex-end}
+  /* pitcher/batter always on their own line now, at every breakpoint —
+     was mobile-only; !important needed on both since the inline style
+     sets align-items:center/gap:6px directly (inline beats a plain
+     selector, only loses to !important) */
+  .gm-matchup-line{flex-direction:column!important;align-items:flex-end!important;gap:2px!important}
+  .gm-matchup-line .mml-vs{display:none}
   @media(max-width:600px){
-    .gm-matchup-line{flex-direction:column;align-items:flex-end;gap:2px!important}
-    .gm-matchup-line .mml-vs{display:none}
     /* the earlier "big dead gap" turned out to be a different bug (each
        stat span was breaking onto its own line instead of one line per
        person — fixed above via .mml-row) rather than the floating itself.
