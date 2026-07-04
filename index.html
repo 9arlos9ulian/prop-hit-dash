@@ -451,6 +451,44 @@
     .gm-left-group{width:230px}
     .gm-inning-box{min-width:230px}
   }
+  /* pregame top strip — mirrored two-team layout (see teamHalf() /
+     scoreboardPregame in buildScoreCard). The center gutter sits symmetrically
+     between two flex:1 halves, so the row's true midpoint still lands where
+     the lineup split below divides — same idea as .gm-footer-cell above. */
+  .gm-scoreboard-pregame{display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)}
+  .gm-team-half{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;font-family:var(--mono);overflow:hidden}
+  .gm-team-half.home{flex-direction:row-reverse}
+  /* each half is two stacked columns (TEAM+RECORD, GRADE+PCT/DELTA) — see
+     teamHalf(). Sizes scale 5 (biggest, TEAM) down to 1 (smallest, RECORD),
+     per the requested visual hierarchy. */
+  .th-col{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .th-s5,.th-s3,.th-s1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .th-s5{font-family:var(--disp);font-size:18px;font-weight:600;line-height:1.15}
+  .th-s3{font-family:var(--mono);font-size:12px;font-weight:700}
+  .th-s1{font-family:var(--mono);font-size:9px}
+  /* trend arrow (▲/▼) and the moneyline add-to-slip button sit in matching
+     20x20 boxes (same size as .row-icon-btn) so the two icon columns line up
+     on the same side/size across the TEAM and RECORD rows. */
+  .th-sqbtn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .gm-pregame-center{flex:none;width:78px;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:4px;padding:6px 4px;text-align:center}
+  .gm-pregame-ou{display:flex;flex-direction:column;gap:3px}
+  /* the shared ouBtn() markup is sized for the wide bottom TOTAL row
+     (live/final) — inside the narrow pregame center gutter its full
+     "O 10.5 +113" text overflows past the gutter, so stretch+clip it to the
+     gutter's own width instead; the full line/price is still in the title
+     tooltip. align-items was center on the parent (for the start-time span);
+     switched to stretch + text-align:center so these buttons can go full
+     width without un-centering the time above them. */
+  .gm-pregame-center .row-icon-btn{width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;padding:0 4px}
+  /* below 660px, shrink everything a step so the two mirrored halves + the
+     fixed-width center gutter still fit without clipping. */
+  @media(max-width:660px){
+    .gm-team-half{gap:8px;padding:6px}
+    .th-s5{font-size:15px}
+    .th-s3{font-size:11px}
+    .th-s1{font-size:8px}
+    .gm-pregame-center{width:58px}
+  }
   #scores-grid{display:flex;flex-direction:column;gap:14px}
 
   /* ── batter popup ── */
@@ -1036,18 +1074,25 @@ function _centsToAmerican(p) {
 }
 
 async function fetchKalshiTotals(dateStr) {
-  // dateStr: 'YYYY-MM-DD' — only show live O/U for today's slate
+  // dateStr: 'YYYY-MM-DD' — only show live O/U for today's slate. Note:
+  // occurrence_datetime is a UTC timestamp of first pitch, and US evening
+  // games land on the *next* UTC calendar day — slicing it to a bare date
+  // and comparing against dateStr (today, UTC) silently drops every night
+  // game. Instead accept anything within a ±20h window of "now", wide
+  // enough to cover the whole slate's local day regardless of timezone.
   if(!_onServer) return; // /kalshi/* is a server.py CORS proxy, not published to the public mirror
   try {
     const res = await fetch('/kalshi/totals');
     if(!res.ok) return;
     const data = await res.json();
     const markets = data.markets || [];
+    const now = Date.now();
+    const WINDOW_MS = 20*60*60*1000;
 
     const byEvent = new Map();
     for(const m of markets) {
-      const occ = (m.occurrence_datetime || '').slice(0,10);
-      if(dateStr && occ !== dateStr) continue;
+      const occMs = Date.parse(m.occurrence_datetime || '');
+      if(dateStr && (!occMs || Math.abs(occMs-now) > WINDOW_MS)) continue;
       const et = m.event_ticker;
       if(!byEvent.has(et)) byEvent.set(et,[]);
       byEvent.get(et).push(m);
@@ -1066,10 +1111,17 @@ async function fetchKalshiTotals(dateStr) {
       // runs scored" — yes_bid = P(over), no_bid = P(under) for this strike
       const overP = Math.round(parseFloat(best.yes_bid_dollars || 0.5) * 100);
       const underP = Math.round(parseFloat(best.no_bid_dollars || (1 - (best.yes_bid_dollars||0.5))) * 100);
-      _kalshiOu.set(`${teams.away} @ ${teams.home}`, {
+      const key = `${teams.away} @ ${teams.home}`;
+      const occMs = Date.parse(best.occurrence_datetime || '');
+      const existing = _kalshiOu.get(key);
+      // same two teams can play a multi-game series within the window —
+      // keep whichever event is actually closest to now, not last-wins
+      if(existing && existing._occMs!=null && Math.abs(existing._occMs-now) <= Math.abs(occMs-now)) continue;
+      _kalshiOu.set(key, {
         line: best.floor_strike,
         over:  { oddsStr: _centsToAmerican(overP),  impliedP: overP/100 },
         under: { oddsStr: _centsToAmerican(underP), impliedP: underP/100 },
+        _occMs: occMs,
       });
     }
   } catch(_) { /* silently fail */ }
@@ -1109,9 +1161,16 @@ async function fetchMoneylines() {
       const homeP = Math.round(parseFloat(best.yes_bid_dollars || 0.5) * 100);
       const awayP = Math.round(parseFloat(best.no_bid_dollars || (1 - (best.yes_bid_dollars||0.5))) * 100);
 
-      _kalshiWinner.set(`${teams.away} @ ${teams.home}`, {
+      const key = `${teams.away} @ ${teams.home}`;
+      const occMs = Date.parse(best.occurrence_datetime || '');
+      const existing = _kalshiWinner.get(key);
+      // same two teams can appear more than once in the listing (multi-game
+      // series) — keep whichever event is closest to now, not last-wins
+      if(existing && existing._occMs!=null && occMs && Math.abs(existing._occMs-Date.now()) <= Math.abs(occMs-Date.now())) continue;
+      _kalshiWinner.set(key, {
         away: { team: teams.away, oddsStr: _centsToAmerican(awayP), impliedP: awayP/100 },
         home: { team: teams.home, oddsStr: _centsToAmerican(homeP), impliedP: homeP/100 },
+        _occMs: occMs || null,
       });
     }
   } catch(_) { /* silently fail */ }
@@ -2448,11 +2507,11 @@ function renderSlip(){
           else if(l.outcome==='lost') slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--bad);opacity:.6;flex:none">LOST</span>`;
           else if(l.outcome==='push') slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.6;flex:none">PUSH</span>`;
           else if(lsLine?.isLive) slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--amber);flex:none">${lsLine.awayR??0}-${lsLine.homeR??0}</span>`;
-          const teamTag = l.betType==='ml' ? `<span class="teamtag" style="${teamTagStyle(l.team)}">${esc(l.team)}</span>` : `<span class="teamtag">O/U</span>`;
-          return `<div class="leg" style="align-items:center">
+          const teamTag = l.betType==='ml' ? `<span class="teamtag" style="font-size:8px;padding:1px 4px;flex:none;${teamTagStyle(l.team)}">${esc(l.team)}</span>` : `<span class="teamtag" style="font-size:8px;padding:1px 4px;flex:none">O/U</span>`;
+          return `<div style="display:flex;align-items:center;gap:7px;padding:5px 12px">
+            <span style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--chalk);flex:none;width:38px;text-align:right">${esc(l.oddsStr||'')}</span>
             ${teamTag}
-            <div style="flex:1;min-width:0"><div class="ln" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</div></div>
-            <span class="lp">${esc(l.oddsStr||pct(l.p))}</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--chalk);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
             ${slipStatusEl}
             <button class="x" onclick="toggle(${l.id})">×</button>
           </div>`;
@@ -2478,16 +2537,18 @@ function renderSlip(){
         const slipInningHtml = lsLine?.inning
           ? `<div style="font-family:var(--mono);font-size:8px;color:var(--sage);margin-top:1px"><span style="color:var(--amber)">${lsLine.half==='Top'?'▲':'▼'}${lsLine.ordinal}</span> · ${lsLine.outs}out</div>`
           : '';
+        const pPct=(l.p*100).toFixed(0);
+        const scoreColor=l.p>=0.70?'var(--good)':l.p>=0.55?'var(--amber)':'var(--sage)';
         const nameLink = bid
-          ? `<a href="https://www.mlb.com/player/${bid}" target="_blank" rel="noopener" class="ln" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;color:inherit" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${esc(l.name||'Hitter')}</a>`
-          : `<div class="ln" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name||'Hitter')}</div>`;
-        return `<div class="leg" style="align-items:${slipInningHtml?'flex-start':'center'}">
-          ${l.team?`<span class="teamtag" style="margin-top:${slipInningHtml?'2px':0};${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}
+          ? `<a href="https://www.mlb.com/player/${bid}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:11px;color:var(--chalk);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${esc(l.name||'Hitter')}</a>`
+          : `<div style="font-family:var(--mono);font-size:11px;color:var(--chalk);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name||'Hitter')}</div>`;
+        return `<div style="display:flex;align-items:${slipInningHtml?'flex-start':'center'};gap:7px;padding:5px 12px">
+          <span style="font-family:var(--mono);font-size:11px;font-weight:600;color:${scoreColor};flex:none;width:22px;text-align:right;margin-top:${slipInningHtml?'2px':0}">${pPct}</span>
+          ${l.team?`<span class="teamtag" style="font-size:8px;padding:1px 4px;flex:none;margin-top:${slipInningHtml?'2px':0};${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}
           <div style="flex:1;min-width:0">
             ${nameLink}
             ${slipInningHtml}
           </div>
-          <span class="lp">${pct(l.p)}</span>
           ${slipStatusEl}
           <button class="x" onclick="toggle(${l.id})">×</button>
         </div>`;
@@ -3690,8 +3751,11 @@ function buildScoreCard(matchup, batters, betKeys) {
     const ls    = _liveLinescore.get(gamePk);
     const gameDate = shortDateToISO(batters[0]?.gameDate);
     const score = window._liveScores ? window._liveScores.get(`${gameDate}|${canonMatchup(matchup)}`) : null;
-    const isLiveGame  = ls ? ls.isLive  : isLive(gameState);
+    const isLiveGame  = ls ? (ls.isLive && !ls.isWarmup) : isLive(gameState);
     const isFinalGame = ls ? ls.isFinal : isFinal(gameState);
+    // pregame gets its own mirrored top-strip layout (see scoreboardPregame
+    // below) — live/final keep the original scoreboard bar untouched.
+    const isPregame = !isLiveGame && !isFinalGame;
     const box = (isLiveGame||isFinalGame) && gamePk ? _bsCache.get(gamePk) : null;
 
     // defense in depth: never show a score number unless the game is actually live/final
@@ -3732,16 +3796,119 @@ function buildScoreCard(matchup, batters, betKeys) {
     const homeMu  = homeSide.length ? muLabel(offGrade(homeAvg), homeSide[0]?.pGrade || 'C') : null;
 
     // inning box — floats right, only rendered at wide breakpoints (900px+).
-    // Real inning-by-inning grid once the game has started; before that, a
-    // compact head-to-head lean comparison (the footer below always shows
-    // the full chip regardless) fills the space instead of sitting empty.
-    const inningBox = (isLiveGame||isFinalGame)
-      ? lineScoreGrid(ls, awayTeam, homeTeam)
-      : (awayMu && homeMu ? `<div style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;white-space:nowrap">
-          <span style="color:${awayMu.col}">${esc(awayTeam)} ${esc(awayMu.lbl.replace('🔥 ',''))}</span>
-          <span style="color:var(--sage);opacity:.4">vs</span>
-          <span style="color:${homeMu.col}">${esc(homeTeam)} ${esc(homeMu.lbl.replace('🔥 ',''))}</span>
-        </div>` : '');
+    // Real inning-by-inning grid once the game has started; before that, the
+    // pregame lean strip lives in fieldInfo instead (see below) so it shows
+    // at every breakpoint, not just 900px+.
+    const inningBox = (isLiveGame||isFinalGame) ? lineScoreGrid(ls, awayTeam, homeTeam) : '';
+
+    // moneyline "+" buttons — one per team, only shown when a real Kalshi
+    // price exists for that side (degrade-gracefully, no button instead of a
+    // broken one when the matchup isn't priced). Hoisted here so both the
+    // pregame teamHalf() and (were it ever needed) other blocks can use it.
+    const kw = _kalshiWinner.get(canonMatchup(matchup));
+    const mlBtn = (side, teamAbbr) => {
+      const priced = kw?.[side];
+      if(!priced) return '';
+      const gpk = gamePk;
+      const existing = teamLegs.find(l=>l.betType==='ml' && l.gamePk===gpk && l.team===teamAbbr);
+      return `<button class="row-icon-btn${existing?' active':''}" title="${existing?'In slip — click to remove':`Add ${teamAbbr} moneyline (${priced.oddsStr})`}" onclick="event.stopPropagation();toggleTeamLeg('ml','${esc(matchup)}','${gpk}','${gameDate}',{team:'${teamAbbr}',oddsStr:'${priced.oddsStr}',impliedP:${priced.impliedP}})">${existing?'✓':'+'}</button>`;
+    };
+
+    // O/U total buttons — game-level (not per-team), only shown when a real
+    // Kalshi total is priced for this matchup. Hoisted here (rather than
+    // inside the old bottom ouRow) so the pregame center gutter can call it
+    // too, without duplicating the button markup.
+    const kou = _kalshiOu.get(canonMatchup(matchup));
+    const ouBtn = (selection, compact) => {
+      const priced = kou?.[selection];
+      if(!priced) return '';
+      const gpk = gamePk;
+      const existing = teamLegs.find(l=>l.betType==='ou' && l.gamePk===gpk && l.selection===selection);
+      const label = selection==='over' ? 'O' : 'U';
+      // compact: pregame center gutter only shows "O <line>" (no price, no
+      // Under button) — still adds the real priced leg to the slip on click,
+      // just doesn't surface the price/Under option in that cramped spot.
+      const text = compact ? `${label} ${kou.line}` : `${label} ${kou.line} ${priced.oddsStr}`;
+      return `<button class="row-icon-btn${existing?' active':''}" style="width:auto;padding:0 8px;font-size:10px" title="${existing?'In slip — click to remove':`${selection==='over'?'Over':'Under'} ${kou.line} (${priced.oddsStr})`}" onclick="event.stopPropagation();toggleTeamLeg('ou','${esc(matchup)}','${gpk}','${gameDate}',{selection:'${selection}',line:${kou.line},oddsStr:'${priced.oddsStr}',impliedP:${priced.impliedP}})">${text}</button>`;
+    };
+
+    // pregame mirrored team half — one function for both sides, in a fixed
+    // internal order (TEAM, RECORD+ML, PITCHER, LEAN); the "home" side is
+    // visually mirrored via CSS (flex-direction:row-reverse on .gm-team-half.home)
+    // rather than duplicating this markup with the groups hand-reversed.
+    // sized 2x2 grid per team half: TEAM (biggest, s5) + RECORD/ML (smallest,
+    // s1) stacked in one column, GRADE+LABEL (s3) + PCT/DELTA (s3) stacked in
+    // the other. No pitcher line here anymore — that detail stays in the
+    // lineup section below. Mirroring is still done via CSS row-reverse
+    // (.gm-team-half.home), so this function stays identical for both sides.
+    function teamHalf(team, mu, avg, side){
+      const ouBadge = (window._teamBadge && window._teamBadge[team]) || '';
+      const disp = side==='away' ? awayDisp : homeDisp;
+      const isRecord = side==='away' ? awayIsRecord : homeIsRecord;
+      const leads = side==='away' ? awayLeads : homeLeads;
+
+      // trend arrow and add-to-slip button sit in their own fixed-size
+      // (20x20, matching .row-icon-btn) column so both icons line up on the
+      // same side, same size, with TEAM/RECORD text in a second column next
+      // to them — not inline-trailing the record text like before. Mirrored
+      // per side so the icons always sit toward the strip's outer edge:
+      // away reads game-then-arrow / record-then-addslip (icon outward,
+      // away from the divider), home reads arrow-then-game /
+      // addslip-then-record (icon toward the divider, text outward).
+      const rowDir = side==='away' ? 'row-reverse' : 'row';
+      const teamRecordCol = `<span class="th-col">
+        <span class="th-s5" style="display:flex;flex-direction:${rowDir};align-items:center;gap:5px">
+          <span class="th-sqbtn">${ouBadge}</span>
+          <span class="teamtag" style="${teamTagStyle(team)};font-size:16px;padding:2px 8px">${esc(team)}</span>
+        </span>
+        <span class="th-s1" style="display:flex;flex-direction:${rowDir};align-items:center;gap:5px;color:${isRecord?'var(--sage)':leads?'var(--amber)':'var(--chalk)'}" title="${isRecord?'Season record':''}">
+          <span class="th-sqbtn">${mlBtn(side, team)}</span>
+          ${disp}
+        </span>
+      </span>`;
+
+      const leanCol = mu ? (()=>{
+        const avgPct = Math.round((avg||0)*100);
+        const avgGrade = offGrade(avg||0);
+        const avgCol = gradeCol(avgGrade);
+        const sign = mu.delta >= 0 ? '+' : '';
+        const deltaCol = mu.delta >= 2 ? 'var(--good)' : mu.delta <= -2 ? 'var(--bad)' : 'var(--sage)';
+        return `<span class="th-col">
+          <span class="th-s3" style="display:flex;align-items:center;gap:5px">
+            <span style="color:${avgCol}">${avgGrade}</span>
+            <span style="color:${mu.col}">${esc(mu.lbl.replace('🔥 ',''))}</span>
+          </span>
+          <span class="th-s3" style="color:${deltaCol}">
+            <span style="color:var(--chalk)">${avgPct}%</span> ${sign}${mu.delta}
+          </span>
+        </span>`;
+      })() : '<span class="th-col"></span>';
+
+      // DOM order is always LEAN column, TEAM/RECORD column. Away renders
+      // that left-to-right as-is (lean at the outer edge, team nearest the
+      // center divider). Home mirrors it via CSS row-reverse
+      // (.gm-team-half.home), flipping it to TEAM/RECORD, LEAN — team nearest
+      // the divider, lean at the outer edge — per the requested mirror order.
+      return `<div class="gm-team-half${side==='home'?' home':''}">
+        ${leanCol}${teamRecordCol}
+      </div>`;
+    }
+
+    // pregame center gutter — start time + Kalshi O/U total, sitting in the
+    // same spot (and using the same 1px divider) the lineup split below
+    // uses, so the vertical line runs continuously from header to lineup.
+    const isWarmup = !!(ls && ls.isWarmup);
+    const pregameCenter = `<div class="gm-pregame-center">
+      ${isWarmup?`<span style="font-family:var(--mono);font-size:10px;color:var(--amber)">Warm</span>`:startTime?`<span style="font-family:var(--mono);font-size:10px;color:var(--sage);white-space:nowrap">${esc(startTime)}</span>`:''}
+      ${kou?`<span class="gm-pregame-ou">${ouBtn('over', true)}</span>`:''}
+    </div>`;
+    const scoreboardPregame = `<div class="gm-scoreboard-pregame">
+      ${teamHalf(awayTeam, awayMu, awayAvg, 'away')}
+      <div style="width:1px;background:var(--line)"></div>
+      ${pregameCenter}
+      <div style="width:1px;background:var(--line)"></div>
+      ${teamHalf(homeTeam, homeMu, homeAvg, 'home')}
+    </div>`;
 
     function sortedSide(side){
       const arr = [...side];
@@ -3893,62 +4060,39 @@ function buildScoreCard(matchup, batters, betKeys) {
       </div>`;
     }
     // footer merged into one horizontal band — lean chip + avg P(hit) bar and
-    // the post-game eval result sit side by side per team, not stacked in two rows
-    const muRow = (awayMu||homeMu) ? `<div style="display:flex;border-top:1px solid var(--line)">
+    // the post-game eval result sit side by side per team, not stacked in two
+    // rows. Pregame no longer shows this — that info now lives in the mirrored
+    // top strip (teamHalf/scoreboardPregame above) instead of being repeated
+    // down here; live/final are unchanged (fieldInfo shows the live at-bat up
+    // top there, not the lean, so this remains the only place for it).
+    const muRow = (!isPregame && (awayMu||homeMu)) ? `<div style="display:flex;border-top:1px solid var(--line)">
       <div class="gm-footer-cell" style="flex:1;padding:7px 14px;background:${awayMu?awayMu.bg:'transparent'};border-left:3px solid ${awayMu?awayMu.border:'var(--line)'}">${muChip(awayMu,awayAvg)}${isFinalGame?evalSide(awaySide,awayMu):''}</div>
       <div style="width:1px;background:var(--line)"></div>
       <div class="gm-footer-cell" style="flex:1;padding:7px 14px;background:${homeMu?homeMu.bg:'transparent'};border-right:3px solid ${homeMu?homeMu.border:'var(--line)'}">${muChip(homeMu,homeAvg)}${isFinalGame?evalSide(homeSide,homeMu):''}</div>
     </div>` : '';
     const evalRow = ''; // merged into muRow above
 
-    // O/U toggle — game-level (not per-team), only shown when a real Kalshi
-    // total is priced for this matchup. Same degrade-gracefully rule as the
-    // moneyline buttons above: no price, no button.
-    const kou = _kalshiOu.get(matchup);
-    const ouRow = kou ? (() => {
-      const gpk = gamePk;
-      const ouBtn = (selection) => {
-        const priced = kou[selection];
-        const existing = teamLegs.find(l=>l.betType==='ou' && l.gamePk===gpk && l.selection===selection);
-        const label = selection==='over' ? 'O' : 'U';
-        return `<button class="row-icon-btn${existing?' active':''}" style="width:auto;padding:0 8px;font-size:10px" title="${existing?'In slip — click to remove':`${selection==='over'?'Over':'Under'} ${kou.line} (${priced.oddsStr})`}" onclick="toggleTeamLeg('ou','${esc(matchup)}','${gpk}','${gameDate}',{selection:'${selection}',line:${kou.line},oddsStr:'${priced.oddsStr}',impliedP:${priced.impliedP}})">${label} ${kou.line} ${priced.oddsStr}</button>`;
-      };
-      return `<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:6px;border-top:1px solid var(--line);background:rgba(255,255,255,.015)">
-        <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">TOTAL</span>
-        ${ouBtn('over')}
-        ${ouBtn('under')}
-      </div>`;
-    })() : '';
+    // O/U toggle row — game-level (not per-team), only shown when a real
+    // Kalshi total is priced for this matchup (kou/ouBtn hoisted above).
+    // Pregame moved this into the top strip's center gutter instead; kept
+    // here unchanged for live/final.
+    const ouRow = (!isPregame && kou) ? `<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:6px;border-top:1px solid var(--line);background:rgba(255,255,255,.015)">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">TOTAL</span>
+      ${ouBtn('over')}
+      ${ouBtn('under')}
+    </div>` : '';
 
-    // TV-style scoreboard header — team/score block (divider between the two
-    // rows, score sized to match the team badge), inning+diamond+outs framed
-    // by a line on each side, then the "tonight" field info (Gameday +
-    // MLB.TV links, park, PF, weather) where the lean badge used to sit —
-    // the lean label now lives in the footer below, matching Slate.
-    // EST badge removed from the scoreboard header — that info now lives in
-    // each side's lineup table header instead ("Estimated Lineup" vs "Confirmed Lineup")
+    // TV-style scoreboard header (live/final only) — team/score block
+    // (divider between the two rows, score sized to match the team badge),
+    // inning+diamond+outs framed by a line on each side. Pregame no longer
+    // uses this at all — see scoreboardPregame above.
     const awayOu = (window._teamBadge && window._teamBadge[awayTeam]) || '';
     const homeOu = (window._teamBadge && window._teamBadge[homeTeam]) || '';
-    // normalized to one consistent look at every width — used to swap for a
-    // horizontal ticker at 900px+, abandoned in favor of a single stacked
-    // layout everywhere (see .gm-score-stacked/.gm-mid-wrap CSS)
-    // moneyline "+" buttons — one per team tag, only shown when a real
-    // Kalshi price exists for that side (degrade-gracefully, no button
-    // instead of a broken one when the matchup isn't priced)
-    const kw = _kalshiWinner.get(matchup);
-    const mlBtn = (side, teamAbbr) => {
-      const priced = kw?.[side];
-      if(!priced) return '';
-      const gpk = gamePk;
-      const existing = teamLegs.find(l=>l.betType==='ml' && l.gamePk===gpk && l.team===teamAbbr);
-      return `<button class="row-icon-btn${existing?' active':''}" title="${existing?'In slip — click to remove':`Add ${teamAbbr} moneyline (${priced.oddsStr})`}" onclick="event.stopPropagation();toggleTeamLeg('ml','${esc(matchup)}','${gpk}','${gameDate}',{team:'${teamAbbr}',oddsStr:'${priced.oddsStr}',impliedP:${priced.impliedP}})">${existing?'✓':'+'}</button>`;
-    };
     const scoreStacked = `<div class="gm-score-stacked" style="flex-direction:column;justify-content:center;padding:8px 10px;min-width:100px;flex:none">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:6px">
         <span style="display:flex;align-items:center;gap:5px">
           ${awayOu}
           <span class="teamtag" style="${teamTagStyle(awayTeam)}">${esc(awayTeam)}</span>
-          ${mlBtn('away', awayTeam)}
         </span>
         <span style="font-family:var(--disp);${awayIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${awayIsRecord?'var(--sage)':awayLeads?'var(--amber)':'var(--chalk)'}" title="${awayIsRecord?'Season record':''}">${awayDisp}</span>
       </div>
@@ -3957,7 +4101,6 @@ function buildScoreCard(matchup, batters, betKeys) {
         <span style="display:flex;align-items:center;gap:5px">
           ${homeOu}
           <span class="teamtag" style="${teamTagStyle(homeTeam)}">${esc(homeTeam)}</span>
-          ${mlBtn('home', homeTeam)}
         </span>
         <span style="font-family:var(--disp);${homeIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${homeIsRecord?'var(--sage)':homeLeads?'var(--amber)':'var(--chalk)'}" title="${homeIsRecord?'Season record':''}">${homeDisp}</span>
       </div>
@@ -3966,12 +4109,22 @@ function buildScoreCard(matchup, batters, betKeys) {
     const scoreBlock = scoreStacked;
 
     // live pitcher-vs-batter readout replaces Gameday/park/MLB.TV links —
-    // only has content while the game is actually live. Sits in the middle
-    // of the bar at wide breakpoints (next to the inning box on the right),
-    // right-aligned at narrow widths where there's no inning box to share
-    // the row with.
+    // only has content while the game is actually live (pregame uses
+    // scoreboardPregame instead, this block only renders for live/final).
     const fieldInfo = `<div class="gm-matchup-mid" style="display:flex;flex-direction:column;justify-content:center;gap:3px;padding:8px 10px;min-width:0;flex:1">
       ${isLiveGame ? liveMatchupLine(score, {big:true}) : ''}
+    </div>`;
+
+    // live/final scoreboard bar — unchanged from before this redesign.
+    const scoreboardLiveFinal = `<div class="gm-scoreboard" style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
+      <div class="gm-left-group" style="display:flex;align-items:stretch;flex:none">
+        <div class="gm-mid-wrap" style="display:flex;align-items:center;justify-content:center;min-width:0;flex:none">${diamondBlock}</div>
+        <div style="width:1px;background:var(--line)"></div>
+        ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" title="Watch on MLB.TV" style="text-decoration:none;color:inherit;display:flex">${scoreBlock}</a>`:scoreBlock}
+      </div>
+      <div style="width:1px;background:var(--line)"></div>
+      ${fieldInfo}
+      <div class="gm-inning-box" style="align-items:center;justify-content:flex-end;padding:8px 10px">${inningBox}</div>
     </div>`;
 
     const storyline = gameStoryline(awaySide, homeSide, parkFactor);
@@ -3983,16 +4136,7 @@ function buildScoreCard(matchup, batters, betKeys) {
     return `<div class="card gamecard-collapsible${collapsed?' collapsed':''}" id="${cardId}" style="padding:0;overflow:hidden">
       <div class="gm-header" onclick="if(!event.target.closest('a'))toggleCard('${cardId}')">
         ${storyline?`<div style="padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);text-align:center"><span title="${esc(storyline.title)}" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:${storyline.color}">✦ ${storyline.label}</span></div>`:''}
-        <div class="gm-scoreboard" style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
-          <div class="gm-left-group" style="display:flex;align-items:stretch;flex:none">
-            <div class="gm-mid-wrap" style="display:flex;align-items:center;justify-content:center;min-width:0;flex:none">${diamondBlock}</div>
-            <div style="width:1px;background:var(--line)"></div>
-            ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" title="Watch on MLB.TV" style="text-decoration:none;color:inherit;display:flex">${scoreBlock}</a>`:scoreBlock}
-          </div>
-          <div style="width:1px;background:var(--line)"></div>
-          ${fieldInfo}
-          <div class="gm-inning-box" style="align-items:center;justify-content:flex-end;padding:8px 10px">${inningBox}</div>
-        </div>
+        ${isPregame ? scoreboardPregame : scoreboardLiveFinal}
       </div>
       <div class="scores-mobile-tabs" style="border-bottom:1px solid var(--line)">
         <span onclick="setScoresMobileSide('${gamePk}','away')" style="flex:1;text-align:center;padding:6px;cursor:pointer;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:${mobileSide==='away'?'var(--amber)':'var(--sage)'};border-bottom:2px solid ${mobileSide==='away'?'var(--amber)':'transparent'}">${esc(awayTeam)}</span>
@@ -5172,6 +5316,13 @@ function canonMatchup(matchup){
             half:    ld.inningHalf     || '',
             outs:    ld.outs           || 0,
             isLive:  absState === 'live',
+            // MLB's abstractGameState flips to 'Live' at first-pitch warmup,
+            // before there's any real inning/pitcher/batter data — without
+            // this the top strip jumped straight to the sparse live
+            // scoreboard (blank diamond, blank matchup line, empty inning
+            // box) for the warmup window. isWarmup lets buildScoreCard keep
+            // showing the mirrored pregame strip until the game actually starts.
+            isWarmup: absState === 'live' && !ld.currentInningOrdinal,
             isFinal: absState === 'final',
             onFirst:  !!ld.offense?.first,
             onSecond: !!ld.offense?.second,
@@ -5232,6 +5383,36 @@ function canonMatchup(matchup){
               });
               const newState = absState==='final' ? (g.status?.detailedState||'Final') : absState==='live' ? 'In Progress' : '';
               if(newState) legs.forEach(l => { if(String(l.gamePk)===gpk) l.gameState=newState; });
+              // this staleDate fetch runs whenever the CSV's real game date
+              // differs from the ticker's displayed date (e.g. before 8am,
+              // the ticker rolls back to show last night's finals while the
+              // CSV is already dated for today) — without also writing
+              // _liveScores here, buildScoreCard's score/record lookup keyed
+              // by the CSV's real date never resolves, so upcoming games'
+              // season record silently fell back to "-" until the ticker's
+              // own date caught up at 8am.
+              const away = canonTeamAbbr(g.teams.away.team.abbreviation);
+              const home = canonTeamAbbr(g.teams.home.team.abbreviation);
+              const awayRec = g.teams.away.leagueRecord;
+              const homeRec = g.teams.home.leagueRecord;
+              if(!window._liveScores) window._liveScores = new Map();
+              window._liveScores.set(`${staleDate}|${away} @ ${home}`, {
+                as: g.teams.away.score ?? null,
+                hs: g.teams.home.score ?? null,
+                state: g.status.abstractGameState,
+                detailedState: g.status.detailedState,
+                gamePk: gpk,
+                inning: ld.currentInning || 0,
+                ordinal: ld.currentInningOrdinal || '',
+                half: ld.inningHalf || '',
+                outs: ld.outs || 0,
+                awayH: ld.teams?.away?.hits ?? null,
+                homeH: ld.teams?.home?.hits ?? null,
+                pitcher: ld.defense?.pitcher || null,
+                batter:  ld.offense?.batter  || null,
+                awayRecord: awayRec ? `${awayRec.wins}-${awayRec.losses}` : null,
+                homeRecord: homeRec ? `${homeRec.wins}-${homeRec.losses}` : null,
+              });
             });
             // matchup fallback for stale legs
             legs.forEach(l => {
