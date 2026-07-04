@@ -912,6 +912,7 @@ let legs = [];
 let kelly = 0.25;
 let currentTab = 'scores';
 const _bsCache = new Map(); // gamePk -> {players: Map<batterId, batting>}
+const _pbpCache = new Map(); // gamePk -> [{batterId, code}] completed at-bats this game, chronological
 // Opening-line odds lock — keyed by "name|matchup|date"; written once, never overwritten.
 // Persisted to localStorage so it survives tab reloads within the same calendar day.
 const _lockedOdds = (() => {
@@ -1107,6 +1108,32 @@ function _fetchBoxscore(gamePk){
       _bsCache.set(gamePk,result);
       return result;
     }).catch(()=>null);
+}
+
+// TV-broadcast-style at-bat result codes, keyed by MLB StatsAPI's eventType
+const _PA_CODES = {
+  strikeout:'K', strikeout_double_play:'K',
+  walk:'BB', intent_walk:'IBB', hit_by_pitch:'HBP',
+  single:'1B', double:'2B', triple:'3B', home_run:'HR',
+  field_out:'FO', force_out:'FC', fielders_choice:'FC', fielders_choice_out:'FC',
+  grounded_into_double_play:'GIDP', double_play:'DP', triple_play:'TP',
+  field_error:'E', sac_fly:'SF', sac_bunt:'SAC', catcher_interf:'CI',
+};
+function _paCode(eventType){ return _PA_CODES[eventType] || (eventType||'').slice(0,2).toUpperCase(); }
+
+function _fetchPlayByPlay(gamePk){
+  // always fetches fresh (unlike _fetchBoxscore's cache-until-deleted) since
+  // new at-bats complete continuously for a live game
+  return fetch(`https://statsapi.mlb.com/api/v1/game/${gamePk}/playByPlay`)
+    .then(r=>r.ok?r.json():null)
+    .then(d=>{
+      if(!d){ return _pbpCache.get(gamePk) || []; }
+      const result = (d.allPlays||[])
+        .filter(p => p.about?.isComplete && p.result?.eventType)
+        .map(p => ({ batterId: String(p.matchup?.batter?.id||''), code: _paCode(p.result.eventType) }));
+      _pbpCache.set(gamePk, result);
+      return result;
+    }).catch(()=>_pbpCache.get(gamePk) || []);
 }
 
 function isSubbedOut(bs, batterId){
@@ -4697,9 +4724,13 @@ function liveMatchupLine(score, opts){
   const pitchCount = pitStats?.pitches ?? null;
   const pitER = pitStats?.er ?? null;
   const batLine = batStats ? `${batStats.hits??0}-${batStats.atBats??0}` : null;
+  // this at-bat's earlier trips, TV-style codes (K, 1B, FC, ...) — from
+  // _pbpCache, prefetched alongside the boxscore for live games
+  const pbp = gpk ? _pbpCache.get(gpk) : null;
+  const paHistory = (batId && pbp) ? pbp.filter(p => p.batterId === batId).map(p => p.code) : [];
   const fs = big ? '11px' : '9px';
   const pitNode = pitName ? `<a href="${pitcherUrl(pit.fullName)}" target="_blank" rel="noopener" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">P </span>${esc(pitName)}</a>${pitchCount!==null?` <span style="color:var(--sage)">${pitchCount}p</span>`:''}${pitER!==null?` <span style="color:${pitER>0?'var(--bad)':'var(--sage)'}">${pitER}ER</span>`:''}` : '';
-  const batNode = batName ? `${batId?`<a href="#" onclick="event.preventDefault();goToBatter('${batId}')" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}</a>`:`<span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}`}${batLine?` <span style="color:var(--amber)">${batLine}</span>`:''}` : '';
+  const batNode = batName ? `${batId?`<a href="#" onclick="event.preventDefault();goToBatter('${batId}')" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}</a>`:`<span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}`}${batLine?` <span style="color:var(--amber)">${batLine}</span>`:''}${paHistory.length?` <span style="color:var(--sage);opacity:.7">(${paHistory.join(', ')})</span>`:''}` : '';
   return `<div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:${fs};flex-wrap:wrap;justify-content:${big?'flex-end':'flex-start'}">
     ${pitNode}
     ${pitName&&batName?'<span style="opacity:.3">vs</span>':''}
@@ -5005,9 +5036,13 @@ function canonMatchup(matchup){
       // on screen, and redrawing anyway just flickers the page every 45s
       if(!viewingDate) renderActiveTab();
 
-      // Pre-fetch boxscores for live games so fmt() can read pitcher/batter stats synchronously
+      // Pre-fetch boxscores + play-by-play for live games so fmt()/liveMatchupLine()
+      // can read pitcher/batter stats and this at-bat's earlier-PA codes synchronously
       const liveGames = games.filter(g => g.status.abstractGameState === 'Live');
-      if(liveGames.length) await Promise.all(liveGames.map(g => _fetchBoxscore(String(g.gamePk)).catch(()=>null)));
+      if(liveGames.length) await Promise.all(liveGames.map(g => Promise.all([
+        _fetchBoxscore(String(g.gamePk)).catch(()=>null),
+        _fetchPlayByPlay(String(g.gamePk)).catch(()=>null),
+      ])));
 
       track.innerHTML = dateLabel + games.map(fmt).join('');
     } catch(e){
