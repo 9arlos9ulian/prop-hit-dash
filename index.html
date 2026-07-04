@@ -4,7 +4,7 @@
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
   :root{
     --field:#0D0C0B; --surf:#121110; --raised:#181614; --chalk:#EFE1C4;
-    --sage:#9C978D; --line:#292620; --good:#B2D07E; --bad:#E7966E; --amber:#EBB269;
+    --sage:#9C978D; --line:#292620; --good:#B2D07E; --good-dark:#4ADE80; --bad:#E7966E; --amber:#EBB269;
     --disp:'JetBrains Mono',monospace; --mono:'JetBrains Mono',monospace; --body:'Inter',sans-serif;
   }
   *{box-sizing:border-box}
@@ -3731,6 +3731,7 @@ function gradeBg(g) {
   return 'rgba(218,110,81,.12)';
 }
 function dotCol(p) {
+  if(p >= 0.75) return 'var(--good-dark)';
   if(p >= 0.68) return 'var(--good)';
   if(p >= 0.55) return 'var(--amber)';
   return 'var(--bad)';
@@ -4285,7 +4286,7 @@ function renderScoresAllBatters() {
   const parkCol = v => v==null||isNaN(v) ? 'var(--sage)' : v>=1.10 ? 'var(--good)' : v<=0.90 ? 'var(--bad)' : 'var(--chalk)';
   const cols = [
     ['Pick',   null,                                                   'center', null, 'Add or remove this batter from your bet slip'],
-    ['Scr',    l => Math.round((l.p||0)*100),                          'right',   l => dotCol(l.p||0), 'Model probability of ≥1 hit tonight. Green ≥70%, amber ≥55%, red below'],
+    ['Scr',    l => Math.round((l.p||0)*100),                          'right',   l => dotCol(l.p||0), 'Model probability of ≥1 hit tonight. Dark green ≥75%, green ≥68%, amber ≥55%, red below'],
     ['#',      l => l.slot||'',                                        'center', null, 'Batting order slot (1-9)'],
     ['Team',   null,                                                   'center', null, "Batter's team"],
     ['Name',   null,                                                   'left', null, 'Batter name, colored by score tier — click to expand full detail'],
