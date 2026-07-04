@@ -932,6 +932,11 @@
 
 <script>
 let legs = [];
+// moneyline/O-U slip selections — separate from `legs` since those are
+// per-team/per-game, not per-batter, and aren't rebuilt on every CSV
+// reload the way `legs` is. Shares the `uid` counter so ids never collide.
+let teamLegs = [];
+function _allSlipItems(){ return legs.concat(teamLegs); }
 let kelly = 0.25;
 let currentTab = 'scores';
 const _bsCache = new Map(); // gamePk -> {players: Map<batterId, batting>}
@@ -1004,8 +1009,8 @@ function _mergeFresh(fresh){
   });
 }
 const _slateScoreCache = new Map(); // gamePk -> {as, hs} | null
-const _kalshiOu = new Map();     // matchup -> {line} | null
-const _kalshiWinner = new Map(); // "AWAY @ HOME" abbrev matchup -> {favTeam (abbrev), favOddsStr}
+const _kalshiOu = new Map();     // matchup -> {line, over:{oddsStr,impliedP}, under:{oddsStr,impliedP}} | null
+const _kalshiWinner = new Map(); // "AWAY @ HOME" abbrev matchup -> {away:{team,oddsStr,impliedP}, home:{team,oddsStr,impliedP}}
 const _MLB_ABBREV = {"Arizona Diamondbacks":"ARI","Atlanta Braves":"ATL","Baltimore Orioles":"BAL","Boston Red Sox":"BOS","Chicago White Sox":"CWS","Chicago Cubs":"CHC","Cincinnati Reds":"CIN","Cleveland Guardians":"CLE","Colorado Rockies":"COL","Detroit Tigers":"DET","Houston Astros":"HOU","Kansas City Royals":"KC","Los Angeles Angels":"LAA","Los Angeles Dodgers":"LAD","Miami Marlins":"MIA","Milwaukee Brewers":"MIL","Minnesota Twins":"MIN","New York Yankees":"NYY","New York Mets":"NYM","Oakland Athletics":"OAK","Philadelphia Phillies":"PHI","Pittsburgh Pirates":"PIT","San Diego Padres":"SD","San Francisco Giants":"SF","Seattle Mariners":"SEA","St. Louis Cardinals":"STL","Tampa Bay Rays":"TB","Texas Rangers":"TEX","Toronto Blue Jays":"TOR","Washington Nationals":"WSH","Athletics":"OAK"};
 
 function _parseKalshiTeams(eventTicker, prefix) {
@@ -1057,7 +1062,15 @@ async function fetchKalshiTotals(dateStr) {
       const best = sorted[0]; if(!best) continue;
       const teams = _parseKalshiTeams(eventTicker);
       if(!teams) continue;
-      _kalshiOu.set(`${teams.away} @ ${teams.home}`, { line: best.floor_strike });
+      // confirmed live against the real API: yes_sub_title reads "Over X
+      // runs scored" — yes_bid = P(over), no_bid = P(under) for this strike
+      const overP = Math.round(parseFloat(best.yes_bid_dollars || 0.5) * 100);
+      const underP = Math.round(parseFloat(best.no_bid_dollars || (1 - (best.yes_bid_dollars||0.5))) * 100);
+      _kalshiOu.set(`${teams.away} @ ${teams.home}`, {
+        line: best.floor_strike,
+        over:  { oddsStr: _centsToAmerican(overP),  impliedP: overP/100 },
+        under: { oddsStr: _centsToAmerican(underP), impliedP: underP/100 },
+      });
     }
   } catch(_) { /* silently fail */ }
 }
@@ -1090,14 +1103,16 @@ async function fetchMoneylines() {
       const teams = _parseKalshiTeams(eventTicker);
       if(!teams) continue;
 
-      // yes side = home team wins on Kalshi winner markets
+      // yes side = home team wins on Kalshi winner markets. Keep both sides'
+      // pricing (not just the favorite) — a moneyline bet on the underdog
+      // needs its own real price too.
       const homeP = Math.round(parseFloat(best.yes_bid_dollars || 0.5) * 100);
-      const awayP = 100 - homeP;
-      const homeFav = homeP >= awayP;
-      const favAbbr = homeFav ? teams.home : teams.away;
-      const favOddsStr = _centsToAmerican(homeFav ? homeP : awayP);
+      const awayP = Math.round(parseFloat(best.no_bid_dollars || (1 - (best.yes_bid_dollars||0.5))) * 100);
 
-      _kalshiWinner.set(`${teams.away} @ ${teams.home}`, { favTeam: favAbbr, favOddsStr });
+      _kalshiWinner.set(`${teams.away} @ ${teams.home}`, {
+        away: { team: teams.away, oddsStr: _centsToAmerican(awayP), impliedP: awayP/100 },
+        home: { team: teams.home, oddsStr: _centsToAmerican(homeP), impliedP: homeP/100 },
+      });
     }
   } catch(_) { /* silently fail */ }
 }
@@ -1294,7 +1309,7 @@ function toggleSlip(){
 }
 
 function updateSlipCount(){
-  const n = legs.filter(l => l.inSlip).length;
+  const n = _allSlipItems().filter(l => l.inSlip).length;
   const badge = document.getElementById('slip-fab-count');
   const title = document.getElementById('slip-drawer-title');
   badge.textContent = n;
@@ -1661,6 +1676,40 @@ function updateSavedBadge(){
 }
 function clearSaved(){ try{ localStorage.removeItem('dugout_csv'); localStorage.removeItem('dugout_csv_ts'); }catch(e){} updateSavedBadge(); }
 function mk(name,p,slot,matchup,team){ return {id:++uid,name,p,slot,matchup:matchup||'',team:team||'',pitcher:'',pitcherHand:'',batterHand:'',hit:'',no:'',inSlip:false,grp:'',hasHit:false,startTime:'',gameDate:'',gameState:'',last5:'',lineupEst:false,bvpAb:0,bvpH:0,bvpAvg:0,vsL:null,vsR:null,pRating:null,pGrade:'',pCsw:null,pKbb:null,pHH:null,bHitRate:null,bXba:null,bHH:null,bBabip:null,splitDiff:null,parkFactor:null,bNGames:0,bDaysRest:0,pNGames:0,pDaysRest:0,batterId:'',pitcherId:'',gamePk:'',yesCents:null,isOpener:false,pUseFb:null,pUseBb:null,pUseOs:null,bHrVsFb:null,bHrVsBb:null,bHrVsOs:null,bHrOverall:null,bHitRateVsSp:null,bPaVsSp:0,bHitRateVsRp:null,bPaVsRp:0,bIsRookie:false,pIsRookie:false,subbedOut:false,baseP:null,matchupDelta:null,bAvgAb:null,bGamesPlayed:0}; }
+
+// moneyline ('ml') / game-total ('ou') slip leg — lives in teamLegs, not
+// legs. opts (ml): {team, oddsStr, impliedP}. opts (ou): {selection:
+// 'over'|'under', line, oddsStr, impliedP}.
+function mkTeamLeg(betType, matchup, gamePk, gameDate, opts){
+  const name = betType==='ml'
+    ? `${opts.team} ML`
+    : `${opts.selection==='over'?'Over':'Under'} ${opts.line}`;
+  return {
+    id: ++uid, betType, matchup, gamePk: gamePk?String(gamePk):'', gameDate,
+    inSlip: true, p: opts.impliedP, oddsStr: opts.oddsStr,
+    team: opts.team || null, selection: opts.selection || null,
+    line: opts.line ?? null, name, outcome: null,
+  };
+}
+// toggles a team leg on/off — removes if the same game+type+selection is
+// already in the slip, otherwise adds a fresh one. Mirrors toggle(id)'s
+// role for batter legs, but team legs aren't pre-existing pool items that
+// just flip a flag — they're created on demand from a button click.
+function toggleTeamLeg(betType, matchup, gamePk, gameDate, opts){
+  const gpk = gamePk?String(gamePk):'';
+  const existing = teamLegs.find(l => l.betType===betType && l.gamePk===gpk &&
+    (betType==='ml' ? l.team===opts.team : l.selection===opts.selection));
+  if(existing){
+    teamLegs = teamLegs.filter(l => l!==existing);
+  } else {
+    teamLegs.push(mkTeamLeg(betType, matchup, gamePk, gameDate, opts));
+  }
+  renderActiveTab();
+  updateSaveBtn();
+  updateSlipCount();
+  const badge = document.getElementById('slip-fab-count');
+  if(badge){ badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
+}
 // Season sparkline. Card-expand, not hover, per the roadmap note (so it
 // doesn't compete with the L10 streak dots).
 const _sparkExpanded = new Set();
@@ -1875,6 +1924,18 @@ function loadSample(){
 // ---- field updates ----
 function setF(id,k,v){ const l=legs.find(x=>x.id===id); if(l){ l[k]=v; render(); } }
 function toggle(id){
+  // team legs (moneyline/O-U) aren't a persistent pool item like batter
+  // legs — "removing from the slip" means deleting them outright, added
+  // fresh via toggleTeamLeg() next time. Only legs from the batter pool
+  // flip an inSlip flag in place.
+  const teamLeg = teamLegs.find(x=>x.id===id);
+  if(teamLeg){
+    teamLegs = teamLegs.filter(x=>x!==teamLeg);
+    renderActiveTab();
+    updateSaveBtn();
+    updateSlipCount();
+    return;
+  }
   const l=legs.find(x=>x.id===id);
   if(!l) return;
   const adding = !l.inSlip;
@@ -2349,8 +2410,18 @@ function render(){
   }).join('');
   } // end else (has visible legs)
 
-  // slip
-  const sel=legs.filter(l=>l.inSlip);
+  renderSlip();
+}
+
+// the bet-slip drawer's contents (#legs) — extracted from render() since
+// render() itself only ran for the history/about tabs (see renderActiveTab()),
+// which meant adding a leg while on Scores/All Batters/Bets didn't actually
+// refresh the visible slip drawer until some unrelated poll happened to call
+// render() later. renderActiveTab() now calls this on every tab so the slip
+// always reflects the latest toggle()/toggleTeamLeg() regardless of which
+// tab triggered it.
+function renderSlip(){
+  const sel=_allSlipItems().filter(l=>l.inSlip);
   updateSlipCount();
   const legsEl=document.getElementById('legs');
   if(!sel.length){ legsEl.innerHTML='<div class="empty">Add legs from the pool.</div>'; }
@@ -2370,6 +2441,22 @@ function render(){
         const lsLine = gpk ? _liveLinescore.get(gpk) : null;
         const alreadyHit = gpk&&bid ? _liveBatterHit.get(gpk+'|'+bid) : false;
         let slipStatusEl = '';
+        if(l.betType){
+          // moneyline/O-U leg — resolve straight from the game's final
+          // score instead of the batter hit-status checks below
+          if(l.outcome==='won') slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--good);background:rgba(178,208,126,.12);border:1px solid rgba(178,208,126,.3);border-radius:3px;padding:1px 5px;flex:none">WON</span>`;
+          else if(l.outcome==='lost') slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--bad);opacity:.6;flex:none">LOST</span>`;
+          else if(l.outcome==='push') slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.6;flex:none">PUSH</span>`;
+          else if(lsLine?.isLive) slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--amber);flex:none">${lsLine.awayR??0}-${lsLine.homeR??0}</span>`;
+          const teamTag = l.betType==='ml' ? `<span class="teamtag" style="${teamTagStyle(l.team)}">${esc(l.team)}</span>` : `<span class="teamtag">O/U</span>`;
+          return `<div class="leg" style="align-items:center">
+            ${teamTag}
+            <div style="flex:1;min-width:0"><div class="ln" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</div></div>
+            <span class="lp">${esc(l.oddsStr||pct(l.p))}</span>
+            ${slipStatusEl}
+            <button class="x" onclick="toggle(${l.id})">×</button>
+          </div>`;
+        }
         if(l.hasHit || alreadyHit){
           slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--good);background:rgba(178,208,126,.12);border:1px solid rgba(178,208,126,.3);border-radius:3px;padding:1px 5px;flex:none">HIT</span>`;
         } else if(l.subbedOut){
@@ -2532,7 +2619,7 @@ function _parlayDec(sel){
 }
 
 function updateSaveBtn(){
-  const sel=legs.filter(l=>l.inSlip);
+  const sel=_allSlipItems().filter(l=>l.inSlip);
   const stake=parseFloat(document.getElementById('stakeInput').value)||0;
   const useDec = sel.length ? _parlayDec(sel) : null;
   const payout = (useDec && stake) ? +(stake*(useDec-1)).toFixed(2) : null;
@@ -2546,7 +2633,7 @@ function updateSaveBtn(){
 }
 
 function saveBet(){
-  const sel=legs.filter(l=>l.inSlip);
+  const sel=_allSlipItems().filter(l=>l.inSlip);
   const stake=parseFloat(document.getElementById('stakeInput').value);
   const payDec=_parlayDec(sel);
   if(!sel.length||!stake||!payDec) return;
@@ -2558,11 +2645,14 @@ function saveBet(){
     saved: new Date().toLocaleString(),
     date: new Date().toLocaleDateString('en-CA'),
     stake, odds: amOdds, payout, trueP, status: 'pending',
-    legs: sel.map(l=>({name:l.name,team:l.team,matchup:l.matchup,gameDate:l.gameDate,p:l.p,yesCents:l.yesCents||null,slot:l.slot||'',pitcher:l.pitcher||'',pitcherHand:l.pitcherHand||'',batterId:l.batterId||null,gamePk:l.gamePk||null,outcome:null}))
+    legs: sel.map(l=> l.betType
+      ? {betType:l.betType,name:l.name,team:l.team,selection:l.selection,line:l.line,oddsStr:l.oddsStr,matchup:l.matchup,gameDate:l.gameDate,gamePk:l.gamePk||null,p:l.p,outcome:null}
+      : {name:l.name,team:l.team,matchup:l.matchup,gameDate:l.gameDate,p:l.p,yesCents:l.yesCents||null,slot:l.slot||'',pitcher:l.pitcher||'',pitcherHand:l.pitcherHand||'',batterId:l.batterId||null,gamePk:l.gamePk||null,outcome:null})
   };
   savedBets.unshift(bet);
   persistBets(); renderSavedBets();
   legs.forEach(l=>l.inSlip=false);
+  teamLegs=[];
   document.getElementById('stakeInput').value='';
   updateSaveBtn(); render();
 }
@@ -2588,6 +2678,28 @@ function autoSettleBets(){
     if(b.status !== 'pending') return;
     let allSettled = true, anyLoss = false, anyPpd = false;
     b.legs.forEach(bl=>{
+      if(bl.betType){
+        // moneyline/O-U — resolve straight from the game's final score
+        // (gamePk-keyed, far more reliable than the batter path's
+        // name+date lookup) instead of the leg-pool lookup above
+        const ls = bl.gamePk ? _liveLinescore.get(String(bl.gamePk)) : null;
+        if(!ls || !ls.isFinal){ allSettled=false; return; }
+        const [awayTeam, homeTeam] = (bl.matchup||'').split(' @ ').map(s=>s.trim());
+        if(bl.betType==='ml'){
+          const winner = (ls.homeR||0) > (ls.awayR||0) ? homeTeam : awayTeam;
+          bl.outcome = bl.team===winner ? 'won' : 'lost';
+        } else { // 'ou'
+          const total = (ls.awayR||0) + (ls.homeR||0);
+          if(total === bl.line){ bl.outcome='push'; }
+          else {
+            const over = total > bl.line;
+            bl.outcome = (bl.selection==='over')===over ? 'won' : 'lost';
+          }
+        }
+        if(bl.outcome==='push'){ anyPpd=true; return; }
+        if(bl.outcome==='lost') anyLoss=true;
+        return;
+      }
       const live = lookup.get(_normName(bl.name)+'|'+(bl.gameDate||''));
       if(!live){ allSettled=false; return; }
       const fin = isFinal(live.gameState) || (live.subbedOut && !live.hasHit);
@@ -2797,9 +2909,30 @@ function _computedBetStatus(b, legLookup){
   let allHit = true, anyMiss = false, anyPpd = false;
   for(const bl of b.legs){
     const oc = bl.outcome;
-    if(oc === 'hit') continue;
-    if(oc === 'miss'){ anyMiss=true; break; }
-    if(oc === 'ppd'){ anyPpd=true; allHit=false; continue; }
+    if(oc === 'hit' || oc === 'won') continue;
+    if(oc === 'miss' || oc === 'lost'){ anyMiss=true; break; }
+    if(oc === 'ppd' || oc === 'push'){ anyPpd=true; allHit=false; continue; }
+    if(bl.betType){
+      // moneyline/O-U, not yet settled to an outcome — derive live from the
+      // game's current/final score instead of the batter-only checks below
+      const ls = bl.gamePk ? _liveLinescore.get(String(bl.gamePk)) : null;
+      if(ls?.isFinal){
+        const [awayTeam, homeTeam] = (bl.matchup||'').split(' @ ').map(s=>s.trim());
+        if(bl.betType==='ml'){
+          const winner = (ls.homeR||0) > (ls.awayR||0) ? homeTeam : awayTeam;
+          if(bl.team!==winner){ anyMiss=true; break; }
+        } else {
+          const total = (ls.awayR||0) + (ls.homeR||0);
+          if(total!==bl.line){
+            const over = total > bl.line;
+            if((bl.selection==='over')!==over){ anyMiss=true; break; }
+          } else { anyPpd=true; allHit=false; }
+        }
+        continue;
+      }
+      allHit = false;
+      continue;
+    }
     // check live tracking
     const csvLeg = legLookup ? legLookup.get(_normName(bl.name)+'|'+(bl.gameDate||'')) : null;
     const gpk = (bl.gamePk||csvLeg?.gamePk) ? String(bl.gamePk||csvLeg.gamePk) : null;
@@ -2871,6 +3004,24 @@ function _betCardHtml(b){
 
     const notLastGroup = gi < groups.size - 1;
     const rows = gLegs.map((bl, idx) => {
+      if(bl.betType){
+        const ls = bl.gamePk ? _liveLinescore.get(String(bl.gamePk)) : null;
+        const won=bl.outcome==='won', lost=bl.outcome==='lost', push=bl.outcome==='push';
+        let statusEl='';
+        if(won) statusEl=`<span style="font-family:var(--mono);font-size:9px;color:var(--good);font-weight:600;background:rgba(178,208,126,.12);border:1px solid rgba(178,208,126,.3);border-radius:3px;padding:1px 5px;flex:none">WON</span>`;
+        else if(lost) statusEl=`<span style="font-family:var(--mono);font-size:9px;color:var(--bad);opacity:.7;flex:none">LOST</span>`;
+        else if(push) statusEl=`<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.5;flex:none">PUSH</span>`;
+        else if(ls?.isLive) statusEl=`<span style="font-family:var(--mono);font-size:9px;color:var(--amber);flex:none">${ls.awayR??0}-${ls.homeR??0}</span>`;
+        const faded=lost, done=won;
+        const notLast=idx<gLegs.length-1;
+        const teamTag = bl.betType==='ml' ? `<span class="teamtag" style="font-size:8px;padding:1px 4px;flex:none;${teamTagStyle(bl.team)}">${esc(bl.team)}</span>` : `<span class="teamtag" style="font-size:8px;padding:1px 4px;flex:none">O/U</span>`;
+        return `<div style="display:flex;align-items:center;gap:7px;padding:5px 12px;${notLast?'border-bottom:1px solid var(--line);':''}${done?'opacity:.5;':''}${faded?'opacity:.35;':''}">
+          <span style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--chalk);flex:none;width:38px;text-align:right">${esc(bl.oddsStr||'')}</span>
+          ${teamTag}
+          <span style="font-family:var(--mono);font-size:11px;color:${done?'var(--sage)':faded?'var(--sage)':'var(--chalk)'};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${done?'text-decoration:line-through;':''}">${esc(bl.name)}</span>
+          ${statusEl}
+        </div>`;
+      }
       const oc = bl.outcome;
       const isHit=oc==='hit', isMiss=oc==='miss', isPpd=oc==='ppd';
       const pPct=(bl.p*100).toFixed(0);
@@ -3293,7 +3444,8 @@ function renderActiveTab() {
   if(currentTab==='scores') renderScores();
   else if(currentTab==='allbatters') renderScoresAllBatters();
   else if(currentTab==='bets') renderBetsTab();
-  else render(); // history/about have no dedicated builder; render() still needs to run to keep #legs (bet slip) current
+  else { render(); return; } // history/about have no dedicated builder; render() already calls renderSlip() itself
+  renderSlip(); // keep the bet slip drawer current regardless of which tab is active
 }
 // ── batter popup — the single place a batter's full card lives now (replaces
 // the old Tonight tab). Opened by name/row clicks from every Scores density
@@ -3749,6 +3901,25 @@ function buildScoreCard(matchup, batters, betKeys) {
     </div>` : '';
     const evalRow = ''; // merged into muRow above
 
+    // O/U toggle — game-level (not per-team), only shown when a real Kalshi
+    // total is priced for this matchup. Same degrade-gracefully rule as the
+    // moneyline buttons above: no price, no button.
+    const kou = _kalshiOu.get(matchup);
+    const ouRow = kou ? (() => {
+      const gpk = gamePk;
+      const ouBtn = (selection) => {
+        const priced = kou[selection];
+        const existing = teamLegs.find(l=>l.betType==='ou' && l.gamePk===gpk && l.selection===selection);
+        const label = selection==='over' ? 'O' : 'U';
+        return `<button class="row-icon-btn${existing?' active':''}" style="width:auto;padding:0 8px;font-size:10px" title="${existing?'In slip — click to remove':`${selection==='over'?'Over':'Under'} ${kou.line} (${priced.oddsStr})`}" onclick="toggleTeamLeg('ou','${esc(matchup)}','${gpk}','${gameDate}',{selection:'${selection}',line:${kou.line},oddsStr:'${priced.oddsStr}',impliedP:${priced.impliedP}})">${label} ${kou.line} ${priced.oddsStr}</button>`;
+      };
+      return `<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:6px;border-top:1px solid var(--line);background:rgba(255,255,255,.015)">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">TOTAL</span>
+        ${ouBtn('over')}
+        ${ouBtn('under')}
+      </div>`;
+    })() : '';
+
     // TV-style scoreboard header — team/score block (divider between the two
     // rows, score sized to match the team badge), inning+diamond+outs framed
     // by a line on each side, then the "tonight" field info (Gameday +
@@ -3761,11 +3932,23 @@ function buildScoreCard(matchup, batters, betKeys) {
     // normalized to one consistent look at every width — used to swap for a
     // horizontal ticker at 900px+, abandoned in favor of a single stacked
     // layout everywhere (see .gm-score-stacked/.gm-mid-wrap CSS)
+    // moneyline "+" buttons — one per team tag, only shown when a real
+    // Kalshi price exists for that side (degrade-gracefully, no button
+    // instead of a broken one when the matchup isn't priced)
+    const kw = _kalshiWinner.get(matchup);
+    const mlBtn = (side, teamAbbr) => {
+      const priced = kw?.[side];
+      if(!priced) return '';
+      const gpk = gamePk;
+      const existing = teamLegs.find(l=>l.betType==='ml' && l.gamePk===gpk && l.team===teamAbbr);
+      return `<button class="row-icon-btn${existing?' active':''}" title="${existing?'In slip — click to remove':`Add ${teamAbbr} moneyline (${priced.oddsStr})`}" onclick="event.stopPropagation();toggleTeamLeg('ml','${esc(matchup)}','${gpk}','${gameDate}',{team:'${teamAbbr}',oddsStr:'${priced.oddsStr}',impliedP:${priced.impliedP}})">${existing?'✓':'+'}</button>`;
+    };
     const scoreStacked = `<div class="gm-score-stacked" style="flex-direction:column;justify-content:center;padding:8px 10px;min-width:100px;flex:none">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:6px">
         <span style="display:flex;align-items:center;gap:5px">
           ${awayOu}
           <span class="teamtag" style="${teamTagStyle(awayTeam)}">${esc(awayTeam)}</span>
+          ${mlBtn('away', awayTeam)}
         </span>
         <span style="font-family:var(--disp);${awayIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${awayIsRecord?'var(--sage)':awayLeads?'var(--amber)':'var(--chalk)'}" title="${awayIsRecord?'Season record':''}">${awayDisp}</span>
       </div>
@@ -3774,6 +3957,7 @@ function buildScoreCard(matchup, batters, betKeys) {
         <span style="display:flex;align-items:center;gap:5px">
           ${homeOu}
           <span class="teamtag" style="${teamTagStyle(homeTeam)}">${esc(homeTeam)}</span>
+          ${mlBtn('home', homeTeam)}
         </span>
         <span style="font-family:var(--disp);${homeIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${homeIsRecord?'var(--sage)':homeLeads?'var(--amber)':'var(--chalk)'}" title="${homeIsRecord?'Season record':''}">${homeDisp}</span>
       </div>
@@ -3821,6 +4005,7 @@ function buildScoreCard(matchup, batters, betKeys) {
       </div>
       ${muRow}
       ${evalRow}
+      ${ouRow}
     </div>`;
   }
 
@@ -4159,7 +4344,7 @@ function syncHistoryDate(val){
   const target = val === today ? '' : val; // "today" and "" (reset) both mean "live"
   if(target === viewingDate) return; // re-picking the date already showing — no-op
 
-  if(legs.some(l => l.inSlip) &&
+  if(_allSlipItems().some(l => l.inSlip) &&
      !confirm('You have unsaved picks in your slip — switching dates will clear them. Continue?')) {
     if(gsel) gsel.value = viewingDate || today; // revert the picker, nothing else changes
     return;
@@ -4911,8 +5096,8 @@ function canonMatchup(matchup){
         return;
       }
       // sort: live+tracked → live → upcoming+tracked → upcoming → final+tracked → final
-      const trackedGamePks = new Set(legs.filter(l=>l.inSlip).map(l=>String(l.gamePk)).filter(Boolean));
-      const trackedMatchups = new Set(legs.filter(l=>l.inSlip).map(l=>l.matchup).filter(Boolean));
+      const trackedGamePks = new Set(_allSlipItems().filter(l=>l.inSlip).map(l=>String(l.gamePk)).filter(Boolean));
+      const trackedMatchups = new Set(_allSlipItems().filter(l=>l.inSlip).map(l=>l.matchup).filter(Boolean));
       function gameIsTracked(g){
         const away=canonTeamAbbr(g.teams.away.team.abbreviation), home=canonTeamAbbr(g.teams.home.team.abbreviation);
         return trackedGamePks.has(String(g.gamePk)) || trackedMatchups.has(`${away} @ ${home}`);
