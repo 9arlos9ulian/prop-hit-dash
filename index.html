@@ -443,6 +443,13 @@
   @media(min-width:900px){
     .gm-inning-box{display:flex!important}
     .gm-matchup-mid{align-items:center}
+    /* match diamond+score's combined width with the inning box's, so the
+       two ends of the scoreboard bar are symmetric — 230px comfortably
+       fits real diamond+score content (observed 175-222px). Inning box
+       gets min-width (not width) so a wide extra-innings line score grid
+       can still grow past it instead of clipping/wrapping. */
+    .gm-left-group{width:230px}
+    .gm-inning-box{min-width:230px}
   }
   #scores-grid{display:flex;flex-direction:column;gap:14px}
 
@@ -3793,9 +3800,11 @@ function buildScoreCard(matchup, batters, betKeys) {
       <div class="gm-header" onclick="if(!event.target.closest('a'))toggleCard('${cardId}')">
         ${storyline?`<div style="padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);text-align:center"><span title="${esc(storyline.title)}" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:${storyline.color}">✦ ${storyline.label}</span></div>`:''}
         <div class="gm-scoreboard" style="display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
-          <div class="gm-mid-wrap" style="display:flex;align-items:center;justify-content:center;min-width:0;flex:none">${diamondBlock}</div>
-          <div style="width:1px;background:var(--line)"></div>
-          ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" title="Watch on MLB.TV" style="text-decoration:none;color:inherit;display:flex">${scoreBlock}</a>`:scoreBlock}
+          <div class="gm-left-group" style="display:flex;align-items:stretch;flex:none">
+            <div class="gm-mid-wrap" style="display:flex;align-items:center;justify-content:center;min-width:0;flex:none">${diamondBlock}</div>
+            <div style="width:1px;background:var(--line)"></div>
+            ${tvUrl?`<a href="${tvUrl}" target="_blank" rel="noopener" title="Watch on MLB.TV" style="text-decoration:none;color:inherit;display:flex">${scoreBlock}</a>`:scoreBlock}
+          </div>
           <div style="width:1px;background:var(--line)"></div>
           ${fieldInfo}
           <div class="gm-inning-box" style="align-items:center;justify-content:flex-end;padding:8px 10px">${inningBox}</div>
