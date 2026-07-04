@@ -419,6 +419,12 @@
   @media(max-width:600px){
     .gm-matchup-line{flex-direction:column;align-items:flex-end;gap:2px!important}
     .gm-matchup-line .mml-vs{display:none}
+    /* shrink-to-content instead of flex:1 stretching across all remaining
+       row space. margin-left:auto alone doesn't fix the gap — it just
+       relocates the same empty space from "inside the box" to "before
+       it," still pinning content to the far edge. Dropping the stretch
+       entirely lets it sit right after the score block instead. */
+    .gm-matchup-mid{flex:0 1 auto!important;margin-left:0!important}
   }
   .linescore-grid{border-collapse:collapse;font-family:var(--mono);font-size:10px;color:var(--chalk)}
   .linescore-grid th{color:var(--sage);font-weight:400;font-size:8px;padding:1px 6px;text-align:center}
