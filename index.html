@@ -3896,15 +3896,22 @@ function buildScoreCard(matchup, batters, betKeys) {
         </span>
       </span>`;
 
+      // shortened label just for this cramped badge — the underlying mu.lbl
+      // strings ('STRONG'/'LEAN'/'NEUTRAL'/'AVOID') stay full-length since
+      // other code compares against them (e.g. sideHtml's colBg .includes()
+      // checks) — this map is purely display, not a data change. NEUTRAL was
+      // the worst offender on mobile, wide enough to overlap the team badge.
+      const LEAN_SHORT = {STRONG:'STR', LEAN:'LEAN', NEUTRAL:'NEU', AVOID:'AVD'};
       const leanCol = mu ? (()=>{
         const avgPct = Math.round((avg||0)*100);
         const avgGrade = offGrade(avg||0);
         const sign = mu.delta >= 0 ? '+' : '';
+        const bareLbl = mu.lbl.replace('🔥 ','');
         return `<span class="th-col">
           <span class="th-lean-badge" style="background:${mu.bg};border:1px solid ${mu.border};color:${mu.col}">
             <span class="th-s3" style="display:flex;align-items:center;gap:5px;color:inherit">
               <span>${avgGrade}</span>
-              <span>${esc(mu.lbl.replace('🔥 ',''))}</span>
+              <span>${esc(LEAN_SHORT[bareLbl] || bareLbl)}</span>
             </span>
             <span class="th-s3" style="color:inherit;opacity:.85">
               ${avgPct}% ${sign}${mu.delta}
