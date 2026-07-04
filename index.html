@@ -2633,6 +2633,7 @@ async function fetchLiveGameData(){
   // return season stats (batting.hits = season total), which would incorrectly
   // mark every batter as hasHit=true before the game starts.
   const gamePks = new Set();
+  const liveGamePks = new Set(); // subset that's actually Live (not Final) — play-by-play only matters while a game is still in progress
   legs.forEach(l => {
     if(!l.gamePk) return;
     const gpk = String(l.gamePk);
@@ -2641,9 +2642,16 @@ async function fetchLiveGameData(){
     const live = ls ? ls.isLive : isLive(l.gameState);
     const final = ls ? ls.isFinal : isFinal(l.gameState);
     if(live || final) gamePks.add(gpk);
+    if(live) liveGamePks.add(gpk);
   });
   if(!gamePks.size) return;
 
+  // boxscore + play-by-play used to be fetched by two independent, uncoordinated
+  // loops (this 30s poller, and the header ticker's own 45s refresh) — same
+  // per-game data, fetched twice as often as needed once the timers drifted out
+  // of phase. Consolidated here since this loop already computes the exact
+  // live/final gamePk sets the ticker was re-deriving; the ticker now just
+  // reads whatever's in _bsCache/_pbpCache instead of re-fetching.
   await Promise.all([...gamePks].map(async gpk => {
 
     // boxscore — per-batter hit count
@@ -2660,6 +2668,12 @@ async function fetchLiveGameData(){
         legs.forEach(l => { if(String(l.gamePk)===gpk && String(l.batterId)===String(batterId)){ l.hasHit=gotHit; l.subbedOut=subbedOut; } });
       });
     } catch(_) {}
+
+    // play-by-play — this at-bat's earlier trips (liveMatchupLine's TV-style
+    // codes); only worth refreshing for games still actually in progress
+    if(liveGamePks.has(gpk)){
+      try { await _fetchPlayByPlay(gpk); } catch(_) {}
+    }
   }));
 
   _lastLiveFetch = new Date();
@@ -5504,14 +5518,12 @@ function canonMatchup(matchup){
       // on screen, and redrawing anyway just flickers the page every 45s
       if(!viewingDate) renderActiveTab();
 
-      // Pre-fetch boxscores + play-by-play for live games so fmt()/liveMatchupLine()
-      // can read pitcher/batter stats and this at-bat's earlier-PA codes synchronously
-      const liveGames = games.filter(g => g.status.abstractGameState === 'Live');
-      if(liveGames.length) await Promise.all(liveGames.map(g => Promise.all([
-        _fetchBoxscore(String(g.gamePk)).catch(()=>null),
-        _fetchPlayByPlay(String(g.gamePk)).catch(()=>null),
-      ])));
-
+      // boxscore/play-by-play for live games used to be pre-fetched here too
+      // (so fmt()/liveMatchupLine() could read them synchronously) — removed
+      // as a duplicate of fetchLiveGameData()'s own 30s loop, which already
+      // covers every live game and runs more often. fmt() itself doesn't read
+      // either cache; liveMatchupLine() (used elsewhere) reads whatever
+      // fetchLiveGameData last populated.
       track.innerHTML = dateLabel + games.map(fmt).join('');
     } catch(e){
       track.innerHTML='<span class="tick-chip tick-pre" style="opacity:.4">Scores unavailable</span>';
