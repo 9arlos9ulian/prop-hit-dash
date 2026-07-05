@@ -4442,7 +4442,14 @@ function parseLogCSV(text) {
       p:        parseFloat(c[iP]) || 0,
       odds:     c[iHitOdds] || '',
       batterId: c[iBatterId] || '',
-      actual:   (()=>{const v=(c[iActual]||'').trim();const today=new Date().toLocaleDateString('en-CA');const d=(c[iDate]||'').trim();return(v==='0'&&d===today)?'':v;})(),
+      // used to blank out a '0' from today's date here, on the theory that a
+      // same-day miss might be a stale leftover from before the game
+      // actually finished — that's now handled at the source instead
+      // (live_slate.py clears actual_hit back to "" for any batter whose
+      // game isn't final yet, and settle.py only ever writes '0'/'1'/'DNP'
+      // for games it confirmed final), so a real settled miss from today
+      // was being hidden as "unsettled" instead of shown as a MISS.
+      actual:   (c[iActual] || '').trim(),
     };
   }).filter(r => r.name)
     .reduce((acc, r) => {
