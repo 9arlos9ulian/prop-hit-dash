@@ -699,8 +699,9 @@
       <div class="poolbar">
         <div class="poolbar-row" style="flex-wrap:wrap">
           <span class="fchip-lbl">Sort</span>
-          <button id="scores-sort-time" class="ghost fchip amber" onclick="scoresSort='time';this.classList.add('amber');document.getElementById('scores-sort-rating').classList.remove('amber');renderScores()">Time</button>
-          <button id="scores-sort-rating" class="ghost fchip" onclick="scoresSort='rating';this.classList.add('amber');document.getElementById('scores-sort-time').classList.remove('amber');renderScores()">Best Lean</button>
+          <button id="scores-sort-time" class="ghost fchip amber" onclick="scoresSort='time';_setScoresSortBtn(this);renderScores()">Time</button>
+          <button id="scores-sort-rating" class="ghost fchip" onclick="scoresSort='rating';_setScoresSortBtn(this);renderScores()">Best Lean</button>
+          <button id="scores-sort-diff" class="ghost fchip" title="Most lopsided matchups first (either STRONG or AVOID), regardless of direction — different from Best Lean, which only favors STRONG" onclick="scoresSort='diff';_setScoresSortBtn(this);renderScores()">Matchup Diff</button>
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
           <button id="scores-live-btn" class="ghost fchip" onclick="scoresLiveOnly=!scoresLiveOnly;scoresUpcoming=false;this.classList.toggle('amber',scoresLiveOnly);document.getElementById('scores-upcoming-btn').classList.remove('amber');renderScores()">● Live</button>
           <button id="scores-upcoming-btn" class="ghost fchip" onclick="scoresUpcoming=!scoresUpcoming;scoresLiveOnly=false;this.classList.toggle('amber',scoresUpcoming);document.getElementById('scores-live-btn').classList.remove('amber');renderScores()">Upcoming</button>
@@ -3905,7 +3906,14 @@ function setScoresOuFilter(dir){
   document.getElementById('exp-ouBtn-under').classList.toggle('amber', scoresOuFilter==='under');
   renderScoresAllBatters();
 }
-let scoresSort = 'time'; // 'time' | 'rating'
+let scoresSort = 'time'; // 'time' | 'rating' | 'diff'
+// three mutually-exclusive sort chips share one active-button toggle
+// instead of each hardcoding "add mine, remove the other two".
+function _setScoresSortBtn(el){
+  ['scores-sort-time','scores-sort-rating','scores-sort-diff'].forEach(id=>{
+    document.getElementById(id)?.classList.toggle('amber', document.getElementById(id)===el);
+  });
+}
 let scoresLiveOnly = false;
 let scoresUpcoming = false;
 // mobile only: which side (away/home) is shown per game, keyed by gamePk
@@ -4437,16 +4445,24 @@ function renderScores() {
     const pa = _isGamePinned(String(a[1][0]?.gamePk||'')) ? 0 : 1;
     const pb = _isGamePinned(String(b[1][0]?.gamePk||'')) ? 0 : 1;
     if(pa !== pb) return pa - pb;
+    function gameScore(bat) {
+      const pitchGrade = bat[0]?.pGrade || 'C';
+      const avgP = bat.reduce((s,l)=>s+(l.p||0),0) / (bat.length||1);
+      const og = offGrade(avgP);
+      const offScore = {A:4,B:3,C:2,D:1,F:0}[og] ?? 2;
+      const pitScore  = {A:0,B:1,C:2,D:3,F:4}[pitchGrade] ?? 2;
+      return offScore + pitScore;
+    }
     if(scoresSort === 'rating') {
-      function gameScore(bat) {
-        const pitchGrade = bat[0]?.pGrade || 'C';
-        const avgP = bat.reduce((s,l)=>s+(l.p||0),0) / (bat.length||1);
-        const og = offGrade(avgP);
-        const offScore = {A:4,B:3,C:2,D:1,F:0}[og] ?? 2;
-        const pitScore  = {A:0,B:1,C:2,D:3,F:4}[pitchGrade] ?? 2;
-        return offScore + pitScore;
-      }
       return gameScore(b[1]) - gameScore(a[1]);
+    }
+    if(scoresSort === 'diff') {
+      // most lopsided matchups first, either direction (STRONG or AVOID) —
+      // different from Best Lean, which only ranks STRONG-favoring games
+      // first (AVOID sinks to the bottom there). Same gameScore()/delta-
+      // from-neutral math as the lean badges themselves (score 0-8, 4 is
+      // neutral), just ranked by |delta| instead of raw value.
+      return Math.abs(gameScore(b[1])-4) - Math.abs(gameScore(a[1])-4);
     }
     function timeVal(t){
       if(!t) return 9999;
