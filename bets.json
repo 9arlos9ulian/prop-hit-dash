@@ -7,7 +7,7 @@
     "odds": 2921,
     "payout": 301.2,
     "trueP": 0.03515874616800001,
-    "status": "pending",
+    "status": "lost",
     "legs": [
       {
         "betType": "ml",
@@ -20,7 +20,7 @@
         "gameDate": "04/07",
         "gamePk": "824658",
         "p": 0.61,
-        "outcome": null
+        "outcome": "lost"
       },
       {
         "betType": "ml",
@@ -33,7 +33,7 @@
         "gameDate": "04/07",
         "gamePk": "824012",
         "p": 0.63,
-        "outcome": null
+        "outcome": "won"
       },
       {
         "betType": "ml",
@@ -46,7 +46,7 @@
         "gameDate": "04/07",
         "gamePk": "824983",
         "p": 0.56,
-        "outcome": null
+        "outcome": "won"
       },
       {
         "betType": "ml",
@@ -59,7 +59,7 @@
         "gameDate": "04/07",
         "gamePk": "825063",
         "p": 0.6,
-        "outcome": null
+        "outcome": "lost"
       },
       {
         "betType": "ml",
@@ -72,7 +72,7 @@
         "gameDate": "04/07",
         "gamePk": "823932",
         "p": 0.71,
-        "outcome": null
+        "outcome": "won"
       },
       {
         "betType": "ml",
@@ -85,7 +85,7 @@
         "gameDate": "04/07",
         "gamePk": "824499",
         "p": 0.59,
-        "outcome": null
+        "outcome": "lost"
       },
       {
         "betType": "ml",
@@ -98,7 +98,7 @@
         "gameDate": "04/07",
         "gamePk": "824903",
         "p": 0.65,
-        "outcome": null
+        "outcome": "won"
       }
     ]
   },
@@ -110,7 +110,7 @@
     "odds": 1105,
     "payout": 120.33,
     "trueP": 0.082947312,
-    "status": "pending",
+    "status": "lost",
     "legs": [
       {
         "betType": "ml",
@@ -123,7 +123,7 @@
         "gameDate": "04/07",
         "gamePk": "825063",
         "p": 0.6,
-        "outcome": null
+        "outcome": "lost"
       },
       {
         "betType": "ml",
@@ -136,7 +136,7 @@
         "gameDate": "04/07",
         "gamePk": "823932",
         "p": 0.71,
-        "outcome": null
+        "outcome": "won"
       },
       {
         "betType": "ou",
@@ -149,7 +149,7 @@
         "gameDate": "04/07",
         "gamePk": "824334",
         "p": 0.56,
-        "outcome": null
+        "outcome": "lost"
       },
       {
         "betType": "ml",
@@ -162,7 +162,7 @@
         "gameDate": "04/07",
         "gamePk": "822716",
         "p": 0.57,
-        "outcome": null
+        "outcome": "won"
       },
       {
         "betType": "ml",
@@ -175,7 +175,7 @@
         "gameDate": "04/07",
         "gamePk": "824658",
         "p": 0.61,
-        "outcome": null
+        "outcome": "lost"
       }
     ]
   },
@@ -187,7 +187,7 @@
     "odds": 4582,
     "payout": 467.28,
     "trueP": 0.00737243158076883,
-    "status": "pending",
+    "status": "lost",
     "legs": [
       {
         "name": "Kyle Karros",
@@ -201,7 +201,7 @@
         "pitcherHand": "L",
         "batterId": "691720",
         "gamePk": "824334",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Heliot Ramos",
@@ -215,10 +215,10 @@
         "pitcherHand": "L",
         "batterId": "671218",
         "gamePk": "824334",
-        "outcome": null
+        "outcome": "hit"
       },
       {
-        "name": "Luis Arráez",
+        "name": "Luis Arr\u00e1ez",
         "team": "SF",
         "matchup": "SF @ COL",
         "gameDate": "04/07",
@@ -229,7 +229,7 @@
         "pitcherHand": "L",
         "batterId": "650333",
         "gamePk": "824334",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Jake Mccarthy",
@@ -243,7 +243,7 @@
         "pitcherHand": "L",
         "batterId": "664983",
         "gamePk": "824334",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Casey Schmitt",
@@ -257,7 +257,7 @@
         "pitcherHand": "L",
         "batterId": "669477",
         "gamePk": "824334",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Willi Castro",
@@ -271,7 +271,7 @@
         "pitcherHand": "L",
         "batterId": "650489",
         "gamePk": "824334",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "name": "Tyler Freeman",
@@ -285,7 +285,7 @@
         "pitcherHand": "L",
         "batterId": "671289",
         "gamePk": "824334",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "name": "Liam Hicks",
@@ -299,7 +299,7 @@
         "pitcherHand": "R",
         "batterId": "689414",
         "gamePk": "824983",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Tommy Edman",
@@ -313,7 +313,7 @@
         "pitcherHand": "L",
         "batterId": "669242",
         "gamePk": "823932",
-        "outcome": null
+        "outcome": "miss"
       },
       {
         "name": "Kyle Stowers",
@@ -327,7 +327,7 @@
         "pitcherHand": "R",
         "batterId": "669065",
         "gamePk": "824983",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Rafael Devers",
@@ -341,7 +341,7 @@
         "pitcherHand": "L",
         "batterId": "646240",
         "gamePk": "824334",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Brice Turang",
@@ -355,7 +355,7 @@
         "pitcherHand": "R",
         "batterId": "668930",
         "gamePk": "825063",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Jung Hoo Lee",
@@ -369,7 +369,7 @@
         "pitcherHand": "L",
         "batterId": "808982",
         "gamePk": "824334",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Freddie Freeman",
@@ -383,7 +383,7 @@
         "pitcherHand": "L",
         "batterId": "518692",
         "gamePk": "823932",
-        "outcome": null
+        "outcome": "hit"
       },
       {
         "name": "Otto Lopez",
@@ -397,7 +397,7 @@
         "pitcherHand": "R",
         "batterId": "672640",
         "gamePk": "824983",
-        "outcome": null
+        "outcome": "hit"
       }
     ]
   }
