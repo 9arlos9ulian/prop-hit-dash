@@ -761,7 +761,7 @@
 
   <!-- BETS TAB -->
   <div id="tab-bets" style="display:none;margin-top:18px">
-    <div id="bets-summary" style="margin-bottom:14px"></div>
+    <div id="bets-summary" style="margin-bottom:14px;position:sticky;top:0;z-index:5;background:var(--field);padding-top:4px"></div>
     <div id="bets-live-status" style="font-family:var(--mono);font-size:10px;color:var(--sage);opacity:.5;text-align:right;margin-bottom:8px"></div>
     <div id="bets-cards"><div class="empty" style="padding:32px 0;text-align:center;color:var(--sage)">No saved bets yet — build a parlay and hit Save bet.</div></div>
   </div>
@@ -938,6 +938,13 @@
     </div>
     <div id="slip-drawer-body">
       <div class="card slip" style="border:none;border-radius:0;box-shadow:none">
+        <div style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line)">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--sage);white-space:nowrap">Target</span>
+          <input id="parlayTargetPct" type="number" min="1" max="99" placeholder="60" style="width:52px;font-family:var(--mono);font-size:12px;background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:5px;padding:4px 6px;text-align:center" />
+          <span style="font-family:var(--mono);font-size:10px;color:var(--sage)">%</span>
+          <button class="ghost fchip" style="margin-left:auto" onclick="buildParlayToTarget()">Build</button>
+        </div>
+        <div id="parlayBuildResult" style="display:none;font-family:var(--mono);font-size:9px;color:var(--sage);padding:4px 12px;border-bottom:1px solid var(--line)"></div>
         <div id="legs"><div class="empty">Add legs from the pool.</div></div>
         <div class="score">
           <div style="display:flex;align-items:center;gap:12px;padding:10px 0 4px;flex-wrap:wrap">
@@ -1321,6 +1328,21 @@ function isSubbedOut(bs, batterId){
     if(pid === String(batterId)) continue;
     const o = parseInt(ord, 10);
     if(!isNaN(o) && Math.floor(o/100) === slot && o % 100 !== 0) return true;
+  }
+  return false;
+}
+// shared by the slip, saved-bet cards, and Scores lineup rows — same
+// current-batter check the header ticker's fmt() already does per-chip
+// (sc-at-bat), just factored out instead of duplicated three more times.
+// window._liveScores entries (keyed by date|matchup) already carry both
+// gamePk and the live offense batter object, so this searches by gamePk
+// directly rather than needing to reconstruct the exact map key.
+function _isPickAtBat(batterId, gamePk){
+  if(!batterId || !gamePk || !window._liveScores) return false;
+  for(const score of window._liveScores.values()){
+    if(String(score.gamePk) === String(gamePk)){
+      return score.state === 'Live' && String(score.batter?.id||'') === String(batterId);
+    }
   }
   return false;
 }
@@ -2620,19 +2642,37 @@ function renderSlip(){
         const nameLink = bid
           ? `<a href="https://www.mlb.com/player/${bid}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:11px;color:var(--chalk);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${esc(l.name||'Hitter')}</a>`
           : `<div style="font-family:var(--mono);font-size:11px;color:var(--chalk);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name||'Hitter')}</div>`;
-        return `<div style="display:flex;align-items:${slipInningHtml?'flex-start':'center'};gap:7px;padding:5px 12px">
+        const atBat = _isPickAtBat(bid, gpk);
+        const atBatBadge = atBat ? `<span style="font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--amber);background:rgba(235,178,105,.15);border:1px solid rgba(235,178,105,.4);border-radius:3px;padding:1px 5px;flex:none">AT BAT</span>` : '';
+        return `<div style="position:relative;display:flex;align-items:${slipInningHtml?'flex-start':'center'};gap:7px;padding:5px 12px"${atBat?' class="sc-at-bat"':''}>
           <span style="font-family:var(--mono);font-size:11px;font-weight:600;color:${scoreColor};flex:none;width:22px;text-align:right;margin-top:${slipInningHtml?'2px':0}">${pPct}</span>
           ${l.team?`<span class="teamtag" style="font-size:8px;padding:1px 4px;flex:none;margin-top:${slipInningHtml?'2px':0};${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}
           <div style="flex:1;min-width:0">
             ${nameLink}
             ${slipInningHtml}
           </div>
+          ${atBatBadge}
           ${slipStatusEl}
           <button class="x" onclick="toggle(${l.id})">×</button>
         </div>`;
       }).join('');
+      // start time next to the matchup header, pregame only — once a game
+      // is live/final each row's own status (score, inning, HIT/MISS)
+      // already covers it, so a stale scheduled time would be redundant.
+      // team legs (mkTeamLeg) don't carry their own startTime, so fall back
+      // to any batter leg sharing the same gamePk in the full legs pool.
+      const g0 = gLegs[0];
+      let gTime = g0.startTime, gState = g0.gameState;
+      if((gTime==null || gState==null) && g0.gamePk){
+        const src = legs.find(x=>String(x.gamePk)===String(g0.gamePk) && x.startTime);
+        if(src){ gTime = gTime ?? src.startTime; gState = gState ?? src.gameState; }
+      }
+      const showTime = gTime && !isLive(gState) && !isFinal(gState);
       return `<div style="border-bottom:1px solid var(--line)">
-        <div style="padding:5px 15px 4px;font-family:var(--disp);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);background:var(--raised)">${esc(game)}</div>
+        <div style="padding:5px 15px 4px;font-family:var(--disp);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);background:var(--raised);display:flex;justify-content:space-between;gap:8px">
+          <span>${esc(game)}</span>
+          ${showTime?`<span style="color:var(--amber)">${esc(gTime)}</span>`:''}
+        </div>
         ${legRows}
       </div>`;
     }).join('');
@@ -2859,6 +2899,59 @@ function updateSaveBtn(){
   const ok=sel.length>0 && stake>0;
   btn.disabled=!ok;
   btn.style.opacity=ok?'1':'0.4';
+}
+
+// auto-build a parlay toward a target combined implied probability —
+// searches the whole day's slate (ignores whatever pool filters are active
+// elsewhere), greedily prefers the highest-confidence legs first, and
+// stops at whichever side of the target ends up closer. Never picks
+// moneyline/O-U legs (the ask was specifically about players) or batters
+// whose game is already Final (a dead-certain result is a pointless leg).
+function buildParlayToTarget(){
+  const target = parseFloat(document.getElementById('parlayTargetPct').value) / 100;
+  if(!target || target<=0 || target>=1){
+    document.getElementById('parlayTargetPct').focus();
+    return;
+  }
+  const alreadySelected = _allSlipItems().some(l=>l.inSlip);
+  if(alreadySelected && !confirm('This replaces your current slip selection. Continue?')) return;
+
+  const candidates = legs.filter(l => !isFinal(l.gameState) && l.p>0 && l.p<=1)
+                         .sort((a,b) => b.p - a.p);
+
+  const resultEl = document.getElementById('parlayBuildResult');
+  if(!candidates.length){
+    resultEl.style.display='block';
+    resultEl.textContent = 'No eligible batters to build from.';
+    return;
+  }
+
+  const chosen = [];
+  let cur = 1;
+  for(const l of candidates){
+    const next = cur * l.p;
+    if(chosen.length===0){
+      // always take the single best leg — it's the closest achievable
+      // floor even if it alone already undershoots the target (adding
+      // more legs can only lower the product further, never raise it).
+      chosen.push(l); cur = next; continue;
+    }
+    if(next >= target){ chosen.push(l); cur = next; continue; }
+    // this leg would cross below target — keep whichever side is closer
+    if(Math.abs(next-target) < Math.abs(cur-target)){ chosen.push(l); cur = next; }
+    break;
+  }
+
+  legs.forEach(l=>l.inSlip=false);
+  teamLegs.length = 0;
+  chosen.forEach(l=>l.inSlip=true);
+  renderSlip();
+
+  resultEl.style.display='block';
+  const pctStr = (cur*100).toFixed(1)+'%';
+  resultEl.textContent = cur < target && chosen.length===1
+    ? `Closest possible: ${pctStr} with 1 leg — adding more can only lower it below your ${(target*100).toFixed(0)}% target.`
+    : `Built ${pctStr} (${chosen.length} leg${chosen.length===1?'':'s'}) · target ${(target*100).toFixed(0)}%`;
 }
 
 function saveBet(){
@@ -3310,10 +3403,13 @@ function _betCardHtml(b){
         : `<span style="font-family:var(--mono);font-size:11px;color:${done?'var(--sage)':faded?'var(--sage)':'var(--chalk)'};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${done?'text-decoration:line-through;':''}">${esc(bl.name)}</span>`;
 
       const notLast=idx<gLegs.length-1;
-      return `<div style="display:flex;align-items:center;gap:7px;padding:5px 12px;${notLast?'border-bottom:1px solid var(--line);':''}${done?'opacity:.5;':''}${faded?'opacity:.35;':''}">
+      const atBat = storedPending && !done && !faded && _isPickAtBat(bid, gpk);
+      const atBatBadge = atBat ? `<span style="font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--amber);background:rgba(235,178,105,.15);border:1px solid rgba(235,178,105,.4);border-radius:3px;padding:1px 5px;flex:none">AT BAT</span>` : '';
+      return `<div style="position:relative;display:flex;align-items:center;gap:7px;padding:5px 12px;${notLast?'border-bottom:1px solid var(--line);':''}${done?'opacity:.5;':''}${faded?'opacity:.35;':''}"${atBat?' class="sc-at-bat"':''}>
         <span style="font-family:var(--mono);font-size:11px;font-weight:600;color:${scoreColor};flex:none;width:22px;text-align:right">${pPct}</span>
         ${bl.team?`<span class="teamtag" style="font-size:8px;padding:1px 4px;flex:none;${teamTagStyle(bl.team)}">${esc(bl.team)}</span>`:''}
         ${nameEl}
+        ${atBatBadge}
         ${statusEl}
       </div>`;
     }).join('');
@@ -4212,13 +4308,19 @@ function buildScoreCard(matchup, batters, betKeys) {
         const zebraBg = idx%2===1 ? 'rgba(255,255,255,.015)' : 'transparent';
         const restBg = isBet ? 'rgba(235,178,105,.09)' : zebraBg;
         const noHit = isFinalGame && !hit;
+        // live-at-bat pulse layered on top of the existing "in your bet
+        // slip" highlighting — only when it's actually this picked batter's
+        // turn right now, reusing the same _isPickAtBat() check the slip
+        // and saved-bet cards use.
+        const atBat = isBet && isLiveGame && _isPickAtBat(l.batterId, gamePk);
         const clickAttr = l.batterId ? `onclick="goToBatter('${l.batterId}')" style="cursor:pointer;` : `style="`;
-        return `<div ${clickAttr}display:flex;align-items:center;gap:8px;padding:4px 10px;background:${restBg};border-left:2px solid ${isBet?'var(--amber)':'transparent'};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='${restBg}'">
+        return `<div ${atBat?'class="sc-at-bat" ':''}${clickAttr}position:relative;display:flex;align-items:center;gap:8px;padding:4px 10px;background:${restBg};border-left:2px solid ${isBet?'var(--amber)':'transparent'};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='${restBg}'">
           <span style="font-family:var(--mono);font-size:9px;color:var(--sage);flex:none;width:14px">${l.slot||''}</span>
           <span style="flex:none;width:12px;text-align:center" title="Trending vs. model expectation">${performanceArrow(l)}</span>
           <span style="font-family:var(--mono);font-size:10px;color:${nameCol};flex:none;width:28px;text-align:right">${Math.round((l.p||0)*100)}</span>
           <span style="font-family:var(--mono);font-size:11px;color:${nameCol};${hit?'text-decoration:line-through;opacity:.45':''};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
           ${noHit?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:8px;color:var(--bad);opacity:.75;flex:none">NO HIT</span>`:''}
+          ${atBat?`<span style="font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--amber);flex:none">AT BAT</span>`:''}
           ${isBet?`<span class="scores-bet-col" title="In your bet slip" style="font-size:10px;flex:none">🎫</span>`:''}
           <span class="scores-hab-col" style="font-family:var(--mono);font-size:10px;color:${boxCol};flex:none;width:34px;text-align:right">${(isLiveGame||isFinalGame)?boxTxt:''}</span>
           ${(!l.hasHit&&!isFinalGame&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}
