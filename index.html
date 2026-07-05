@@ -960,6 +960,7 @@
           <div style="margin-top:4px">
             <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">Stake ($)</div>
             <input id="stakeInput" class="bank" placeholder="25" style="width:100%;font-size:14px" oninput="updateSaveBtn()">
+            <div id="kellyHint" style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.6;margin-top:3px"></div>
           </div>
           <button class="amber" id="saveBtn" onclick="saveBet()" disabled style="width:100%;margin-top:8px;opacity:.4">Save bet</button>
           <button class="ghost" id="cancelEditBtn" onclick="cancelEditBet()" style="width:100%;margin-top:6px;font-size:10px;display:none">Cancel edit</button>
@@ -2922,6 +2923,27 @@ function updateSaveBtn(){
 
   const cancelEl=document.getElementById('cancelEditBtn');
   if(cancelEl) cancelEl.style.display = _editingBetId ? '' : 'none';
+
+  const kellyEl = document.getElementById('kellyHint');
+  if(kellyEl){
+    const trueP = sel.length ? sel.reduce((a,l)=>a*(l.p||0),1) : 0;
+    const suggested = (trueP && useDec) ? _kellyStake(trueP, useDec, _currentBankroll()) : 0;
+    kellyEl.textContent = suggested > 0
+      ? `Suggested: $${suggested.toFixed(2)} (¼-Kelly)`
+      : '';
+  }
+}
+
+// quarter-Kelly stake suggestion — informational only, never forces the
+// stake input. Reviving the long-dead `kelly` fraction variable (was
+// declared once, never used) as an actual bankroll-management feature.
+function _kellyStake(trueP, decOdds, bankroll){
+  const b = decOdds - 1;
+  if(b <= 0 || bankroll <= 0) return 0;
+  const q = 1 - trueP;
+  const f = (b * trueP - q) / b;
+  if(f <= 0) return 0;
+  return +(kelly * f * bankroll).toFixed(2);
 }
 
 // today's bets can be re-opened into the slip for editing (add/remove a
@@ -3657,6 +3679,13 @@ function _betsStatusFilterChips(){
   return `<div style="display:flex;gap:6px;margin-bottom:10px">${btns}</div>`;
 }
 
+const BANK_START = 20;
+function _currentBankroll(){
+  const totalWon = savedBets.filter(b=>b.status==='won').reduce((a,b)=>a+(b.payout||0),0);
+  const totalLost = savedBets.filter(b=>b.status==='lost').reduce((a,b)=>a+b.stake,0);
+  return BANK_START + (totalWon - totalLost);
+}
+
 function renderBetsTab(){
   const cardsEl = document.getElementById('bets-cards');
   const sumEl   = document.getElementById('bets-summary');
@@ -3673,12 +3702,9 @@ function renderBetsTab(){
   const allWon   = savedBets.filter(b=>b.status==='won');
   const allLost  = savedBets.filter(b=>b.status==='lost');
   const allVoid  = savedBets.filter(b=>b.status==='void');
-  const totalWon = allWon.reduce((a,b)=>a+(b.payout||0),0);
-  const totalLost= allLost.reduce((a,b)=>a+b.stake,0);
-  const net      = totalWon-totalLost;
   const pendingStake = savedBets.filter(b=>b.status==='pending').reduce((a,b)=>a+b.stake,0);
-  const BANK_START = 20;
-  const bankroll = BANK_START + net;
+  const net      = _currentBankroll() - BANK_START;
+  const bankroll = _currentBankroll();
   const bankColor = bankroll >= BANK_START ? 'var(--good)' : 'var(--bad)';
 
   if(sumEl) sumEl.innerHTML=`<div class="card" style="margin-bottom:14px"><div class="saved-summary" style="border-top:none">
