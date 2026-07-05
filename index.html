@@ -630,12 +630,41 @@
   .scorecircle.sc-picked{border-color:var(--amber)!important;animation:none;box-shadow:0 0 10px rgba(235,178,105,.2)}
   .scorecircle.sc-picked .scoreval{opacity:.3}
   .scorecircle.sc-picked .sc-overlay{opacity:1;color:var(--amber);font-size:17px;background:rgba(235,178,105,.1)}
+
+  /* ── auth gate — whole app is locked behind sign-in for now, per explicit
+     product decision (no tiers defined yet, so "everything requires login"
+     is the simplest interim state, not a permanent one). .wrap stays
+     display:none until a session is confirmed, so nothing behind the gate
+     ever paints first. ── */
+  .wrap.auth-hidden{display:none}
+  #auth-gate{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:var(--field)}
+  #auth-gate.auth-hidden{display:none}
+  .auth-card{width:100%;max-width:340px;padding:28px 26px;background:var(--surf);border:1px solid var(--line);border-radius:12px}
+  .auth-card h2{font-family:var(--disp);font-weight:400;font-size:20px;letter-spacing:-.3px;margin:0 0 4px;color:var(--chalk);text-transform:uppercase}
+  .auth-card p{font-family:var(--mono);font-size:11px;color:var(--sage);margin:0 0 18px}
+  .auth-card input{width:100%;background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:9px 11px;font-family:var(--mono);font-size:13px;margin-bottom:10px;outline:none}
+  .auth-card input:focus{border-color:var(--amber)}
+  .auth-card button{width:100%;margin-top:4px}
+  #auth-error{font-family:var(--mono);font-size:11px;color:var(--bad);margin-top:10px;min-height:14px}
 </style>
+
+<div id="auth-gate">
+  <div class="auth-card">
+    <h2>Mochi</h2>
+    <p>Sign in to continue</p>
+    <form id="auth-form" onsubmit="event.preventDefault();_handleSignIn();">
+      <input id="auth-email" type="email" placeholder="Email" autocomplete="username" required />
+      <input id="auth-password" type="password" placeholder="Password" autocomplete="current-password" required />
+      <button type="submit" class="amber">Sign In</button>
+    </form>
+    <div id="auth-error"></div>
+  </div>
+</div>
 
 <canvas id="bg-canvas"></canvas>
 <div class="bg-gradient"></div>
 
-<div class="wrap">
+<div class="wrap auth-hidden">
   <div class="site-header">
     <div class="header-eyebrow">MLB Analytics</div>
     <div class="header-title">
@@ -1005,6 +1034,12 @@
 </div><!-- /grid -->
 </div><!-- /tab-dugout -->
 </div><!-- /wrap -->
+
+<!-- supabase-js via CDN — a <script src> tag, not a build step; same
+     category as the Google Font @import already in <style> above. Anon key
+     below is meant to be public (RLS is the real security boundary, not
+     key secrecy) — see the bets-sync section further down. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
 let legs = [];
@@ -2613,43 +2648,111 @@ function computeParlay(sel){
   el.style.color=trueP>=0.5?'var(--good)':trueP>=0.3?'var(--chalk)':'var(--bad)';
 }
 
-// ---- saved bets ----
+// ---- saved bets — Supabase-backed (2026-07-05), replacing the old
+// server.py `/bets`+bets.json flow, which could only ever be written from
+// the one Mac running the local Flask server (bound to 127.0.0.1, not
+// reachable from any other device) and left the public GitHub Pages mirror
+// as a plain, unauthenticated, read-only snapshot. Supabase's anon key
+// below is meant to be public — Row Level Security (see the `bets` table's
+// policies, scoped to auth.uid()) is the actual security boundary, not key
+// secrecy. localStorage is now an offline-read cache only, not the source
+// of truth. ----
+const SUPABASE_URL = 'https://prbtzzikvojjwetvibcu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByYnR6emlrdm9qandldHZpYmN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNTA3NjUsImV4cCI6MjA5ODgyNjc2NX0.zsQ4K6woYOt9UDWLnJYpJlv92xRxUGnmATWbg_Wxzq4';
+const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 let savedBets = [];
 try{ savedBets = JSON.parse(localStorage.getItem('dugout_bets')||'[]'); }catch(e){}
 
 const _onServer = location.hostname==='127.0.0.1'||location.hostname==='localhost';
 
-function persistBets(){
-  // always write localStorage as fallback
-  try{ localStorage.setItem('dugout_bets', JSON.stringify(savedBets)); }catch(e){}
-  // when served locally, also persist server-side to bets.json
-  if(_onServer){
-    fetch('/bets', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(savedBets)})
-      .catch(()=>{});
+// bet<->row field mapping — only trueP/true_p differs (JS camelCase vs
+// Postgres snake_case); everything else round-trips as-is, including
+// `legs` (jsonb, both the batter-prop and ml/ou leg shapes store verbatim).
+function _betToRow(b){
+  return {id:b.id, saved:b.saved, date:b.date, stake:b.stake, odds:b.odds,
+          payout:b.payout, true_p:b.trueP, status:b.status, legs:b.legs};
+}
+function _rowToBet(r){
+  return {id:r.id, saved:r.saved, date:r.date, stake:r.stake, odds:r.odds,
+          payout:r.payout, trueP:r.true_p, status:r.status, legs:r.legs};
+}
+
+// failed writes surface here instead of silently vanishing (the old
+// `.catch(()=>{})` on the /bets POST could lose a save with no sign
+// anything went wrong) — flushed on reconnect or the next mutation. Not a
+// persisted offline queue (that's Phase 3 PWA territory); the bet is never
+// actually lost even if a flush is missed, since it's already sitting in
+// localStorage and this list is rebuilt from `savedBets` on flush, not
+// tracked as a fragile diff.
+let _pendingSync = new Set();
+function _showSyncBanner(msg, isError){
+  let el = document.getElementById('sync-banner');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'sync-banner';
+    el.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9998;font-family:var(--mono);font-size:11px;padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--surf);transition:opacity .2s';
+    document.body.appendChild(el);
   }
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--bad)' : 'var(--good)';
+  el.style.opacity = '1';
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(()=>{ el.style.opacity='0'; }, 3000);
+}
+function _syncOp(id, promise){
+  _pendingSync.add(id);
+  promise.then(({error})=>{
+    _pendingSync.delete(id);
+    if(error){ _pendingSync.add(id); _showSyncBanner('Sync failed — check connection', true); }
+  }).catch(()=>{ _pendingSync.add(id); _showSyncBanner('Sync failed — check connection', true); });
+}
+window.addEventListener('online', ()=>{ if(_pendingSync.size) _flushPendingSync(); });
+function _flushPendingSync(){
+  // simplest safe retry: re-derive each pending id's current local state
+  // from savedBets and re-issue the same insert/update/delete shape rather
+  // than tracking a fragile per-op diff queue.
+  const ids = [..._pendingSync];
+  _pendingSync.clear();
+  ids.forEach(id=>{
+    const b = savedBets.find(x=>x.id===id);
+    if(b) _syncOp(id, _sb.from('bets').upsert(_betToRow(b)));
+    else  _syncOp(id, _sb.from('bets').delete().eq('id', id));
+  });
+}
+
+function persistBets(){
+  // localStorage is now an offline-read cache only — Supabase (via the
+  // targeted calls in saveBet/settleBet/deleteBet/autoSettleBets below) is
+  // the source of truth. Kept here so a page that briefly can't reach
+  // Supabase still has last-known-good data to render.
+  try{ localStorage.setItem('dugout_bets', JSON.stringify(savedBets)); }catch(e){}
 }
 
 function _loadBetsFromServer(){
-  // on the local server, /bets is the live read/write endpoint; on the
-  // public GitHub Pages mirror there's no server to hit, but push_to_dash()
-  // already publishes bets.json as a static file (same pattern as
-  // tonight_p_hit.csv/picks_log.csv) — this used to just return early and
-  // never fetch it, so the public site silently only ever showed whatever
-  // was in that specific browser's localStorage, never the real bet history.
-  // Cache-bust the static-file path the same way the CSV fetch does, since
-  // a bare URL let the browser serve a stale cached bets.json otherwise.
-  const url = _onServer ? '/bets' : './bets.json?t='+Date.now();
-  fetch(url, _onServer ? {} : {cache:'no-store'})
-    .then(r=>r.ok?r.json():null)
-    .then(data=>{
-      if(!Array.isArray(data)||!data.length) return;
-      // server/static-file wins over localStorage (it's the source of truth)
-      savedBets = data;
+  _sb.from('bets').select('*').order('id', {ascending:false})
+    .then(({data, error})=>{
+      if(error || !Array.isArray(data)) return;
+      savedBets = data.map(_rowToBet);
       try{ localStorage.setItem('dugout_bets', JSON.stringify(savedBets)); }catch(e){}
       renderSavedBets();
       if(window.currentTab==='bets') renderBetsTab();
     })
     .catch(()=>{});
+  // realtime cross-device sync — reflect a bet saved/settled/deleted from
+  // another device without needing a reload.
+  _sb.channel('bets-sync').on('postgres_changes', {event:'*', schema:'public', table:'bets'}, payload=>{
+    if(payload.eventType==='DELETE'){
+      savedBets = savedBets.filter(b=>b.id!==payload.old.id);
+    } else {
+      const bet = _rowToBet(payload.new);
+      const i = savedBets.findIndex(b=>b.id===bet.id);
+      if(i>=0) savedBets[i]=bet; else savedBets.unshift(bet);
+    }
+    try{ localStorage.setItem('dugout_bets', JSON.stringify(savedBets)); }catch(e){}
+    renderSavedBets();
+    if(window.currentTab==='bets') renderBetsTab();
+  }).subscribe();
 }
 
 // ---- live game data (Tonight + Bets tabs) ----
@@ -2776,6 +2879,7 @@ function saveBet(){
   };
   savedBets.unshift(bet);
   persistBets(); renderSavedBets();
+  _syncOp(bet.id, _sb.from('bets').insert(_betToRow(bet)));
   legs.forEach(l=>l.inSlip=false);
   teamLegs=[];
   document.getElementById('stakeInput').value='';
@@ -2784,12 +2888,16 @@ function saveBet(){
 
 function settleBet(id,status){
   const b=savedBets.find(b=>b.id===id);
-  if(b){ b.status=status; persistBets(); renderSavedBets(); }
+  if(b){
+    b.status=status; persistBets(); renderSavedBets();
+    _syncOp(id, _sb.from('bets').update({status}).eq('id', id));
+  }
 }
 
 function deleteBet(id){
   savedBets=savedBets.filter(b=>b.id!==id);
   persistBets(); renderSavedBets();
+  _syncOp(id, _sb.from('bets').delete().eq('id', id));
 }
 
 function autoSettleBets(){
@@ -2798,7 +2906,14 @@ function autoSettleBets(){
   legs.forEach(l=>{
     if(l.name && l.gameDate) lookup.set(_normName(l.name)+'|'+l.gameDate, l);
   });
+  // track *which* bets changed this tick (not just whether any did) so the
+  // Supabase sync below can issue one targeted update per changed bet —
+  // same shape settleBet() already uses for a manual click — instead of a
+  // blanket persistBets() call. With two devices possibly live at once, a
+  // full-table-style rewrite here could otherwise clobber an edit made on
+  // another device inside this same 30s polling window.
   let changed = false;
+  const changedIds = [];
   savedBets.forEach(b=>{
     if(b.status !== 'pending') return;
     let allSettled = true, anyLoss = false, anyPpd = false;
@@ -2839,9 +2954,16 @@ function autoSettleBets(){
       else if(anyLoss) b.status='lost';
       else b.status='won';
       changed=true;
+      changedIds.push(b.id);
     }
   });
-  if(changed){ persistBets(); renderSavedBets(); }
+  if(changed){
+    persistBets(); renderSavedBets();
+    changedIds.forEach(id=>{
+      const b = savedBets.find(x=>x.id===id);
+      _syncOp(id, _sb.from('bets').update({status:b.status, legs:b.legs}).eq('id', id));
+    });
+  }
 }
 
 const _betCardCollapsed = new Set();
@@ -3514,7 +3636,10 @@ function renderBetsTab(){
 }
 
 // auto-load on page open: fetch CSV from server if available, else restore from localStorage
-(function(){
+// renamed from an immediately-invoked function to a named one, called only
+// once a Supabase session is confirmed (see the auth-gate block right
+// below) — everything in here used to run unconditionally on script load.
+function _bootApp(){
   function restoreFromStorage(){
     try{
       const saved=localStorage.getItem('dugout_csv');
@@ -3568,7 +3693,32 @@ function renderBetsTab(){
   // so just hide it on the public site instead of showing a control that does nothing there
   if(!_onServer){ const gsel = document.getElementById('global-date-picker'); if(gsel) gsel.style.display = 'none'; }
   switchTab('scores', document.querySelector('.tabs .tab[onclick*="\'scores\'"]')); // Scores is the default landing tab as of 2026-07-02 — its container defaults to display:none in HTML like any non-Tonight tab used to, so boot must explicitly switch to it
-})();
+}
+
+// ── auth gate — whole app locked behind sign-in for now (no product tiers
+// defined yet, see the CSS comment above #auth-gate). Single dashboard-
+// managed user; no sign-up/reset UI. Session persists per-device via
+// supabase-js's own localStorage key, so this is a one-time login per
+// device, not per-visit. ──────────────────────────────────────────────────
+function _unlockApp(){
+  document.getElementById('auth-gate').classList.add('auth-hidden');
+  document.querySelector('.wrap').classList.remove('auth-hidden');
+  _bootApp();
+}
+function _handleSignIn(){
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.textContent = '';
+  _sb.auth.signInWithPassword({email, password}).then(({error})=>{
+    if(error){ errEl.textContent = error.message; return; }
+    _unlockApp();
+  });
+}
+_sb.auth.getSession().then(({data})=>{
+  if(data?.session) _unlockApp();
+  // else: leave #auth-gate visible, _bootApp() doesn't run until sign-in
+});
 
 // ── tab switching ─────────────────────────────────────────────────────────────
 function renderActiveTab() {
