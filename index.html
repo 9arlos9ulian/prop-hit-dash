@@ -1162,7 +1162,7 @@ async function fetchKalshiTotals(dateStr) {
   // and comparing against dateStr (today, UTC) silently drops every night
   // game. Instead accept anything within a ±20h window of "now", wide
   // enough to cover the whole slate's local day regardless of timezone.
-  if(!_onServer) return; // /kalshi/* is a server.py CORS proxy, not published to the public mirror
+  if(!_onServer) { await _loadStaticKalshiOdds(); return; }
   try {
     const res = await fetch('/kalshi/totals');
     if(!res.ok) return;
@@ -1209,10 +1209,28 @@ async function fetchKalshiTotals(dateStr) {
   } catch(_) { /* silently fail */ }
 }
 
+// public site fallback: a snapshot from the last pipeline run
+// (live_slate.py -> kalshi_api.write_game_odds_json), same shape the two
+// functions above build client-side from the live /kalshi/* proxy.
+let _staticKalshiLoaded = false;
+async function _loadStaticKalshiOdds() {
+  if(_staticKalshiLoaded) return;
+  _staticKalshiLoaded = true;
+  try {
+    const res = await fetch('./kalshi_game_odds.json?t=' + Date.now());
+    if(!res.ok) return;
+    const data = await res.json();
+    for(const [key, g] of Object.entries(data)) {
+      if(g.winner) _kalshiWinner.set(key, g.winner);
+      if(g.totals) _kalshiOu.set(key, g.totals);
+    }
+  } catch(_) { /* silently fail */ }
+}
+
 async function fetchMoneylines() {
   // Kalshi KXMLBGAME series — per-game MLB winner markets (server.py proxies
   // /kalshi/winner to that series; KXMLB alone is the season championship futures)
-  if(!_onServer) return; // /kalshi/* is a server.py CORS proxy, not published to the public mirror
+  if(!_onServer) { await _loadStaticKalshiOdds(); return; }
   try {
     const res = await fetch('/kalshi/winner');
     if(!res.ok) return;
