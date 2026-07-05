@@ -2630,12 +2630,20 @@ function persistBets(){
 }
 
 function _loadBetsFromServer(){
-  if(!_onServer) return;
-  fetch('/bets')
+  // on the local server, /bets is the live read/write endpoint; on the
+  // public GitHub Pages mirror there's no server to hit, but push_to_dash()
+  // already publishes bets.json as a static file (same pattern as
+  // tonight_p_hit.csv/picks_log.csv) — this used to just return early and
+  // never fetch it, so the public site silently only ever showed whatever
+  // was in that specific browser's localStorage, never the real bet history.
+  // Cache-bust the static-file path the same way the CSV fetch does, since
+  // a bare URL let the browser serve a stale cached bets.json otherwise.
+  const url = _onServer ? '/bets' : './bets.json?t='+Date.now();
+  fetch(url, _onServer ? {} : {cache:'no-store'})
     .then(r=>r.ok?r.json():null)
     .then(data=>{
       if(!Array.isArray(data)||!data.length) return;
-      // server wins over localStorage (server is source of truth)
+      // server/static-file wins over localStorage (it's the source of truth)
       savedBets = data;
       try{ localStorage.setItem('dugout_bets', JSON.stringify(savedBets)); }catch(e){}
       renderSavedBets();
