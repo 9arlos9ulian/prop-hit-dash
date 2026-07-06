@@ -3676,7 +3676,44 @@ function _betsStatusFilterChips(){
   const btns = opts.map(([val,lbl]) =>
     `<button class="ghost fchip${betsStatusFilter===val?' amber':''}" onclick="setBetsStatusFilter('${val}')">${lbl}</button>`
   ).join('');
-  return `<div style="display:flex;gap:6px;margin-bottom:10px">${btns}</div>`;
+  const dates = [...new Set(savedBets.map(_betDate).filter(d=>d))].sort().reverse();
+  const dateSelect = dates.length ? `<select onchange="_jumpToBetDate(this.value)" style="margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--field);color:var(--sage);border:1px solid var(--line);border-radius:4px;padding:2px 6px">
+    <option value="">Jump to date…</option>
+    ${dates.map(d=>{
+      const dt = new Date(d+'T12:00:00');
+      const label = dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      return `<option value="${d}">${label}</option>`;
+    }).join('')}
+  </select>` : '';
+  return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">${btns}${dateSelect}</div>`;
+}
+
+// jump-to-date: force-expand whichever tier (today/past/archive) the date
+// falls into, reusing the same collapse mechanics each tier already has,
+// then scroll that section into view — no new data structure needed.
+function _jumpToBetDate(dateStr){
+  if(!dateStr) return;
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const archiveCutoff = new Date(); archiveCutoff.setDate(archiveCutoff.getDate() - ARCHIVE_AFTER_DAYS);
+  const archiveCutoffStr = archiveCutoff.toLocaleDateString('en-CA');
+
+  let targetId;
+  if(dateStr === todayStr){
+    localStorage.setItem('bets_collapse_bets-today-settled', '0');
+    targetId = 'bets-today-pending';
+  } else if(dateStr >= archiveCutoffStr){
+    localStorage.setItem('bets_collapse_bets-past-group', '0');
+    targetId = 'bets-past-'+dateStr.replace(/-/g,'');
+    localStorage.setItem('bets_collapse_'+targetId, '0');
+  } else {
+    localStorage.setItem('bets_collapse_bets-archive-group', '0');
+    window._archiveExpanded.add(dateStr);
+    targetId = 'bets-archive-date-'+dateStr;
+  }
+  renderBetsTab();
+  requestAnimationFrame(() => {
+    document.getElementById(targetId)?.scrollIntoView({behavior:'smooth', block:'start'});
+  });
 }
 
 const BANK_START = 20;
@@ -3814,7 +3851,7 @@ function renderBetsTab(){
       const cardsHtml = expanded
         ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;padding:8px 2px 10px">${db.map(_betCardHtml).join('')}</div>`
         : '';
-      return `<div style="border-bottom:1px solid var(--line)">
+      return `<div id="bets-archive-date-${d}" style="border-bottom:1px solid var(--line)">
         <div onclick="_archiveDateToggle('${d}')" style="display:flex;align-items:center;gap:10px;padding:7px 6px;cursor:pointer;user-select:none;font-family:var(--mono);font-size:11px" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background=''">
           <span style="color:var(--sage);opacity:.5;width:10px">${expanded?'▾':'▸'}</span>
           <span style="color:var(--chalk);width:90px">${label}</span>
