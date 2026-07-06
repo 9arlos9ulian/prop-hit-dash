@@ -2262,6 +2262,15 @@ const MLB_TEAM_SLUG = {
   STL:'cardinals',TB:'rays',TEX:'rangers',TOR:'blue-jays',WSH:'nationals',
   ATH:'athletics',
 };
+// MLB's linescore.inningState is one of Top/Bottom/Middle/End — the latter
+// two are the between-half-innings break, distinct from whichever half just
+// played (which inningHalf/isTopInning alone can't tell you). Returns a
+// short suffix to tack onto the ▲/▼+ordinal label, or '' when mid-play.
+function _inningMidSuffix(inningState){
+  if(inningState==='Middle') return ' MID';
+  if(inningState==='End') return ' END';
+  return '';
+}
 function teamUrl(abbr){ const s=MLB_TEAM_SLUG[abbr]; return s?`https://www.mlb.com/${s}`:''; }
 function pitcherUrl(name){ const slug=name.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim().replace(/\s+/g,'-'); return `https://www.foxsports.com/mlb/${slug}-player`; }
 function liveInningAbHtml(l){
@@ -2275,7 +2284,7 @@ function liveInningAbHtml(l){
   const inningsLeft = Math.max(0, 9-ls.inning-(ls.half==='Bottom'?.5:0)-ls.outs/3*.1);
   const abRaw = inningsLeft*rate;
   const abEst = abRaw<0.5?'last AB':`~${Math.round(abRaw)} AB`;
-  return `<div style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-top:3px"><span style="color:var(--amber)">${halfShort}${ls.ordinal}</span> · ${outsStr} · <span style="opacity:.7">${abEst} left</span></div>`;
+  return `<div style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-top:3px"><span style="color:var(--amber)">${halfShort}${ls.ordinal}${_inningMidSuffix(ls.inningState)}</span> · ${outsStr} · <span style="opacity:.7">${abEst} left</span></div>`;
 }
 
 function gameUrl(date, gamePk, matchup, gameState){
@@ -2655,7 +2664,7 @@ function renderSlip(){
         }
         // inning line below name
         const slipInningHtml = lsLine?.inning
-          ? `<div style="font-family:var(--mono);font-size:8px;color:var(--sage);margin-top:1px"><span style="color:var(--amber)">${lsLine.half==='Top'?'▲':'▼'}${lsLine.ordinal}</span> · ${lsLine.outs}out</div>`
+          ? `<div style="font-family:var(--mono);font-size:8px;color:var(--sage);margin-top:1px"><span style="color:var(--amber)">${lsLine.half==='Top'?'▲':'▼'}${lsLine.ordinal}${_inningMidSuffix(lsLine.inningState)}</span> · ${lsLine.outs}out</div>`
           : '';
         const pPct=(l.p*100).toFixed(0);
         const scoreColor=l.p>=0.70?'var(--good)':l.p>=0.55?'var(--amber)':'var(--sage)';
@@ -3430,7 +3439,7 @@ function _betCardHtml(b){
     }
     if(lsGroup?.isLive){
       const h=lsGroup.half==='Top'?'▲':'▼';
-      hdrRight += `<span style="font-family:var(--mono);font-size:9px;color:var(--amber);margin-left:5px">${h}${lsGroup.ordinal}</span>`;
+      hdrRight += `<span style="font-family:var(--mono);font-size:9px;color:var(--amber);margin-left:5px">${h}${lsGroup.ordinal}${_inningMidSuffix(lsGroup.inningState)}</span>`;
     } else if(lsGroup?.isFinal){
       hdrRight += `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.4;margin-left:5px">Final</span>`;
     }
@@ -4263,7 +4272,7 @@ function buildScoreCard(matchup, batters, betKeys) {
     if(isLiveGame && ls) {
       const half = ls.half==='Top' ? '▲' : '▼';
       diamondInner = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
-        <span style="font-family:var(--mono);font-size:12px;color:var(--amber)">${half}${esc(ls.ordinal||'')}</span>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--amber)">${half}${esc(ls.ordinal||'')}${_inningMidSuffix(ls.inningState)}</span>
         ${_baseDiamond(ls, 22)}
         ${_outDots(ls.outs||0)}
       </div>`;
@@ -5075,6 +5084,7 @@ async function loadHistoricalScores(date){
         inning:  ld.currentInning || 0,
         ordinal: ld.currentInningOrdinal || '',
         half:    ld.inningHalf || '',
+        inningState: ld.inningState || '',
         outs:    ld.outs || 0,
         awayH: ld.teams?.away?.hits ?? null,
         homeH: ld.teams?.home?.hits ?? null,
@@ -5086,6 +5096,7 @@ async function loadHistoricalScores(date){
       _liveLinescore.set(gpk, {
         inning:  ld.currentInning || 0, ordinal: ld.currentInningOrdinal || '',
         half:    ld.inningHalf || '',   outs:    ld.outs || 0,
+        inningState: ld.inningState || '',
         isLive:  absState === 'live',   isFinal: absState === 'final',
         onFirst:  !!ld.offense?.first, onSecond: !!ld.offense?.second, onThird: !!ld.offense?.third,
         awayH: ld.teams?.away?.hits ?? null,  homeH: ld.teams?.home?.hits ?? null,
@@ -5724,7 +5735,7 @@ function canonMatchup(matchup){
       const awayLeads = as > hs, homeLeads = hs > as;
       const warmup = code==='PW' || !inn;
       const tvUrl    = g.gamePk ? `https://www.mlb.com/tv/g${g.gamePk}` : '';
-      const innLabel = warmup ? 'Warm' : `${arr}${inn}`;
+      const innLabel = warmup ? 'Warm' : `${arr}${inn}${_inningMidSuffix(ls.inningState)}`;
 
       // Simplified 2026-07-01: just inning, outs, teams, score — click through
       // to MLB.TV to watch live, or click the card itself to jump to this
@@ -5845,6 +5856,7 @@ function canonMatchup(matchup){
           inning: ls.currentInning || 0,
           ordinal: ls.currentInningOrdinal || '',
           half: ls.inningHalf || '',
+          inningState: ls.inningState || '',
           outs: ls.outs || 0,
           awayH: ls.teams?.away?.hits ?? null,
           homeH: ls.teams?.home?.hits ?? null,
@@ -5867,6 +5879,7 @@ function canonMatchup(matchup){
             inning:  ld.currentInning  || 0,
             ordinal: ld.currentInningOrdinal || '',
             half:    ld.inningHalf     || '',
+            inningState: ld.inningState || '',
             outs:    ld.outs           || 0,
             isLive:  absState === 'live',
             // MLB's abstractGameState flips to 'Live' at first-pitch warmup,
@@ -5932,6 +5945,7 @@ function canonMatchup(matchup){
               _liveLinescore.set(gpk, {
                 inning: ld.currentInning||0, ordinal: ld.currentInningOrdinal||'',
                 half: ld.inningHalf||'', outs: ld.outs||0,
+                inningState: ld.inningState||'',
                 isLive: absState==='live', isFinal: absState==='final',
               });
               const newState = absState==='final' ? (g.status?.detailedState||'Final') : absState==='live' ? 'In Progress' : '';
@@ -5958,6 +5972,7 @@ function canonMatchup(matchup){
                 inning: ld.currentInning || 0,
                 ordinal: ld.currentInningOrdinal || '',
                 half: ld.inningHalf || '',
+                inningState: ld.inningState || '',
                 outs: ld.outs || 0,
                 awayH: ld.teams?.away?.hits ?? null,
                 homeH: ld.teams?.home?.hits ?? null,
