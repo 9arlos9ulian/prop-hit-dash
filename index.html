@@ -4236,6 +4236,19 @@ function toggleGamePin(gamePk){
   renderScores();
 }
 
+// _liveScores keys are `${date}|${matchup}|${gamePk}` (gamePk included so a
+// doubleheader's two games, same date+matchup, don't overwrite each other).
+// When the caller knows gamePk, look it up directly; otherwise (legs that
+// lack a gamePk — a rare CSV edge case) fall back to a prefix scan, same
+// best-effort ambiguity that existed before gamePk was added to the key.
+function _findLiveScore(date, matchup, gamePk){
+  if(!window._liveScores) return null;
+  if(gamePk) return window._liveScores.get(`${date}|${matchup}|${gamePk}`) || null;
+  const prefix = `${date}|${matchup}|`;
+  for(const [k, v] of window._liveScores){ if(k.startsWith(prefix)) return v; }
+  return null;
+}
+
 // ── scores tab — live boxscore per game, same lean dynamics as Slate ──────────
 // full per-game card, called from renderScores()'s map below
 function buildScoreCard(matchup, batters, betKeys) {
@@ -4250,7 +4263,7 @@ function buildScoreCard(matchup, batters, betKeys) {
 
     const ls    = _liveLinescore.get(gamePk);
     const gameDate = shortDateToISO(batters[0]?.gameDate);
-    const score = window._liveScores ? window._liveScores.get(`${gameDate}|${canonMatchup(matchup)}`) : null;
+    const score = _findLiveScore(gameDate, canonMatchup(matchup), gamePk);
     const isLiveGame  = ls ? (ls.isLive && !ls.isWarmup) : isLive(gameState);
     const isFinalGame = ls ? ls.isFinal : isFinal(gameState);
     // pregame gets its own mirrored top-strip layout (see scoreboardPregame
@@ -4687,9 +4700,13 @@ function renderScores() {
     });
   });
 
+  // Keyed by (matchup, gamePk) — not matchup alone. Two teams can play a
+  // doubleheader (same matchup string, two different gamePks same day);
+  // grouping by matchup only merged both games' batters into one card,
+  // making every player appear twice with no way to tell the games apart.
   const gameMap = new Map();
   legs.forEach(l => {
-    const key = l.matchup || 'Unknown';
+    const key = (l.matchup || 'Unknown') + '|' + (l.gamePk || '');
     if(!gameMap.has(key)) gameMap.set(key, []);
     gameMap.get(key).push(l);
   });
@@ -4743,7 +4760,7 @@ function renderScores() {
     return;
   }
 
-  el.innerHTML = games.map(([matchup, batters]) => buildScoreCard(matchup, batters, betKeys)).join('');
+  el.innerHTML = games.map(([, batters]) => buildScoreCard(batters[0]?.matchup || 'Unknown', batters, betKeys)).join('');
   updateCollapseAllLabel();
 }
 
@@ -5083,7 +5100,7 @@ async function loadHistoricalScores(date){
       const detailedState = g.status.detailedState;
       const absState = (state||'').toLowerCase();
       const ld = g.linescore || {};
-      window._liveScores.set(`${date}|${away} @ ${home}`, {
+      window._liveScores.set(`${date}|${away} @ ${home}|${gpk}`, {
         as: g.teams.away.score ?? null,
         hs: g.teams.home.score ?? null,
         state, detailedState, gamePk: gpk,
@@ -5856,7 +5873,7 @@ function canonMatchup(matchup){
         const gd = today;
         const awayRec = g.teams.away.leagueRecord;
         const homeRec = g.teams.home.leagueRecord;
-        window._liveScores.set(`${gd}|${away} @ ${home}`, {
+        window._liveScores.set(`${gd}|${away} @ ${home}|${g.gamePk}`, {
           as, hs, state, detailedState,
           gamePk: String(g.gamePk),
           inning: ls.currentInning || 0,
@@ -5914,7 +5931,7 @@ function canonMatchup(matchup){
         });
         // also sync by matchup string for legs that may lack gamePk
         legs.forEach(l => {
-          const score = window._liveScores.get(`${shortDateToISO(l.gameDate)}|${canonMatchup(l.matchup)}`);
+          const score = _findLiveScore(shortDateToISO(l.gameDate), canonMatchup(l.matchup), l.gamePk);
           if(!score) return;
           if(score.state === 'Live' && !l.gameState.toLowerCase().includes('progress')) l.gameState = 'In Progress';
           else if(score.state === 'Final' && !isFinal(l.gameState)) l.gameState = score.detailedState || 'Final';
@@ -5969,7 +5986,7 @@ function canonMatchup(matchup){
               const awayRec = g.teams.away.leagueRecord;
               const homeRec = g.teams.home.leagueRecord;
               if(!window._liveScores) window._liveScores = new Map();
-              window._liveScores.set(`${staleDate}|${away} @ ${home}`, {
+              window._liveScores.set(`${staleDate}|${away} @ ${home}|${gpk}`, {
                 as: g.teams.away.score ?? null,
                 hs: g.teams.home.score ?? null,
                 state: g.status.abstractGameState,
