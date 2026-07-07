@@ -1658,6 +1658,7 @@ function parseCSV(raw){
   const iPitcherId=head.findIndex(h=>h==='opp_pitcher_id');
   const iGamePk=head.findIndex(h=>h==='game_pk');
   const iPMultihit=head.findIndex(h=>h==='p_multihit');
+  const iPHrRbi=head.findIndex(h=>h==='p_hrrbi');
   const start=(iP>=0)?1:0;
   const fresh=[];
   for(let i=start;i<lines.length;i++){
@@ -1737,6 +1738,7 @@ function parseCSV(raw){
     const ycRaw=iYesCents>=0?(c[iYesCents]||'').trim():'';
     entry.yesCents=ycRaw&&ycRaw!=='nan'&&ycRaw!=='NaN'?parseFloat(ycRaw)||null:null;
     const _pMultihit=iPMultihit>=0?parseFloat(c[iPMultihit]):NaN; entry.pMultihit=isNaN(_pMultihit)?null:_pMultihit;
+    const _pHrRbi=iPHrRbi>=0?parseFloat(c[iPHrRbi]):NaN; entry.pHrRbi=isNaN(_pHrRbi)?null:_pHrRbi;
     fresh.push(entry);
   }
   return fresh;
@@ -1852,7 +1854,7 @@ function updateSavedBadge(){
   }
 }
 function clearSaved(){ try{ localStorage.removeItem('dugout_csv'); localStorage.removeItem('dugout_csv_ts'); }catch(e){} updateSavedBadge(); }
-function mk(name,p,slot,matchup,team){ return {id:++uid,name,p,slot,matchup:matchup||'',team:team||'',pitcher:'',pitcherHand:'',batterHand:'',hit:'',no:'',inSlip:false,grp:'',hasHit:false,startTime:'',gameDate:'',gameState:'',last5:'',lineupEst:false,bvpAb:0,bvpH:0,bvpAvg:0,vsL:null,vsR:null,pRating:null,pGrade:'',pCsw:null,pKbb:null,pHH:null,bHitRate:null,bXba:null,bHH:null,bBabip:null,splitDiff:null,parkFactor:null,bNGames:0,bDaysRest:0,pNGames:0,pDaysRest:0,batterId:'',pitcherId:'',gamePk:'',yesCents:null,isOpener:false,pUseFb:null,pUseBb:null,pUseOs:null,bHrVsFb:null,bHrVsBb:null,bHrVsOs:null,bHrOverall:null,bHitRateVsSp:null,bPaVsSp:0,bHitRateVsRp:null,bPaVsRp:0,bIsRookie:false,pIsRookie:false,subbedOut:false,baseP:null,matchupDelta:null,bAvgAb:null,bGamesPlayed:0,pMultihit:null}; }
+function mk(name,p,slot,matchup,team){ return {id:++uid,name,p,slot,matchup:matchup||'',team:team||'',pitcher:'',pitcherHand:'',batterHand:'',hit:'',no:'',inSlip:false,grp:'',hasHit:false,startTime:'',gameDate:'',gameState:'',last5:'',lineupEst:false,bvpAb:0,bvpH:0,bvpAvg:0,vsL:null,vsR:null,pRating:null,pGrade:'',pCsw:null,pKbb:null,pHH:null,bHitRate:null,bXba:null,bHH:null,bBabip:null,splitDiff:null,parkFactor:null,bNGames:0,bDaysRest:0,pNGames:0,pDaysRest:0,batterId:'',pitcherId:'',gamePk:'',yesCents:null,isOpener:false,pUseFb:null,pUseBb:null,pUseOs:null,bHrVsFb:null,bHrVsBb:null,bHrVsOs:null,bHrOverall:null,bHitRateVsSp:null,bPaVsSp:0,bHitRateVsRp:null,bPaVsRp:0,bIsRookie:false,pIsRookie:false,subbedOut:false,baseP:null,matchupDelta:null,bAvgAb:null,bGamesPlayed:0,pMultihit:null,pHrRbi:null}; }
 
 // moneyline ('ml') / game-total ('ou') slip leg — lives in teamLegs, not
 // legs. opts (ml): {team, oddsStr, impliedP}. opts (ou): {selection:
@@ -4800,6 +4802,7 @@ function renderScoresAllBatters() {
     ['Pick',   null,                                                   'center', null, 'Add or remove this batter from your bet slip'],
     ['Scr',    l => Math.round((l.p||0)*100),                          'right',   l => dotCol(l.p||0), 'Model probability of ≥1 hit tonight. Dark green ≥75%, green ≥68%, amber ≥55%, red below'],
     ['Multi',  l => pct(l.pMultihit),                                  'right',   l => hiLoCol(l.pMultihit,.28,.15), 'Model probability of 2+ hits tonight — a separate, newer model (see calibration_multihit.png). Green ≥28%, red ≤15%. League base rate is ~20%'],
+    ['H+R+RBI',l => pct(l.pHrRbi),                                    'right',   l => hiLoCol(l.pHrRbi,.50,.35), 'Model probability of combined hits+runs+RBI ≥ 2 tonight — a separate model (see calibration_hrrbi.png). Green ≥50%, red ≤35%. League base rate is ~43%'],
     ['#',      l => l.slot||'',                                        'center', null, 'Batting order slot (1-9)'],
     ['Team',   null,                                                   'center', null, "Batter's team"],
     ['Name',   null,                                                   'left', null, 'Batter name, colored by score tier — click to expand full detail'],
