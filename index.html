@@ -1084,10 +1084,14 @@ function _persistLockedOdds(){
     }));
   } catch(_) {}
 }
+// Keyed by (name, matchup, gameDate, gamePk) — NOT without gamePk. A same-day
+// doubleheader has two different games sharing the same matchup string; a
+// key missing gamePk collides both games' rows onto one lock/identity, same
+// failure mode fixed in _mergeFresh() below.
 function _lockOdds(legsList){
   let changed = false;
   legsList.forEach(l => {
-    const key = l.name+'|'+l.matchup+'|'+(l.gameDate||'');
+    const key = l.name+'|'+l.matchup+'|'+(l.gameDate||'')+'|'+(l.gamePk||'');
     if(!_lockedOdds.has(key) && (l.hit || l.no)){
       _lockedOdds.set(key, {hit: l.hit||'', no: l.no||''});
       changed = true;
@@ -1097,7 +1101,7 @@ function _lockOdds(legsList){
 }
 function _applyLockedOdds(legsList){
   legsList.forEach(l => {
-    const locked = _lockedOdds.get(l.name+'|'+l.matchup+'|'+(l.gameDate||''));
+    const locked = _lockedOdds.get(l.name+'|'+l.matchup+'|'+(l.gameDate||'')+'|'+(l.gamePk||''));
     if(locked){ l.hit = locked.hit; l.no = locked.no; }
   });
 }
@@ -1109,7 +1113,15 @@ function _mergeFresh(fresh){
   _lockOdds(legs);          // snapshot any odds already entered in current session
   _applyLockedOdds(fresh);  // re-apply to new list (covers re-pasted CSV case)
   if(!legs.length){ legs = fresh; return; }
-  const key = l => (l.batterId||'') + '|' + _normName(l.name) + '|' + (l.gameDate||'') + '|' + (l.matchup||'');
+  // Keyed by (batterId, name, gameDate, matchup, gamePk) — NOT without gamePk.
+  // A same-day doubleheader puts the same batter in two fresh rows sharing
+  // every other field (batterId/name/gameDate/matchup are identical between
+  // the two games) — without gamePk in the key, both rows resolved to the
+  // SAME existing `cur` object, which doesn't even carry team/gamePk/matchup
+  // in its carry-over whitelist below, so both games' entries in the merged
+  // `legs` array ended up as duplicate references to one stale object,
+  // silently wrecking the team-side split derived from it downstream.
+  const key = l => (l.batterId||'') + '|' + _normName(l.name) + '|' + (l.gameDate||'') + '|' + (l.matchup||'') + '|' + (l.gamePk||'');
   const existing = new Map(legs.map(l => [key(l), l]));
   legs = fresh.map(f => {
     const cur = existing.get(key(f));
