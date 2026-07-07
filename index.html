@@ -4001,10 +4001,17 @@ function renderActiveTab() {
 // the old Tonight tab). Opened by name/row clicks from every Scores density
 // mode via goToBatter(). Shows live game context front and center when the
 // game is in progress; no weather, no base/matchup score decomposition.
-function goToBatter(batterId) { openBatterPopup(batterId); }
+function goToBatter(batterId, gamePk) { openBatterPopup(batterId, gamePk); }
 
-function openBatterPopup(batterId){
-  const l = legs.find(x => String(x.batterId) === String(batterId));
+// gamePk disambiguates a same-day doubleheader — the same batterId appears
+// in two legs (one per game), and matching by batterId alone always
+// resolved to whichever leg happened to be first in `legs`, showing the
+// wrong game's pitcher/matchup/state regardless of which card was clicked.
+function openBatterPopup(batterId, gamePk){
+  const l = gamePk
+    ? (legs.find(x => String(x.batterId) === String(batterId) && String(x.gamePk) === String(gamePk))
+       || legs.find(x => String(x.batterId) === String(batterId)))
+    : legs.find(x => String(x.batterId) === String(batterId));
   if(!l) return;
   const body = document.getElementById('batter-popup-body');
   const backdrop = document.getElementById('batter-popup-backdrop');
@@ -4498,7 +4505,7 @@ function buildScoreCard(matchup, batters, betKeys) {
         // turn right now, reusing the same _isPickAtBat() check the slip
         // and saved-bet cards use.
         const atBat = isBet && isLiveGame && _isPickAtBat(l.batterId, gamePk);
-        const clickAttr = l.batterId ? `onclick="goToBatter('${l.batterId}')" style="cursor:pointer;` : `style="`;
+        const clickAttr = l.batterId ? `onclick="goToBatter('${l.batterId}','${l.gamePk||''}')" style="cursor:pointer;` : `style="`;
         return `<div ${atBat?'class="sc-at-bat" ':''}${clickAttr}position:relative;display:flex;align-items:center;gap:8px;padding:4px 10px;background:${restBg};border-left:2px solid ${isBet?'var(--amber)':'transparent'};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='${restBg}'">
           <span style="font-family:var(--mono);font-size:9px;color:var(--sage);flex:none;width:14px">${l.slot||''}</span>
           <span style="flex:none;width:12px;text-align:center" title="Trending vs. model expectation">${performanceArrow(l)}</span>
@@ -4865,7 +4872,7 @@ function renderScoresAllBatters() {
     const teamCell = `<td style="text-align:center">${l.team?`<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}</td>`;
     const pTeam = pitcherTeam(l);
     const pTeamCell = `<td style="text-align:center">${pTeam?`<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(pTeam)}">${esc(pTeam)}</span>`:''}</td>`;
-    const nameCell = `<td style="text-align:left;cursor:${l.batterId?'pointer':'default'}" ${l.batterId?`onclick="goToBatter('${l.batterId}')"`:''}>
+    const nameCell = `<td style="text-align:left;cursor:${l.batterId?'pointer':'default'}" ${l.batterId?`onclick="goToBatter('${l.batterId}','${l.gamePk||''}')"`:''}>
       <span style="color:${dotCol(l.p||0)};${l.hasHit?'text-decoration:line-through;opacity:.45':''}">${esc(l.name)}</span>
       ${noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
     </td>`;
@@ -5683,7 +5690,7 @@ function liveMatchupLine(score, opts){
   const paHistory = (batId && pbp) ? pbp.filter(p => p.batterId === batId).map(p => p.code) : [];
   const fs = big ? '11px' : '9px';
   const pitNode = pitName ? `<a href="${pitcherUrl(pit.fullName)}" target="_blank" rel="noopener" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">P </span>${esc(pitName)}</a>${pitchCount!==null?` <span style="color:var(--sage)">${pitchCount}p</span>`:''}${pitER!==null?` <span style="color:${pitER>0?'var(--bad)':'var(--sage)'}">${pitER}ER</span>`:''}` : '';
-  const batNode = batName ? `${batId?`<a href="#" onclick="event.preventDefault();goToBatter('${batId}')" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}</a>`:`<span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}`}${batLine?` <span style="color:var(--amber)">${batLine}</span>`:''}${paHistory.length?` <span style="color:var(--sage);opacity:.7">(${paHistory.join(', ')})</span>`:''}` : '';
+  const batNode = batName ? `${batId?`<a href="#" onclick="event.preventDefault();goToBatter('${batId}','${gpk||''}')" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}</a>`:`<span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}`}${batLine?` <span style="color:var(--amber)">${batLine}</span>`:''}${paHistory.length?` <span style="color:var(--sage);opacity:.7">(${paHistory.join(', ')})</span>`:''}` : '';
   // pitNode/batNode are each several sibling inline elements (name + pitch
   // count + ER, etc.) — wrap each in its own row so flex-direction:column
   // (mobile) breaks into exactly one line per person, not one per span
