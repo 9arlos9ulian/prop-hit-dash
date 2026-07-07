@@ -3637,7 +3637,7 @@ function _sectionHtml(id, title, count, bets, opts={}){
 }
 
 const ARCHIVE_AFTER_DAYS = 30;
-let betsStatusFilter = 'all'; // 'all' | 'won' | 'lost' | 'void'
+let betsStatusFilter = 'all'; // 'all' | 'pending' | 'won' | 'lost' | 'void'
 window._archiveExpanded = window._archiveExpanded || new Set();
 
 function setBetsStatusFilter(f){
@@ -3683,7 +3683,7 @@ function _bankrollHistoryPanel(){
 }
 
 function _betsStatusFilterChips(){
-  const opts = [['all','All'],['won','Won'],['lost','Lost'],['void','Void']];
+  const opts = [['all','All'],['pending','Active'],['won','Won'],['lost','Lost'],['void','Void']];
   const btns = opts.map(([val,lbl]) =>
     `<button class="ghost fchip${betsStatusFilter===val?' amber':''}" onclick="setBetsStatusFilter('${val}')">${lbl}</button>`
   ).join('');
