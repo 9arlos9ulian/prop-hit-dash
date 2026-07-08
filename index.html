@@ -483,7 +483,7 @@
      between two flex:1 halves, so the row's true midpoint still lands where
      the lineup split below divides — same idea as .gm-footer-cell above. */
   .gm-scoreboard-pregame{display:flex;align-items:stretch;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)}
-  .gm-team-half{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;font-family:var(--mono);overflow:hidden}
+  .gm-team-half{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 10px;font-family:var(--mono);overflow:hidden}
   .gm-team-half.home{flex-direction:row-reverse}
   /* each half is two stacked columns (TEAM+RECORD, GRADE+PCT/DELTA) — see
      teamHalf(). Sizes scale 5 (biggest, TEAM) down to 1 (smallest, RECORD),
@@ -2684,17 +2684,29 @@ function renderSlip(){
         if(l.betType){
           // moneyline/O-U leg — resolve straight from the game's final
           // score instead of the batter hit-status checks below
+          const settled = l.outcome==='won'||l.outcome==='lost'||l.outcome==='push';
           if(l.outcome==='won') slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--good);background:rgba(178,208,126,.12);border:1px solid rgba(178,208,126,.3);border-radius:3px;padding:1px 5px;flex:none">WON</span>`;
           else if(l.outcome==='lost') slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--bad);opacity:.6;flex:none">LOST</span>`;
           else if(l.outcome==='push') slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.6;flex:none">PUSH</span>`;
-          else if(lsLine?.isLive) slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--amber);flex:none">${lsLine.awayR??0}-${lsLine.homeR??0}</span>`;
+          else if(lsLine?.isLive) slipStatusEl = teamLegLiveHtml(l.gamePk, l.matchup, {compact:true});
           const teamTag = l.betType==='ml' ? `<span class="teamtag" style="font-size:8px;padding:1px 4px;flex:none;${teamTagStyle(l.team)}">${esc(l.team)}</span>` : `<span class="teamtag" style="font-size:8px;padding:1px 4px;flex:none">O/U</span>`;
-          return `<div style="display:flex;align-items:center;gap:7px;padding:5px 12px">
-            <span style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--chalk);flex:none;width:38px;text-align:right">${esc(l.oddsStr||'')}</span>
-            ${teamTag}
-            <span style="font-family:var(--mono);font-size:11px;color:var(--chalk);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
-            ${slipStatusEl}
-            <button class="x" onclick="toggle(${l.id})">×</button>
+          // win-prob bar — ml legs only (see plan), live estimate once the
+          // game starts, odds-implied probability before that; nothing once settled.
+          const winProbBar = (l.betType==='ml' && !settled) ? (() => {
+            const [away, home] = (l.matchup||'').split(' @ ').map(s=>s.trim());
+            const isHome = canonTeamAbbr(home) === canonTeamAbbr(l.team);
+            const liveProb = lsLine?.isLive ? estimateLiveWinProb(lsLine, isHome) : null;
+            return winProbBarHtml(liveProb!=null ? liveProb : l.p, liveProb!=null);
+          })() : '';
+          return `<div style="display:flex;flex-direction:column;gap:4px;padding:5px 12px">
+            <div style="display:flex;align-items:center;gap:7px">
+              <span style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--chalk);flex:none;width:38px;text-align:right">${esc(l.oddsStr||'')}</span>
+              ${teamTag}
+              <span style="font-family:var(--mono);font-size:11px;color:var(--chalk);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
+              ${slipStatusEl}
+              <button class="x" onclick="toggle(${l.id})">×</button>
+            </div>
+            ${winProbBar}
           </div>`;
         }
         if(l.hasHit || alreadyHit){
@@ -3506,19 +3518,31 @@ function _betCardHtml(b){
       if(bl.betType){
         const ls = bl.gamePk ? _liveLinescore.get(String(bl.gamePk)) : null;
         const won=bl.outcome==='won', lost=bl.outcome==='lost', push=bl.outcome==='push';
+        const settled = won||lost||push;
         let statusEl='';
         if(won) statusEl=`<span style="font-family:var(--mono);font-size:9px;color:var(--good);font-weight:600;background:rgba(178,208,126,.12);border:1px solid rgba(178,208,126,.3);border-radius:3px;padding:1px 5px;flex:none">WON</span>`;
         else if(lost) statusEl=`<span style="font-family:var(--mono);font-size:9px;color:var(--bad);opacity:.7;flex:none">LOST</span>`;
         else if(push) statusEl=`<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.5;flex:none">PUSH</span>`;
-        else if(ls?.isLive) statusEl=`<span style="font-family:var(--mono);font-size:9px;color:var(--amber);flex:none">${ls.awayR??0}-${ls.homeR??0}</span>`;
+        else if(ls?.isLive) statusEl=teamLegLiveHtml(bl.gamePk, bl.matchup, {compact:false});
         const faded=lost, done=won;
         const notLast=idx<gLegs.length-1;
         const teamTag = bl.betType==='ml' ? `<span class="teamtag" style="font-size:8px;padding:1px 4px;flex:none;${teamTagStyle(bl.team)}">${esc(bl.team)}</span>` : `<span class="teamtag" style="font-size:8px;padding:1px 4px;flex:none">O/U</span>`;
-        return `<div style="display:flex;align-items:center;gap:7px;padding:5px 12px;${notLast?'border-bottom:1px solid var(--line);':''}${done?'opacity:.5;':''}${faded?'opacity:.35;':''}">
-          <span style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--chalk);flex:none;width:38px;text-align:right">${esc(bl.oddsStr||'')}</span>
-          ${teamTag}
-          <span style="font-family:var(--mono);font-size:11px;color:${done?'var(--sage)':faded?'var(--sage)':'var(--chalk)'};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${done?'text-decoration:line-through;':''}">${esc(bl.name)}</span>
-          ${statusEl}
+        // win-prob bar — ml legs only (see plan), live estimate once the
+        // game starts, odds-implied probability before that; nothing once settled.
+        const winProbBar = (bl.betType==='ml' && !settled) ? (() => {
+          const [away, home] = (bl.matchup||'').split(' @ ').map(s=>s.trim());
+          const isHome = canonTeamAbbr(home) === canonTeamAbbr(bl.team);
+          const liveProb = ls?.isLive ? estimateLiveWinProb(ls, isHome) : null;
+          return winProbBarHtml(liveProb!=null ? liveProb : bl.p, liveProb!=null);
+        })() : '';
+        return `<div style="display:flex;flex-direction:column;gap:4px;padding:5px 12px;${notLast?'border-bottom:1px solid var(--line);':''}${done?'opacity:.5;':''}${faded?'opacity:.35;':''}">
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--chalk);flex:none;width:38px;text-align:right">${esc(bl.oddsStr||'')}</span>
+            ${teamTag}
+            <span style="font-family:var(--mono);font-size:11px;color:${done?'var(--sage)':faded?'var(--sage)':'var(--chalk)'};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${done?'text-decoration:line-through;':''}">${esc(bl.name)}</span>
+            ${statusEl}
+          </div>
+          ${winProbBar}
         </div>`;
       }
       const oc = bl.outcome;
@@ -4446,37 +4470,11 @@ function buildScoreCard(matchup, batters, betKeys) {
         </span>
       </span>`;
 
-      // shortened label just for this cramped badge — the underlying mu.lbl
-      // strings ('STRONG'/'LEAN'/'NEUTRAL'/'AVOID') stay full-length since
-      // other code compares against them (e.g. sideHtml's colBg .includes()
-      // checks) — this map is purely display, not a data change. NEUTRAL was
-      // the worst offender on mobile, wide enough to overlap the team badge.
-      const LEAN_SHORT = {STRONG:'STR', LEAN:'LEAN', NEUTRAL:'NEU', AVOID:'AVD'};
-      const leanCol = mu ? (()=>{
-        const avgPct = Math.round((avg||0)*100);
-        const avgGrade = offGrade(avg||0);
-        const sign = mu.delta >= 0 ? '+' : '';
-        const bareLbl = mu.lbl.replace('🔥 ','');
-        return `<span class="th-col">
-          <span class="th-lean-badge" style="background:${mu.bg};border:1px solid ${mu.border};color:${mu.col}">
-            <span class="th-s3" style="display:flex;align-items:center;gap:5px;color:inherit">
-              <span>${avgGrade}</span>
-              <span>${esc(LEAN_SHORT[bareLbl] || bareLbl)}</span>
-            </span>
-            <span class="th-s3" style="color:inherit;opacity:.85">
-              ${avgPct}% ${sign}${mu.delta}
-            </span>
-          </span>
-        </span>`;
-      })() : '<span class="th-col"></span>';
-
-      // DOM order is always LEAN column, TEAM/RECORD column. Away renders
-      // that left-to-right as-is (lean at the outer edge, team nearest the
-      // center divider). Home mirrors it via CSS row-reverse
-      // (.gm-team-half.home), flipping it to TEAM/RECORD, LEAN — team nearest
-      // the divider, lean at the outer edge — per the requested mirror order.
+      // Lean (grade/label/%/delta) moved back out of the top strip and into
+      // the footer muRow, matching how live/final games already show it —
+      // this half is just TEAM/RECORD now, centered in its half.
       return `<div class="gm-team-half${side==='home'?' home':''}">
-        ${leanCol}${teamRecordCol}
+        ${teamRecordCol}
       </div>`;
     }
 
@@ -4657,11 +4655,9 @@ function buildScoreCard(matchup, batters, betKeys) {
     }
     // footer merged into one horizontal band — lean chip + avg P(hit) bar and
     // the post-game eval result sit side by side per team, not stacked in two
-    // rows. Pregame no longer shows this — that info now lives in the mirrored
-    // top strip (teamHalf/scoreboardPregame above) instead of being repeated
-    // down here; live/final are unchanged (fieldInfo shows the live at-bat up
-    // top there, not the lean, so this remains the only place for it).
-    const muRow = (!isPregame && (awayMu||homeMu)) ? `<div style="display:flex;border-top:1px solid var(--line)">
+    // rows. Shown for every state (pregame/live/final) — the mirrored top
+    // strip only carries TEAM/RECORD now, this is the one place lean lives.
+    const muRow = (awayMu||homeMu) ? `<div style="display:flex;border-top:1px solid var(--line)">
       <div class="gm-footer-cell" style="flex:1;padding:7px 14px;background:${awayMu?awayMu.bg:'transparent'};border-left:3px solid ${awayMu?awayMu.border:'var(--line)'}">${muChip(awayMu,awayAvg)}${isFinalGame?evalSide(awaySide,awayMu):''}</div>
       <div style="width:1px;background:var(--line)"></div>
       <div class="gm-footer-cell" style="flex:1;padding:7px 14px;background:${homeMu?homeMu.bg:'transparent'};border-right:3px solid ${homeMu?homeMu.border:'var(--line)'}">${muChip(homeMu,homeAvg)}${isFinalGame?evalSide(homeSide,homeMu):''}</div>
@@ -5736,6 +5732,66 @@ function _baseDiamond(bases, size){
 }
 function _outDots(outs){
   return `<div class="sc-dots">${[0,1,2].map(i=>`<div class="sc-dot ${i<outs?'sc-dot-on':'sc-dot-off'}"></div>`).join('')}</div>`;
+}
+
+// live in-progress detail for a moneyline/O-U slip leg — score/inning/outs,
+// a baserunner diamond, and the current pitcher/batter (liveMatchupLine),
+// reusing the exact same building blocks the Scores tab uses instead of the
+// old bare "awayR-homeR" text. Shared by renderSlip() and _betCardHtml() so
+// both stay in sync (they used to each duplicate the same flat markup).
+// Returns '' once the game isn't live (pregame/final — callers already
+// handle those states with the odds-implied bar / WON-LOST pill instead).
+function teamLegLiveHtml(gamePk, matchup, opts){
+  const gpk = gamePk ? String(gamePk) : null;
+  const ls = gpk ? _liveLinescore.get(gpk) : null;
+  if(!ls?.isLive) return '';
+  const compact = !!opts?.compact;
+  const half = ls.half==='Top' ? '▲' : '▼';
+  const scoreLine = `<span style="font-family:var(--mono);font-size:${compact?9:10}px;color:var(--amber)">${ls.awayR??0}-${ls.homeR??0}</span>`;
+  const inningLine = `<span style="font-family:var(--mono);font-size:${compact?8:9}px;color:var(--sage)">${half}${esc(ls.ordinal||'')}${_inningMidSuffix(ls.inningState)}</span>`;
+  const diamond = compact ? '' : _baseDiamond(ls, 14);
+  const matchupLine = compact ? '' : (() => {
+    const score = window._liveScores ? window._liveScores.get(matchup) : null;
+    return liveMatchupLine(score, {big:false});
+  })();
+  return `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none;white-space:nowrap">
+    <div style="display:flex;align-items:center;gap:5px">${scoreLine}${inningLine}${diamond}${_outDots(ls.outs||0)}</div>
+    ${matchupLine}
+  </div>`;
+}
+
+// rough LIVE win-probability estimate from score differential + innings
+// remaining — a lightweight heuristic for the bet-slip's win% bar, NOT one
+// of this project's three calibrated targets (see CLAUDE.md's calibration
+// rule) — deliberately labeled "LIVE (est.)" wherever it's shown, never
+// presented as a calibrated number. isHome: is the picked team the home team.
+function estimateLiveWinProb(ls, isHome){
+  if(!ls?.isLive || ls.inning==null) return null;
+  const my  = isHome ? (ls.homeR||0) : (ls.awayR||0);
+  const opp = isHome ? (ls.awayR||0) : (ls.homeR||0);
+  const inningsLeft = Math.max(0.5, 9 - ls.inning + (ls.half==='Top'?0.5:0) - (ls.outs||0)/6);
+  const z = (my - opp) / Math.sqrt(inningsLeft);
+  const K = 1.3; // eyeballed: up-1-in-the-9th-with-2-outs should read ~85-90%, tied-mid-game ~50%
+  return 1 / (1 + Math.exp(-z * K));
+}
+// thin probability bar shared by the pregame (odds-implied) and live
+// (estimateLiveWinProb) states of a moneyline leg — same visual language as
+// the app's other P(hit)-style bars (.mu-bar-wrap etc.), just relabeled.
+function winProbBarHtml(prob, isLive){
+  if(prob==null) return '';
+  const pct = Math.round(prob*100);
+  const col = prob>=0.6?'var(--good)':prob<=0.4?'var(--bad)':'var(--amber)';
+  const label = isLive ? 'LIVE' : 'IMPL';
+  const title = isLive
+    ? 'Rough live estimate from score/inning — not a calibrated model'
+    : 'Odds-implied probability at bet time (pregame)';
+  return `<div style="display:flex;align-items:center;gap:5px;width:100%;min-width:60px" title="${title}">
+    <span style="font-family:var(--mono);font-size:8px;color:var(--sage);flex:none">${label}</span>
+    <div style="flex:1;height:3px;border-radius:2px;background:var(--field);overflow:hidden;min-width:30px">
+      <div style="height:100%;width:${pct}%;background:${col}"></div>
+    </div>
+    <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:${col};flex:none">${pct}%</span>
+  </div>`;
 }
 
 // live pitcher + current batter, with real-time box-score stats — shared by
