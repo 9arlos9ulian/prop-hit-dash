@@ -10,6 +10,10 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--field);color:var(--chalk);font-family:var(--body)}
   .wrap{max-width:1080px;margin:0 auto;padding:22px 16px 80px}
+  /* Scores/All Batters get a wider stage than the rest of the app — toggled
+     by switchTab() adding/removing this class on .wrap, so Bets/History
+     keep the original 1080px reading width untouched. */
+  .wrap.wide-tab{max-width:1800px}
   .eyebrow{font-family:var(--disp);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--sage)}
   h1{font-family:var(--disp);font-weight:400;font-size:32px;letter-spacing:-.5px;margin:4px 0 2px;text-transform:uppercase;line-height:1}
   h1 .a{color:var(--amber)}
@@ -125,9 +129,15 @@
   #slip-drawer-body{overflow-y:auto;flex:1;padding-bottom:8px}
   @media(max-width:480px){#slip-drawer{right:0;left:0;width:100%;border-radius:14px 14px 0 0}#slip-fab{right:16px;bottom:16px}}
   @media(max-width:600px){.scores-hab-col,.scores-extra-col,.scores-hit-col,.scores-bet-col{display:none}}
+  /* .card is now a size container (see .card{container-type} further down)
+     so this narrow-card fallback (single team's lineup + tab switcher
+     instead of both lineups side by side) reacts to the CARD's own width —
+     important once #scores-grid packs multiple cards per row (wide-tab):
+     a card can be well under 640px even on a very wide monitor. */
   .scores-mobile-tabs{display:none}
   .scores-side-wrap{display:contents}
-  @media(max-width:600px){
+  @container(max-width:640px){
+    .scores-hab-col,.scores-extra-col,.scores-hit-col,.scores-bet-col{display:none}
     .scores-mobile-tabs{display:flex}
     .scores-mobile-divider{display:none}
     .scores-side-wrap.scores-mobile-hide{display:none}
@@ -218,6 +228,9 @@
   .row-done{opacity:.7;border-left:3px solid rgba(178,208,126,.6) !important;background:rgba(178,208,126,.06) !important}
   .hitbadge{font-family:var(--mono);font-size:9px;color:var(--good);background:rgba(178,208,126,.12);border:1px solid rgba(178,208,126,.3);border-radius:4px;padding:1px 5px;white-space:nowrap;flex:none;line-height:1.5;text-transform:uppercase;letter-spacing:.4px}
   .missbadge{font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(231,150,110,.08);border:1px solid rgba(231,150,110,.25);border-radius:4px;padding:1px 5px;white-space:nowrap;flex:none;line-height:1.5;text-transform:uppercase;letter-spacing:.4px}
+  /* subbed out mid-game — same pill shape as hit/miss but sage, matching the
+     "not a definitive result" language .hist-pending already uses for PPD */
+  .subbedbadge{font-family:var(--mono);font-size:9px;color:var(--sage);background:rgba(156,151,141,.1);border:1px solid rgba(156,151,141,.3);border-radius:4px;padding:1px 5px;white-space:nowrap;flex:none;line-height:1.5;text-transform:uppercase;letter-spacing:.4px}
   .row-missed{opacity:.7;border-left:3px solid rgba(218,110,81,.7) !important;background:rgba(218,110,81,.06) !important}
   .row-in-slip{opacity:.35;pointer-events:none;filter:grayscale(.4)}
   .col-hdr{display:none}
@@ -391,7 +404,11 @@
   .header-sub{font-family:var(--mono);font-size:11px;color:var(--sage);opacity:.65;letter-spacing:.3px;line-height:1.7;max-width:600px}
 
   /* ── card glow ── */
-  .card{transition:box-shadow .3s}
+  /* every .card is a size query container — game cards' internal
+     breakpoints (below) react to the card's own rendered width via
+     @container instead of the page viewport, so they still look right
+     once #scores-grid packs 2-3 cards into a row (see wide-tab above). */
+  .card{transition:box-shadow .3s;container-type:inline-size}
   .card:hover{box-shadow:0 0 0 1px rgba(178,208,126,.08),0 8px 32px rgba(0,0,0,.3)}
   .card-collapsible>h2{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between}
   .card-collapsible>h2::after{content:'▾';font-size:12px;color:var(--sage);opacity:.6;transition:transform .2s;margin-left:8px;flex-shrink:0}
@@ -402,10 +419,13 @@
   .gamecard-collapsible.collapsed>.gm-header{box-shadow:0 2px 6px -2px rgba(0,0,0,.5)}
   .gamecard-collapsible.collapsed>*:not(.gm-header){display:none!important}
   .gm-footer-cell{display:flex;align-items:center;justify-content:center;gap:12px}
-  @media(max-width:480px){.gm-footer-cell{flex-direction:column;gap:4px}}
+  /* @container, not @media — these are all about how much room this specific
+     card has, not the browser viewport (see .card{container-type} above and
+     the wide-tab multi-column grid this makes safe). */
+  @container(max-width:480px){.gm-footer-cell{flex-direction:column;gap:4px}}
   .mu-chip{display:flex;flex-direction:column;align-items:center;gap:6px}
   .mu-bar-wrap{width:100%;max-width:150px}
-  @media(min-width:900px){
+  @container(min-width:420px){
     .mu-chip{flex-direction:row;gap:14px}
     .mu-bar-wrap{width:150px}
   }
@@ -429,10 +449,10 @@
      selector, only loses to !important) */
   .gm-matchup-line{flex-direction:column!important;align-items:flex-end!important;gap:2px!important}
   .gm-matchup-line .mml-vs{display:none}
-  @media(min-width:600px){
+  @container(min-width:380px){
     .gm-matchup-line{align-items:center!important}
   }
-  @media(max-width:600px){
+  @container(max-width:380px){
     /* the earlier "big dead gap" turned out to be a different bug (each
        stat span was breaking onto its own line instead of one line per
        person — fixed above via .mml-row) rather than the floating itself.
@@ -447,7 +467,7 @@
   /* left side of the scoreboard bar (diamond block + score block) is now one
      consistent look at every width — the mid-section content swap (line score
      grid, matchup alignment) below is the only remaining responsive piece */
-  @media(min-width:900px){
+  @container(min-width:560px){
     .gm-inning-box{display:flex!important}
     .gm-matchup-mid{align-items:center}
     /* match diamond+score's combined width with the inning box's, so the
@@ -494,7 +514,7 @@
   .gm-pregame-center .row-icon-btn{width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;padding:0 4px}
   /* below 660px, shrink everything a step so the two mirrored halves + the
      fixed-width center gutter still fit without clipping. */
-  @media(max-width:660px){
+  @container(max-width:500px){
     .gm-team-half{gap:8px;padding:6px}
     .th-s5{font-size:15px}
     .th-s3{font-size:11px}
@@ -502,6 +522,12 @@
     .gm-pregame-center{width:58px}
   }
   #scores-grid{display:flex;flex-direction:column;gap:14px}
+  /* wide-tab (Scores only) switches the single column to a real grid at
+     wider viewports — each .card becomes its own query container (below)
+     so its internal breakpoints react to the column's actual width, not
+     the viewport, once there's more than one column on screen. */
+  @media(min-width:900px)  { .wide-tab #scores-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;align-items:start} }
+  @media(min-width:1400px) { .wide-tab #scores-grid{grid-template-columns:repeat(3,1fr)} }
 
   /* ── batter popup ── */
   #batter-popup-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
@@ -706,6 +732,7 @@
           <button id="scores-live-btn" class="ghost fchip" onclick="scoresLiveOnly=!scoresLiveOnly;scoresUpcoming=false;this.classList.toggle('amber',scoresLiveOnly);document.getElementById('scores-upcoming-btn').classList.remove('amber');renderScores()">● Live</button>
           <button id="scores-upcoming-btn" class="ghost fchip" onclick="scoresUpcoming=!scoresUpcoming;scoresLiveOnly=false;this.classList.toggle('amber',scoresUpcoming);document.getElementById('scores-live-btn').classList.remove('amber');renderScores()">Upcoming</button>
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
+          <button id="scores-oubadge-btn" class="ghost fchip amber" title="Show/hide the team O/U-performance badge (▲/▼/–) next to team names" onclick="toggleOuBadge()">▲/▼ O/U perf</button>
           <button id="scores-collapse-toggle" class="ghost fchip" onclick="toggleAllScoreCards()">Expand All</button>
         </div>
       </div>
@@ -725,8 +752,7 @@
           <button id="exp-hideSettledBtn" class="ghost fchip" onclick="filterHideSettled=!filterHideSettled;this.classList.toggle('amber',filterHideSettled);renderScoresAllBatters()" title="Hide batters whose game has ended">✓ Hide Final</button>
           <button id="exp-confirmedBtn" class="ghost fchip" onclick="filterConfirmed=!filterConfirmed;this.classList.toggle('amber',filterConfirmed);renderScoresAllBatters()" title="Hide estimated lineups">✓ Confirmed</button>
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
-          <button id="exp-ouBtn-over" class="ghost fchip" onclick="setScoresOuFilter('over')">▲ Over-performing</button>
-          <button id="exp-ouBtn-under" class="ghost fchip" onclick="setScoresOuFilter('under')">▼ Under-performing</button>
+          <button id="allbatters-oubadge-btn" class="ghost fchip amber" title="Show/hide the team O/U-performance badge (▲/▼/–) next to team names" onclick="toggleOuBadge()">▲/▼ O/U perf</button>
         </div>
         <div class="poolbar-row" style="flex-wrap:wrap">
           <span class="fchip-lbl">Slot</span>
@@ -761,7 +787,7 @@
 
   <!-- BETS TAB -->
   <div id="tab-bets" style="display:none;margin-top:18px">
-    <div id="bets-summary" style="margin-bottom:14px;position:sticky;top:0;z-index:5;background:var(--field);padding-top:4px"></div>
+    <div id="bets-summary" style="margin-bottom:14px"></div>
     <div id="bets-live-status" style="font-family:var(--mono);font-size:10px;color:var(--sage);opacity:.5;text-align:right;margin-bottom:8px"></div>
     <div id="bets-cards"><div class="empty" style="padding:32px 0;text-align:center;color:var(--sage)">No saved bets yet — build a parlay and hit Save bet.</div></div>
   </div>
@@ -2180,6 +2206,16 @@ const FINAL_STATES=new Set(['final','game over','completed early','cancelled','p
 function isLive(gameState){ return (gameState||'').toLowerCase().includes('progress'); }
 function isPostponed(gameState){ const s=(gameState||'').toLowerCase(); return s==='postponed'||s.includes('postponed'); }
 function isFinal(gameState){ const s=(gameState||'').toLowerCase(); return FINAL_STATES.has(s)||s.includes('final'); }
+// shared "did this batter get a hit" state, used by every render path that
+// shows a HIT/MISS/SUBBED tag (render(), batterPopupHtml(), renderSlip(),
+// sideHtml(), renderScoresAllBatters()) — previously each one recomputed its
+// own ad hoc boolean and only some of them checked l.subbedOut at all.
+function battingStatus(l){ // 'hit' | 'subbed' | 'miss' | null (still pending)
+  if(l.hasHit) return 'hit';
+  if(l.subbedOut) return 'subbed';
+  if(isFinal(l.gameState)) return 'miss';
+  return null;
+}
 function streakHits(l){ const s=(l.last5||'').replace(/[^01]/g,''); if(!s) return -1; const s10=s.slice(-10); return s10.split('').filter(c=>c==='1').length; }
 function trailMiss(l){ const s=(l.last5||'').replace(/[^01]/g,''); let n=0; for(let i=s.length-1;i>=0;i--){if(s[i]==='0')n++;else break;} return n; }
 function isBestMatchup(l){
@@ -2457,7 +2493,7 @@ function render(){
     const pillBg=edge==null?'var(--field)':(edge>0?'rgba(178,208,126,.15)':'rgba(231,150,110,.15)');
     const ppd=isPostponed(l.gameState);
     const missed=(isFinal(l.gameState)||l.subbedOut)&&!l.hasHit&&!ppd;
-    const hitBadge=l.hasHit?'<span class="hitbadge">HIT</span>':ppd?'<span class="hist-pending">PPD</span>':missed?'<span class="missbadge">MISS</span>':'';
+    const hitBadge=l.hasHit?'<span class="hitbadge">HIT</span>':ppd?'<span class="hist-pending">PPD</span>':battingStatus(l)==='subbed'?'<span class="subbedbadge" title="Subbed out of the game — no more plate appearances">SUBBED</span>':missed?'<span class="missbadge">MISS</span>':'';
     const scoreVal=Math.floor(l.p*100);
     const scoreColor=l.p>=0.70?'var(--good)':l.p>=0.55?'var(--amber)':'var(--sage)';
     const _s=(l.last5||'').replace(/[^01]/g,'');
@@ -2665,7 +2701,7 @@ function renderSlip(){
           slipStatusEl = `<span style="font-family:var(--mono);font-size:9px;color:var(--good);background:rgba(178,208,126,.12);border:1px solid rgba(178,208,126,.3);border-radius:3px;padding:1px 5px;flex:none">HIT</span>`;
         } else if(l.subbedOut){
           // pulled from the game (boxscore shows a substitute batted in their slot) — no more PAs coming, resolve now
-          slipStatusEl=`<span title="Subbed out of the game" style="font-family:var(--mono);font-size:9px;color:var(--bad);opacity:.6;flex:none">MISS</span>`;
+          slipStatusEl=`<span title="Subbed out of the game — no more plate appearances" style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.8;flex:none">SUBBED</span>`;
         } else if(isLive(l.gameState)){
           if(lsLine?.inning){
             const slot=Number(l.slot)||5;
@@ -4046,7 +4082,7 @@ function batterPopupHtml(l){
   const scoreColor = l.p>=0.70?'var(--good)':l.p>=0.55?'var(--amber)':'var(--sage)';
   const ppd = isPostponed(l.gameState);
   const missed = (isFinal(l.gameState)||l.subbedOut) && !l.hasHit && !ppd;
-  const hitBadge = l.hasHit?'<span class="hitbadge">HIT</span>':ppd?'<span class="hist-pending">PPD</span>':missed?'<span class="missbadge">NO HIT</span>':'';
+  const hitBadge = l.hasHit?'<span class="hitbadge">HIT</span>':ppd?'<span class="hist-pending">PPD</span>':battingStatus(l)==='subbed'?'<span class="subbedbadge" title="Subbed out of the game — no more plate appearances">SUBBED</span>':missed?'<span class="missbadge">NO HIT</span>':'';
   const live = isLive(l.gameState);
   const handSpan = l.batterHand ? `<span style="font-size:12px;font-weight:400;opacity:.55;margin-left:3px">${l.batterHand}</span>` : '';
   const nameNode = l.batterId
@@ -4150,6 +4186,10 @@ function batterPopupHtml(l){
 }
 function switchTab(name, btn) {
   currentTab = name;
+  // Scores/All Batters get a wider stage (3-col game grid / full-width
+  // batters table) — everything else keeps the original 1080px reading
+  // width. See .wrap.wide-tab in the CSS.
+  document.querySelector('.wrap').classList.toggle('wide-tab', name==='scores'||name==='allbatters');
   document.getElementById('tab-dugout').style.display     = 'none'; // removed from nav 2026-07-02, kept for #pool/slip state only
   document.getElementById('tab-scores').style.display     = name==='scores'     ? '' : 'none';
   document.getElementById('tab-allbatters').style.display = name==='allbatters' ? '' : 'none';
@@ -4174,12 +4214,19 @@ function switchTab(name, btn) {
 }
 
 // ── scores tab ─────────────────────────────────────────────────────────────
-let scoresOuFilter = ''; // '' | 'over' | 'under'
-function setScoresOuFilter(dir){
-  scoresOuFilter = scoresOuFilter === dir ? '' : dir;
-  document.getElementById('exp-ouBtn-over').classList.toggle('amber', scoresOuFilter==='over');
-  document.getElementById('exp-ouBtn-under').classList.toggle('amber', scoresOuFilter==='under');
-  renderScoresAllBatters();
+// shared show/hide toggle for the ▲/▼/– team O/U-performance badge, used by
+// both Scores (teamHalf/scoreStacked) and All Batters (teamCell) — replaces
+// the old All-Batters-only "Over-performing/Under-performing" row filter,
+// which hid whole rows by team without showing why, hence "removed" instead
+// of kept: this is a plain visibility toggle on the badge itself instead.
+let showOuBadge = true;
+function toggleOuBadge(){
+  showOuBadge = !showOuBadge;
+  ['scores-oubadge-btn','allbatters-oubadge-btn'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle('amber', showOuBadge);
+  });
+  renderActiveTab();
 }
 let scoresSort = 'time'; // 'time' | 'rating' | 'diff'
 // three mutually-exclusive sort chips share one active-button toggle
@@ -4374,7 +4421,7 @@ function buildScoreCard(matchup, batters, betKeys) {
     // lineup section below. Mirroring is still done via CSS row-reverse
     // (.gm-team-half.home), so this function stays identical for both sides.
     function teamHalf(team, mu, avg, side){
-      const ouBadge = (window._teamBadge && window._teamBadge[team]) || '';
+      const ouBadge = showOuBadge ? ((window._teamBadge && window._teamBadge[team]) || '') : '';
       const disp = side==='away' ? awayDisp : homeDisp;
       const isRecord = side==='away' ? awayIsRecord : homeIsRecord;
       const leads = side==='away' ? awayLeads : homeLeads;
@@ -4500,6 +4547,7 @@ function buildScoreCard(matchup, batters, betKeys) {
         const zebraBg = idx%2===1 ? 'rgba(255,255,255,.015)' : 'transparent';
         const restBg = isBet ? 'rgba(235,178,105,.09)' : zebraBg;
         const noHit = isFinalGame && !hit;
+        const subbedTag = battingStatus(l)==='subbed';
         // live-at-bat pulse layered on top of the existing "in your bet
         // slip" highlighting — only when it's actually this picked batter's
         // turn right now, reusing the same _isPickAtBat() check the slip
@@ -4511,7 +4559,7 @@ function buildScoreCard(matchup, batters, betKeys) {
           <span style="flex:none;width:12px;text-align:center" title="Trending vs. model expectation">${performanceArrow(l)}</span>
           <span style="font-family:var(--mono);font-size:10px;color:${nameCol};flex:none;width:28px;text-align:right">${Math.round((l.p||0)*100)}</span>
           <span style="font-family:var(--mono);font-size:11px;color:${nameCol};${hit?'text-decoration:line-through;opacity:.45':''};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
-          ${noHit?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:8px;color:var(--bad);opacity:.75;flex:none">NO HIT</span>`:''}
+          ${subbedTag?`<span class="scores-hit-col" title="Subbed out of the game — no more plate appearances" style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.85;flex:none">SUBBED</span>`:noHit?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:8px;color:var(--bad);opacity:.75;flex:none">NO HIT</span>`:''}
           ${atBat?`<span style="font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--amber);flex:none">AT BAT</span>`:''}
           ${isBet?`<span class="scores-bet-col" title="In your bet slip" style="font-size:10px;flex:none">🎫</span>`:''}
           <span class="scores-hab-col" style="font-family:var(--mono);font-size:10px;color:${boxCol};flex:none;width:34px;text-align:right">${(isLiveGame||isFinalGame)?boxTxt:''}</span>
@@ -4634,8 +4682,8 @@ function buildScoreCard(matchup, batters, betKeys) {
     // (divider between the two rows, score sized to match the team badge),
     // inning+diamond+outs framed by a line on each side. Pregame no longer
     // uses this at all — see scoreboardPregame above.
-    const awayOu = (window._teamBadge && window._teamBadge[awayTeam]) || '';
-    const homeOu = (window._teamBadge && window._teamBadge[homeTeam]) || '';
+    const awayOu = showOuBadge ? ((window._teamBadge && window._teamBadge[awayTeam]) || '') : '';
+    const homeOu = showOuBadge ? ((window._teamBadge && window._teamBadge[homeTeam]) || '') : '';
     const scoreStacked = `<div class="gm-score-stacked" style="flex-direction:column;justify-content:center;padding:8px 10px;min-width:100px;flex:none">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:6px">
         <span style="display:flex;align-items:center;gap:5px">
@@ -4802,7 +4850,6 @@ function renderScoresAllBatters() {
   }
   const rows = legs
     .filter(l => slotVisible(l))
-    .filter(l => !scoresOuFilter || (window._teamOu && window._teamOu[l.team]===scoresOuFilter))
     .sort((a,b) => (b.p||0)-(a.p||0));
   if(!rows.length) {
     el.innerHTML = '<div class="card"><div class="empty">No batters match this filter.</div></div>';
@@ -4868,13 +4915,15 @@ function renderScoresAllBatters() {
   const thead = `<tr>${cols.map(([lbl,,align,,tip])=>`<th style="text-align:${align};cursor:help" title="${esc(tip||'')}">${lbl}</th>`).join('')}</tr>`;
   const tbody = rows.map(l => {
     const noHit = isFinal(l.gameState) && !l.hasHit;
+    const subbedTag = battingStatus(l)==='subbed';
     const pickCell = `<td style="text-align:center">${(!l.hasHit&&!isFinal(l.gameState)&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}</td>`;
-    const teamCell = `<td style="text-align:center">${l.team?`<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}</td>`;
+    const ouBadge = (showOuBadge && window._teamBadge && l.team && window._teamBadge[l.team]) || '';
+    const teamCell = `<td style="text-align:center;white-space:nowrap">${l.team?`${ouBadge}<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}</td>`;
     const pTeam = pitcherTeam(l);
     const pTeamCell = `<td style="text-align:center">${pTeam?`<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(pTeam)}">${esc(pTeam)}</span>`:''}</td>`;
     const nameCell = `<td style="text-align:left;cursor:${l.batterId?'pointer':'default'}" ${l.batterId?`onclick="goToBatter('${l.batterId}','${l.gamePk||''}')"`:''}>
       <span style="color:${dotCol(l.p||0)};${l.hasHit?'text-decoration:line-through;opacity:.45':''}">${esc(l.name)}</span>
-      ${noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
+      ${subbedTag?'<span title="Subbed out of the game — no more plate appearances" style="color:var(--sage);opacity:.85;font-size:8px;margin-left:5px">SUBBED</span>':noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
     </td>`;
     const cells = cols.map(([lbl,fn,align,colorFn]) => lbl==='Pick' ? pickCell : lbl==='Team' ? teamCell : lbl==='P.Team' ? pTeamCell : lbl==='Name' ? nameCell : `<td style="text-align:${align};${colorFn?`color:${colorFn(l)}`:''}">${fn(l)}</td>`).join('');
     return `<tr>${cells}</tr>`;
@@ -4944,20 +4993,16 @@ function loadHistory() {
         _tb[r.team].n++; _tb[r.team].exp+=r.p; _tb[r.team].act+=r.actual==='1'?1:0;
       });
       window._teamBadge = {};
-      window._teamOu = {}; // team -> 'over' | 'under' | '' — same ratio, filterable form
       const _neutralBadge = '<span style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.6;border:1px solid var(--line);border-radius:3px;padding:1px 5px" title="Performing in line with model expectation">–</span>';
       Object.entries(_tb).forEach(([t,v])=>{
-        if(v.n<30){ window._teamBadge[t]=_neutralBadge; window._teamOu[t]=''; return; }
+        if(v.n<30){ window._teamBadge[t]=_neutralBadge; return; }
         const ratio = v.exp>0 ? v.act/v.exp : 1;
         if(ratio>=1.06){
           window._teamBadge[t] = '<span style="font-family:var(--mono);font-size:8px;color:var(--good);border:1px solid rgba(178,208,126,.35);border-radius:3px;padding:1px 5px" title="Outperforming model expectation">▲</span>';
-          window._teamOu[t] = 'over';
         } else if(ratio<=0.94){
           window._teamBadge[t] = '<span style="font-family:var(--mono);font-size:8px;color:var(--bad);border:1px solid rgba(231,150,110,.35);border-radius:3px;padding:1px 5px" title="Underperforming model expectation">▼</span>';
-          window._teamOu[t] = 'under';
         } else {
           window._teamBadge[t] = _neutralBadge;
-          window._teamOu[t] = '';
         }
       });
       // per-batter performance arrow: same ratio math as the team badge, scoped to
@@ -5395,9 +5440,12 @@ function renderHistory(resetPage) {
     {lo:0,   hi:0.50, label:'<50%'},
     {lo:0.50,hi:0.60, label:'50–60'},
     {lo:0.60,hi:0.70, label:'60–70'},
-    {lo:0.70,hi:0.80, label:'70–80'},
-    {lo:0.80,hi:0.90, label:'80–90'},
-    {lo:0.90,hi:1.01, label:'90%+'},
+    {lo:0.70,hi:0.75, label:'70–75'},
+    {lo:0.75,hi:0.80, label:'75–80'},
+    {lo:0.80,hi:0.85, label:'80–85'},
+    {lo:0.85,hi:0.90, label:'85–90'},
+    {lo:0.90,hi:0.95, label:'90–95'},
+    {lo:0.95,hi:1.01, label:'95%+'},
   ].map(b => {
     const bs = settled.filter(r=>r.p>=b.lo&&r.p<b.hi);
     const bn = bs.length;
@@ -5438,48 +5486,72 @@ function renderHistory(resetPage) {
     </tr>`;
   }).join('')}</tbody></table>`;
   // ── team performance ─────────────────────────────────────────────────────
+  // Shows season-long calibration AND a recent-window (last RECENT_GAMES team
+  // games) ratio side by side, so a team that's a persistent underperformer
+  // reads differently at a glance from one that's only cold lately — no
+  // toggle/slider needed, both windows are always visible together.
   (()=>{
     const teamEl = document.getElementById('h-team-body');
     if(!teamEl) return;
+    const RECENT_GAMES = 14;
     const teamMap = {};
     settled.forEach(r => {
       if(!r.team) return;
-      if(!teamMap[r.team]) teamMap[r.team] = {team:r.team, games:new Set(), exp:0, act:0, n:0};
+      if(!teamMap[r.team]) teamMap[r.team] = {team:r.team, games:{}, exp:0, act:0, n:0};
       const t = teamMap[r.team];
-      t.games.add(r.date + '|' + (r.matchup||r.date));
+      const gameKey = r.date + '|' + (r.matchup||r.date);
+      if(!t.games[gameKey]) t.games[gameKey] = {date:r.date, exp:0, act:0, n:0};
+      const g = t.games[gameKey];
+      g.exp += r.p; g.act += r.actual==='1'?1:0; g.n++;
       t.exp += r.p;
       t.act += r.actual==='1' ? 1 : 0;
       t.n++;
     });
-    const teams = Object.values(teamMap).sort((a,b) => (a.act-a.exp)-(b.act-b.exp));
+    const teams = Object.values(teamMap).map(t => {
+      const gamesSorted = Object.values(t.games).sort((a,b) => b.date.localeCompare(a.date));
+      const recentGames = gamesSorted.slice(0, RECENT_GAMES);
+      const recent = recentGames.reduce((s,g) => ({exp:s.exp+g.exp, act:s.act+g.act, n:s.n+g.n}), {exp:0,act:0,n:0});
+      return {...t, gameCount: gamesSorted.length, recent, recentGameCount: recentGames.length};
+    }).sort((a,b) => (a.act-a.exp)-(b.act-b.exp));
     if(!teams.length){ teamEl.innerHTML='<div class="empty">No settled data yet.</div>'; return; }
     const CALIB_THRESHOLD = 30;
     const pct1 = v => (v*100).toFixed(1)+'%';
+    const ratioCell = (ratio, ready, readyLabel) => ratio!=null && ready
+      ? `<span style="color:${ratio>=1?'var(--good)':ratio>=0.9?'var(--amber)':'var(--bad)'};font-weight:700">${ratio.toFixed(3)}</span>`
+      : `<span style="color:var(--sage);opacity:.4">${readyLabel}</span>`;
     teamEl.innerHTML = `<table class="hlog"><thead><tr>
       <th>Team</th><th class="r">Games</th><th class="r">Batters</th>
       <th class="r">Exp Hits</th><th class="r">Act Hits</th><th class="r">Delta</th>
-      <th class="r">Hit Rate</th><th class="r">Exp Rate</th><th class="r" title="act/exp ratio — apply as multiplier once ≥30 games">Cal ×</th>
+      <th class="r">Hit Rate</th><th class="r">Exp Rate</th>
+      <th class="r" title="act/exp ratio, full season — apply as multiplier once ≥30 games">Cal × (season)</th>
+      <th class="r" title="act/exp ratio, most recent ${RECENT_GAMES} team games only — diverging from the season column flags a recent hot/cold streak rather than a persistent skew">Cal × (L${RECENT_GAMES}G)</th>
     </tr></thead><tbody>${teams.map(t => {
       const delta = t.act - t.exp;
       const dStr = (delta>=0?'+':'')+delta.toFixed(1);
       const dCol = delta >= 1 ? 'var(--good)' : delta <= -1 ? 'var(--bad)' : 'var(--sage)';
       const actRate = t.n ? t.act/t.n : 0;
       const expRate = t.n ? t.exp/t.n : 0;
-      const calRatio = t.exp > 0 ? t.act / t.exp : null;
-      const ready = t.games.size >= CALIB_THRESHOLD;
-      const calCell = ready && calRatio !== null
-        ? `<span style="color:${calRatio>=1?'var(--good)':calRatio>=0.9?'var(--amber)':'var(--bad)'};font-weight:700">${calRatio.toFixed(3)}</span>`
-        : `<span style="color:var(--sage);opacity:.4">${t.games.size}/${CALIB_THRESHOLD}</span>`;
-      return `<tr>
-        <td style="font-family:var(--mono);font-weight:600">${t.team}</td>
-        <td class="r" style="color:${ready?'var(--chalk)':'var(--sage)'}">${t.games.size}</td>
+      const seasonReady = t.gameCount >= CALIB_THRESHOLD;
+      const seasonRatio = t.exp > 0 ? t.act / t.exp : null;
+      const recentReady = t.recentGameCount >= RECENT_GAMES;
+      const recentRatio = t.recent.exp > 0 ? t.recent.act / t.recent.exp : null;
+      const seasonCell = ratioCell(seasonRatio, seasonReady, `${t.gameCount}/${CALIB_THRESHOLD}`);
+      const recentCell = ratioCell(recentRatio, recentReady, `${t.recentGameCount}/${RECENT_GAMES}`);
+      // flag a meaningful season-vs-recent split once both windows are
+      // actually populated enough to compare (recent alone hitting the
+      // small ~14-game sample noisily is expected and not itself a flag)
+      const diverges = seasonReady && recentReady && seasonRatio!=null && recentRatio!=null && Math.abs(recentRatio-seasonRatio) >= 0.15;
+      return `<tr${diverges?' style="background:rgba(235,178,105,.05)"':''}>
+        <td style="font-family:var(--mono);font-weight:600">${t.team}${diverges?` <span title="Recent ${RECENT_GAMES}-game form diverges from season baseline by ${(Math.abs(recentRatio-seasonRatio)*100).toFixed(0)}pt" style="color:var(--amber)">⚡</span>`:''}</td>
+        <td class="r" style="color:${seasonReady?'var(--chalk)':'var(--sage)'}">${t.gameCount}</td>
         <td class="r" style="color:var(--sage)">${t.n}</td>
         <td class="r" style="color:var(--amber)">${t.exp.toFixed(1)}</td>
         <td class="r" style="color:var(--chalk)">${t.act}</td>
         <td class="r" style="color:${dCol};font-weight:700">${dStr}</td>
         <td class="r" style="color:${actRate>=0.65?'var(--good)':actRate>=0.50?'var(--amber)':'var(--bad)'}">${pct1(actRate)}</td>
         <td class="r" style="color:var(--sage)">${pct1(expRate)}</td>
-        <td class="r">${calCell}</td>
+        <td class="r">${seasonCell}</td>
+        <td class="r">${recentCell}</td>
       </tr>`;
     }).join('')}</tbody></table>`;
   })();
