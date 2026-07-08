@@ -558,6 +558,14 @@
   @keyframes coldGlowRed{0%,100%{opacity:.6}50%{opacity:1}}
   @keyframes coldGlowBlue{0%,100%{opacity:.6}50%{opacity:1}}
   @keyframes scAtBat{0%,100%{opacity:.5}50%{opacity:1}}
+  /* gold glow for "you have an active pick here" (team moneyline tag or a
+     batter row already in the slip) in Scores — deliberately ::before, not
+     ::after like .sc-at-bat above, so both can stack on the same batter row
+     without one pseudo-element silently overriding the other when a picked
+     batter is also literally at bat right now. */
+  .pick-glow{position:relative}
+  .pick-glow::before{content:'';position:absolute;inset:-2px;border-radius:inherit;pointer-events:none;box-shadow:0 0 0 1px rgba(235,178,105,.5),0 0 14px rgba(235,178,105,.32);animation:pickGlowPulse 2.2s ease-in-out infinite}
+  @keyframes pickGlowPulse{0%,100%{opacity:.55}50%{opacity:1}}
 
   /* ── tab glow ── */
   .tab.active{
@@ -4361,6 +4369,13 @@ function buildScoreCard(matchup, batters, betKeys) {
     const isPregame = !isLiveGame && !isFinalGame;
     const box = (isLiveGame||isFinalGame) && gamePk ? _bsCache.get(gamePk) : null;
 
+    // active moneyline picks (slip or saved-pending) for either side — drives
+    // both the gold pick-glow on the team tag and the win-prob bar in muRow.
+    const awayMlLeg = _findActiveMlLeg(gamePk, matchup, awayTeam);
+    const homeMlLeg = _findActiveMlLeg(gamePk, matchup, homeTeam);
+    const awayPickGlow = awayMlLeg ? ' pick-glow' : '';
+    const homePickGlow = homeMlLeg ? ' pick-glow' : '';
+
     // defense in depth: never show a score number unless the game is actually live/final
     const as = (isLiveGame||isFinalGame) ? (score?.as ?? null) : null;
     const hs = (isLiveGame||isFinalGame) ? (score?.hs ?? null) : null;
@@ -4406,8 +4421,10 @@ function buildScoreCard(matchup, batters, betKeys) {
 
     // moneyline "+" buttons — one per team, only shown when a real Kalshi
     // price exists for that side (degrade-gracefully, no button instead of a
-    // broken one when the matchup isn't priced). Hoisted here so both the
-    // pregame teamHalf() and (were it ever needed) other blocks can use it.
+    // broken one when the matchup isn't priced) — no gameState gating here,
+    // so this naturally works pregame AND live/final as long as Kalshi still
+    // has the game priced. Hoisted here so both the pregame teamHalf() and
+    // the live/final scoreStacked block below can share it.
     const kw = _kalshiWinner.get(canonMatchup(matchup));
     const mlBtn = (side, teamAbbr) => {
       const priced = kw?.[side];
@@ -4449,6 +4466,7 @@ function buildScoreCard(matchup, batters, betKeys) {
       const disp = side==='away' ? awayDisp : homeDisp;
       const isRecord = side==='away' ? awayIsRecord : homeIsRecord;
       const leads = side==='away' ? awayLeads : homeLeads;
+      const pickGlow = side==='away' ? awayPickGlow : homePickGlow;
 
       // trend arrow and add-to-slip button sit in their own fixed-size
       // (20x20, matching .row-icon-btn) column so both icons line up on the
@@ -4462,7 +4480,7 @@ function buildScoreCard(matchup, batters, betKeys) {
       const teamRecordCol = `<span class="th-col">
         <span class="th-s5" style="display:flex;flex-direction:${rowDir};align-items:center;gap:5px">
           <span class="th-sqbtn">${ouBadge}</span>
-          <span class="teamtag" style="${teamTagStyle(team)};font-size:16px;padding:2px 8px">${esc(team)}</span>
+          <span class="teamtag${pickGlow}" style="${teamTagStyle(team)};font-size:16px;padding:2px 8px" title="${pickGlow?'Active moneyline pick':''}">${esc(team)}</span>
         </span>
         <span class="th-s1" style="display:flex;flex-direction:${rowDir};align-items:center;gap:5px;color:${isRecord?'var(--sage)':leads?'var(--amber)':'var(--chalk)'}" title="${isRecord?'Season record':''}">
           <span class="th-sqbtn">${mlBtn(side, team)}</span>
@@ -4551,8 +4569,13 @@ function buildScoreCard(matchup, batters, betKeys) {
         // turn right now, reusing the same _isPickAtBat() check the slip
         // and saved-bet cards use.
         const atBat = isBet && isLiveGame && _isPickAtBat(l.batterId, gamePk);
+        // .pick-glow (gold, "you have a pick here") and .sc-at-bat (sharper
+        // pulse, "it's their turn right now") can both apply at once — the
+        // former uses ::before and the latter ::after so neither overrides
+        // the other's box-shadow overlay.
+        const rowClasses = [isBet?'pick-glow':'', atBat?'sc-at-bat':''].filter(Boolean).join(' ');
         const clickAttr = l.batterId ? `onclick="goToBatter('${l.batterId}','${l.gamePk||''}')" style="cursor:pointer;` : `style="`;
-        return `<div ${atBat?'class="sc-at-bat" ':''}${clickAttr}position:relative;display:flex;align-items:center;gap:8px;padding:4px 10px;background:${restBg};border-left:2px solid ${isBet?'var(--amber)':'transparent'};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='${restBg}'">
+        return `<div ${rowClasses?`class="${rowClasses}" `:''}${clickAttr}position:relative;display:flex;align-items:center;gap:8px;padding:4px 10px;background:${restBg};border-left:2px solid ${isBet?'var(--amber)':'transparent'};transition:background .12s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='${restBg}'">
           <span style="font-family:var(--mono);font-size:9px;color:var(--sage);flex:none;width:14px">${l.slot||''}</span>
           <span style="flex:none;width:12px;text-align:center" title="Trending vs. model expectation">${performanceArrow(l)}</span>
           <span style="font-family:var(--mono);font-size:10px;color:${nameCol};flex:none;width:28px;text-align:right">${Math.round((l.p||0)*100)}</span>
@@ -4658,9 +4681,9 @@ function buildScoreCard(matchup, batters, betKeys) {
     // rows. Shown for every state (pregame/live/final) — the mirrored top
     // strip only carries TEAM/RECORD now, this is the one place lean lives.
     const muRow = (awayMu||homeMu) ? `<div style="display:flex;border-top:1px solid var(--line)">
-      <div class="gm-footer-cell" style="flex:1;padding:7px 14px;background:${awayMu?awayMu.bg:'transparent'};border-left:3px solid ${awayMu?awayMu.border:'var(--line)'}">${muChip(awayMu,awayAvg)}${isFinalGame?evalSide(awaySide,awayMu):''}</div>
+      <div class="gm-footer-cell" style="flex:1;padding:7px 14px;background:${awayMu?awayMu.bg:'transparent'};border-left:3px solid ${awayMu?awayMu.border:'var(--line)'}">${muChip(awayMu,awayAvg)}${isFinalGame?evalSide(awaySide,awayMu):pickWinProbHtml(awayMlLeg,ls,false)}</div>
       <div style="width:1px;background:var(--line)"></div>
-      <div class="gm-footer-cell" style="flex:1;padding:7px 14px;background:${homeMu?homeMu.bg:'transparent'};border-right:3px solid ${homeMu?homeMu.border:'var(--line)'}">${muChip(homeMu,homeAvg)}${isFinalGame?evalSide(homeSide,homeMu):''}</div>
+      <div class="gm-footer-cell" style="flex:1;padding:7px 14px;background:${homeMu?homeMu.bg:'transparent'};border-right:3px solid ${homeMu?homeMu.border:'var(--line)'}">${muChip(homeMu,homeAvg)}${isFinalGame?evalSide(homeSide,homeMu):pickWinProbHtml(homeMlLeg,ls,true)}</div>
     </div>` : '';
     const evalRow = ''; // merged into muRow above
 
@@ -4684,7 +4707,8 @@ function buildScoreCard(matchup, batters, betKeys) {
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:6px">
         <span style="display:flex;align-items:center;gap:5px">
           ${awayOu}
-          <span class="teamtag" style="${teamTagStyle(awayTeam)}">${esc(awayTeam)}</span>
+          <span class="teamtag${awayPickGlow}" style="${teamTagStyle(awayTeam)}" title="${awayPickGlow?'Active moneyline pick':''}">${esc(awayTeam)}</span>
+          ${mlBtn('away', awayTeam)}
         </span>
         <span style="font-family:var(--disp);${awayIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${awayIsRecord?'var(--sage)':awayLeads?'var(--amber)':'var(--chalk)'}" title="${awayIsRecord?'Season record':''}">${awayDisp}</span>
       </div>
@@ -4692,7 +4716,8 @@ function buildScoreCard(matchup, batters, betKeys) {
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:6px">
         <span style="display:flex;align-items:center;gap:5px">
           ${homeOu}
-          <span class="teamtag" style="${teamTagStyle(homeTeam)}">${esc(homeTeam)}</span>
+          <span class="teamtag${homePickGlow}" style="${teamTagStyle(homeTeam)}" title="${homePickGlow?'Active moneyline pick':''}">${esc(homeTeam)}</span>
+          ${mlBtn('home', homeTeam)}
         </span>
         <span style="font-family:var(--disp);${homeIsRecord?'font-size:14px;font-weight:400':'font-size:20px;font-weight:600'};line-height:1;color:${homeIsRecord?'var(--sage)':homeLeads?'var(--amber)':'var(--chalk)'}" title="${homeIsRecord?'Season record':''}">${homeDisp}</span>
       </div>
@@ -4754,13 +4779,20 @@ function renderScores() {
     return;
   }
 
-  // pending bet legs -> Set of "gamePk|batterId" so active bets can be highlighted
+  // active bet legs (saved-pending OR still being built in the slip) -> Set
+  // of "gamePk|batterId" so active picks can be highlighted — widened
+  // 2026-07-08 to also include the in-progress slip (previously
+  // saved-pending only), so a batter leg you're still building glows too,
+  // matching the same "slip OR saved-pending" rule the new team-pick glow uses.
   const betKeys = new Set();
   (savedBets||[]).forEach(b => {
     if(b.status !== 'pending') return;
     (b.legs||[]).forEach(bl => {
       if(bl.gamePk && bl.batterId) betKeys.add(String(bl.gamePk)+'|'+String(bl.batterId));
     });
+  });
+  legs.forEach(l => {
+    if(l.inSlip && l.gamePk && l.batterId) betKeys.add(String(l.gamePk)+'|'+String(l.batterId));
   });
 
   // Keyed by (matchup, gamePk) — not matchup alone. Two teams can play a
@@ -5792,6 +5824,32 @@ function winProbBarHtml(prob, isLive){
     </div>
     <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:${col};flex:none">${pct}%</span>
   </div>`;
+}
+
+// does `team` (in this gamePk/matchup) have an active moneyline pick right
+// now — either still being built in the slip, or already saved as a pending
+// bet? Used by Scores to show the same win-prob bar/gold-glow the bet slip
+// already gets, so you don't have to jump tabs to see a live pick trending.
+function _findActiveMlLeg(gamePk, matchup, team){
+  const gpk = String(gamePk||'');
+  const inSlip = teamLegs.find(l => l.inSlip && l.betType==='ml' && l.team===team &&
+    (String(l.gamePk||'')===gpk || l.matchup===matchup));
+  if(inSlip) return inSlip;
+  for(const b of (savedBets||[])){
+    if(b.status!=='pending') continue;
+    const bl = (b.legs||[]).find(x => x.betType==='ml' && x.team===team &&
+      (String(x.gamePk||'')===gpk || x.matchup===matchup));
+    if(bl) return bl;
+  }
+  return null;
+}
+// win-prob bar for a Scores game-card team footer — same functions the bet
+// slip uses (estimateLiveWinProb/winProbBarHtml), just fed from whichever
+// active leg _findActiveMlLeg() found instead of a slip/bet-card leg object.
+function pickWinProbHtml(leg, ls, isHome){
+  if(!leg) return '';
+  const liveProb = ls?.isLive ? estimateLiveWinProb(ls, isHome) : null;
+  return winProbBarHtml(liveProb!=null ? liveProb : leg.p, liveProb!=null);
 }
 
 // live pitcher + current batter, with real-time box-score stats — shared by
