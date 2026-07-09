@@ -106,12 +106,11 @@
     .card h2{padding:10px 12px;font-size:10px}
   }
   /* ── slip drawer ── */
-  #debug-fab{position:fixed;bottom:24px;left:24px;z-index:200;background:var(--raised);border:1px solid var(--line);border-radius:20px;padding:8px 14px;display:flex;align-items:center;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,.5);font-family:var(--mono);font-size:10px;color:var(--sage);pointer-events:none;opacity:.7;letter-spacing:.02em}
-  #debug-fab .dbg-dot{width:6px;height:6px;border-radius:50%;background:var(--sage);flex-shrink:0}
-  #debug-fab .dbg-dot.live{background:var(--good);box-shadow:0 0 6px var(--good)}
-  #debug-fab .dbg-dot.stale{background:var(--bad)}
-  @media(max-width:480px){#debug-fab{left:12px;bottom:16px;font-size:9px}}
-  #slip-fab{position:fixed;bottom:24px;right:24px;z-index:200;background:var(--raised);border:1px solid var(--line);border-radius:20px;padding:8px 16px 8px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.5);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .2s;font-family:var(--disp);font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)}
+  /* slip fab + bet pills share one fixed bottom-right row now, so the pills
+     sit immediately to the LEFT of the fab regardless of either one's
+     width, instead of each being independently position:fixed. */
+  #fab-row{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;align-items:center;gap:8px}
+  #slip-fab{background:var(--raised);border:1px solid var(--line);border-radius:20px;padding:8px 16px 8px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.5);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .2s;font-family:var(--disp);font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);flex:none}
   #slip-fab:hover{border-color:var(--amber);color:var(--chalk)}
   #slip-fab.drawer-open{transform:translateY(8px);opacity:0;pointer-events:none}
   #slip-fab-icon{font-size:16px}
@@ -127,7 +126,32 @@
   #slip-drawer-close{font-size:11px;color:var(--sage);opacity:.7;line-height:1;font-family:var(--mono);background:var(--field);border:1px solid var(--line);border-radius:4px;padding:2px 7px;letter-spacing:.5px}
   #slip-drawer-close:hover{opacity:1;color:var(--chalk)}
   #slip-drawer-body{overflow-y:auto;flex:1;padding-bottom:8px}
-  @media(max-width:480px){#slip-drawer{right:0;left:0;width:100%;border-radius:14px 14px 0 0}#slip-fab{right:16px;bottom:16px}}
+  @media(max-width:480px){#slip-drawer{right:0;left:0;width:100%;border-radius:14px 14px 0 0}#fab-row{right:16px;bottom:16px}}
+  /* bet pills — sit to the left of the SLIP fab inside #fab-row, one per
+     active pending bet, oldest first (closest to the fab). Tinted
+     background/border (same recipe as .hitbadge/.missbadge/.subbedbadge)
+     reflects that bet's live combined win probability — NOT a colored plain
+     border, which can't actually apply an alpha channel on top of a
+     var(--good)-style token and rendered wrong. Refreshed on the same 30s
+     poll that drives every other live indicator in the app. */
+  #bet-pills{display:flex;align-items:center;gap:6px;max-width:55vw;overflow-x:auto;flex:none}
+  .bet-pill{display:flex;align-items:center;gap:6px;border-radius:14px;padding:5px 12px;cursor:pointer;font-family:var(--mono);font-size:10px;font-weight:600;transition:opacity .15s;white-space:nowrap;flex:none}
+  .bet-pill:hover{opacity:.8}
+  .bet-pill .bp-dot{width:7px;height:7px;border-radius:50%;flex:none}
+  @media(max-width:480px){#bet-pills{max-width:45vw}}
+  /* second drawer, identical shell to #slip-drawer, just for viewing one
+     saved bet read-only when its pill is clicked — kept independent of
+     #slip-drawer's open/close state so viewing a bet doesn't disturb
+     whatever's being built in the main slip. */
+  #bet-pill-drawer{position:fixed;bottom:0;right:24px;width:380px;max-height:82vh;background:var(--raised);border:1px solid var(--line);border-bottom:none;border-radius:14px 14px 0 0;box-shadow:0 -6px 40px rgba(0,0,0,.55);z-index:203;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+  #bet-pill-drawer.drawer-open{transform:translateY(0)}
+  #bet-pill-drawer-handle{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 8px;border-bottom:1px solid var(--line);cursor:pointer;flex:none}
+  #bet-pill-drawer-handle:hover{background:rgba(255,255,255,.03)}
+  #bet-pill-drawer-title{font-family:var(--disp);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--sage)}
+  #bet-pill-drawer-close{font-size:11px;color:var(--sage);opacity:.7;line-height:1;font-family:var(--mono);background:var(--field);border:1px solid var(--line);border-radius:4px;padding:2px 7px;letter-spacing:.5px}
+  #bet-pill-drawer-close:hover{opacity:1;color:var(--chalk)}
+  #bet-pill-drawer-body{overflow-y:auto;flex:1;padding-bottom:8px}
+  @media(max-width:480px){#bet-pill-drawer{right:0;left:0;width:100%;border-radius:14px 14px 0 0}}
   @media(max-width:600px){.scores-hab-col,.scores-extra-col,.scores-hit-col,.scores-bet-col{display:none}}
   /* .card is now a size container (see .card{container-type} further down)
      so this narrow-card fallback (single team's lineup + tab switcher
@@ -441,6 +465,11 @@
   .gm-score-stacked{display:flex}
   .gm-score-stacked .teamtag{font-size:14px}
   .gm-mid-wrap{padding:8px 20px;margin-right:10px}
+  /* fixed width so the inning label doesn't reflow the whole scoreboard bar
+     every time it grows (e.g. "▲5th" -> "▲5th MID"/"▲5th END") or the game
+     transitions between pregame/live/final states — previously unstyled, so
+     its natural content width drove .gm-left-group's total width directly. */
+  .gm-diamond-block{width:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
   .gm-inning-box{display:none}
   .gm-matchup-mid{align-items:flex-end}
   /* pitcher/batter always on their own line now, at every breakpoint —
@@ -955,15 +984,13 @@
   <!-- stat-line hover tooltip -->
 
   <!-- SLIP FAB + DRAWER (global, outside any tab container) -->
-  <div id="debug-fab">
-    <div class="dbg-dot" id="dbg-dot"></div>
-    <span id="dbg-label">loading…</span>
-    <span id="dbg-bp" style="border-left:1px solid var(--line);padding-left:6px;margin-left:2px"></span>
-  </div>
 
-  <div id="slip-fab" onclick="toggleSlip()">
-    <span id="slip-fab-label">Slip</span>
-    <span id="slip-fab-count"></span>
+  <div id="fab-row">
+    <div id="bet-pills"></div>
+    <div id="slip-fab" onclick="toggleSlip()">
+      <span id="slip-fab-label">Slip</span>
+      <span id="slip-fab-count"></span>
+    </div>
   </div>
   <div id="slip-drawer">
     <div id="slip-drawer-handle" onclick="toggleSlip()">
@@ -986,6 +1013,10 @@
               <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">Model prob</div>
               <div style="font-family:var(--disp);font-size:22px;font-weight:400;color:var(--chalk)" id="sTrue">—</div>
             </div>
+            <div style="flex:1;min-width:80px" title="Combined probability using each leg's CURRENT state — already-resolved legs count as 1/0, live moneylines use the rough live estimate, everything else pending falls back to its pregame number">
+              <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">Live %</div>
+              <div style="font-family:var(--disp);font-size:22px;font-weight:400" id="sLive">—</div>
+            </div>
             <div style="flex:1;min-width:80px">
               <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">To win</div>
               <div style="font-family:var(--mono);font-size:18px;color:var(--good)" id="parlayPayout">—</div>
@@ -1001,6 +1032,18 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- bet pill drawer — opened from a pill inside #fab-row above; one
+       small floating pill per active (pending) saved bet, colored by that
+       bet's current live combined win probability. Click opens that bet's
+       own read-only drawer, reusing _betCardHtml(). -->
+  <div id="bet-pill-drawer">
+    <div id="bet-pill-drawer-handle" onclick="closeBetPillDrawer()">
+      <span id="bet-pill-drawer-title">Bet</span>
+      <span id="bet-pill-drawer-close">✕ close</span>
+    </div>
+    <div id="bet-pill-drawer-body"></div>
   </div>
 
   <!-- TONIGHT TAB — removed from navigation 2026-07-02; kept in the DOM (always
@@ -2784,10 +2827,19 @@ function renderSlip(){
 
 function computeParlay(sel){
   const el=document.getElementById('sTrue');
-  if(!sel.length){ el.textContent='—'; return; }
+  const liveEl=document.getElementById('sLive');
+  if(!sel.length){ el.textContent='—'; if(liveEl){ liveEl.textContent='—'; liveEl.style.color='var(--chalk)'; } return; }
   const trueP=sel.reduce((a,l)=>a*(l.p>0&&l.p<=1?l.p:1),1);
   el.textContent=pct(trueP);
   el.style.color=trueP>=0.5?'var(--good)':trueP>=0.3?'var(--chalk)':'var(--bad)';
+  // live-resolved version of the same product — diverges from Model prob
+  // once a game goes live/settles, converging back to it for anything still
+  // untouched pregame (see _liveLegProb/liveCombinedProb).
+  if(liveEl){
+    const liveP = liveCombinedProb(sel);
+    liveEl.textContent = liveP==null ? '—' : pct(liveP);
+    liveEl.style.color = liveP==null ? 'var(--chalk)' : liveP>=0.5?'var(--good)':liveP>=0.3?'var(--chalk)':'var(--bad)';
+  }
 }
 
 // ---- saved bets — Supabase-backed (2026-07-05), replacing the old
@@ -2972,6 +3024,9 @@ async function fetchLiveGameData(){
   autoSettleBets();
   if(window.refreshTicker) window.refreshTicker();
   renderActiveTab();
+  renderBetPills(); // global fab pills — refresh every poll regardless of
+                     // active tab, unlike renderSavedBets() which only runs
+                     // when Bets itself is the active tab.
 }
 
 function startLivePolling(){
@@ -3387,6 +3442,7 @@ function _downloadCsv(csv){
 }
 
 function renderSavedBets(){
+  renderBetPills();
   const el=document.getElementById('savedBets');
   const sumEl=document.getElementById('savedSummary');
   const badge=document.getElementById('inPlayBadge');
@@ -3402,7 +3458,7 @@ function renderSavedBets(){
   // slip drawer: just show pending bets (compact), full history is in the Bets tab
   const slipBets = savedBets.filter(b=>b.status==='pending');
   el.innerHTML = slipBets.length
-    ? slipBets.map(_betCardHtml).join('')
+    ? slipBets.map(b=>_betCardHtml(b)).join('')
     : `<div class="empty" style="font-size:11px">No active bets. <button class="ghost" style="font-size:10px;padding:2px 8px;margin-left:4px" onclick="switchTab('bets',document.querySelector('.tab[onclick*=bets]'))">View history →</button></div>`;
   const voided=savedBets.filter(b=>b.status==='void');
   const totalWon=won.reduce((a,b)=>a+(b.payout||0),0);
@@ -3470,7 +3526,15 @@ function _computedBetStatus(b, legLookup){
   return 'pending';
 }
 
-function _betCardHtml(b){
+function _betCardHtml(b, opts){
+  // readonly: true strips the edit/delete controls — used by the bet-pill
+  // drawer (a pure "view this bet" surface opened from a fab pill), so a
+  // click meant to just look at the bet can't mutate/delete it. Real bug
+  // fixed 2026-07-08: this card's own faint delete "✕" sat right next to
+  // the drawer's unrelated "✕ close" button and someone hit the wrong one,
+  // permanently deleting a real saved bet (no undo/backup exists for
+  // Supabase deletes issued from here — see deleteBet()).
+  const readonly = !!opts?.readonly;
   const _legLookup = _buildLegLookup();
   const dispStatus = _computedBetStatus(b, _legLookup);
   const isWon=dispStatus==='won', isLost=dispStatus==='lost', isVoid=dispStatus==='void', isPending=dispStatus==='pending';
@@ -3626,9 +3690,10 @@ function _betCardHtml(b){
   // inSlip flags on the in-memory legs/teamLegs pool, which only reflects
   // today's slate, and a settled bet's legs may already be gone from it
   const isToday = storedPending && (_betDate(b) === new Date().toLocaleDateString('en-CA') || _betDate(b) === '');
-  const editBtn = isToday
+  const editBtn = (isToday && !readonly)
     ? `<button class="ghost" style="font-size:9px;padding:1px 5px;color:var(--sage);opacity:.5" onclick="event.stopPropagation();editBet(${b.id})">edit</button>`
     : '';
+  const deleteBtn = readonly ? '' : `<button class="ghost" style="font-size:9px;padding:1px 5px;color:var(--bad);opacity:.3" onclick="event.stopPropagation();deleteBet(${b.id})">✕</button>`;
 
   return `<div style="border-radius:8px;overflow:hidden;border:1px solid var(--line);border-left:3px solid ${accentColor}${_editingBetId===b.id?';outline:1px solid var(--amber)':''}">
     <div onclick="toggleBetCard(${b.id})" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--line);cursor:pointer;user-select:none" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background='rgba(255,255,255,.02)'">
@@ -3638,7 +3703,7 @@ function _betCardHtml(b){
       <div style="flex:1"></div>
       <span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.6px;color:${pillColor};background:${pillColor}1a;border:1px solid ${pillColor}40;border-radius:3px;padding:1px 6px">${pillTxt}</span>
       ${editBtn}
-      <button class="ghost" style="font-size:9px;padding:1px 5px;color:var(--bad);opacity:.3" onclick="event.stopPropagation();deleteBet(${b.id})">✕</button>
+      ${deleteBtn}
     </div>
     <div id="bc-body-${b.id}" style="display:${bodyDisplay}">
     <div style="display:flex;border-bottom:1px solid var(--line)">
@@ -3714,7 +3779,7 @@ function _sectionHtml(id, title, count, bets, opts={}){
         <div style="flex:1"></div>
         ${extra}
       </div>
-      <div id="${id}" style="display:${open?'grid':'none'};grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">${bets.map(_betCardHtml).join('')}</div>
+      <div id="${id}" style="display:${open?'grid':'none'};grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">${bets.map(b=>_betCardHtml(b)).join('')}</div>
     </div>`;
 }
 
@@ -3942,7 +4007,7 @@ function renderBetsTab(){
       })();
       const expanded = window._archiveExpanded.has(d);
       const cardsHtml = expanded
-        ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;padding:8px 2px 10px">${db.map(_betCardHtml).join('')}</div>`
+        ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;padding:8px 2px 10px">${db.map(b=>_betCardHtml(b)).join('')}</div>`
         : '';
       return `<div id="bets-archive-date-${d}" style="border-bottom:1px solid var(--line)">
         <div onclick="_archiveDateToggle('${d}')" style="display:flex;align-items:center;gap:10px;padding:7px 6px;cursor:pointer;user-select:none;font-family:var(--mono);font-size:11px" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background=''">
@@ -4431,7 +4496,11 @@ function buildScoreCard(matchup, batters, betKeys) {
       if(!priced) return '';
       const gpk = gamePk;
       const existing = teamLegs.find(l=>l.betType==='ml' && l.gamePk===gpk && l.team===teamAbbr);
-      return `<button class="row-icon-btn${existing?' active':''}" title="${existing?'In slip — click to remove':`Add ${teamAbbr} moneyline (${priced.oddsStr})`}" onclick="event.stopPropagation();toggleTeamLeg('ml','${esc(matchup)}','${gpk}','${gameDate}',{team:'${teamAbbr}',oddsStr:'${priced.oddsStr}',impliedP:${priced.impliedP}})">${existing?'✓':'+'}</button>`;
+      // preventDefault, not just stopPropagation — for a live game this
+      // button sits inside the MLB.TV <a> wrapper around scoreStacked
+      // (see scoreBlock below), and stopPropagation alone doesn't stop an
+      // ancestor anchor's own default navigation on click.
+      return `<button class="row-icon-btn${existing?' active':''}" title="${existing?'In slip — click to remove':`Add ${teamAbbr} moneyline (${priced.oddsStr})`}" onclick="event.preventDefault();event.stopPropagation();toggleTeamLeg('ml','${esc(matchup)}','${gpk}','${gameDate}',{team:'${teamAbbr}',oddsStr:'${priced.oddsStr}',impliedP:${priced.impliedP}})">${existing?'✓':'+'}</button>`;
     };
 
     // O/U total buttons — game-level (not per-team), only shown when a real
@@ -5824,6 +5893,92 @@ function winProbBarHtml(prob, isLive){
     </div>
     <span style="font-family:var(--mono);font-size:9px;font-weight:700;color:${col};flex:none">${pct}%</span>
   </div>`;
+}
+
+// current win/hit probability for ONE leg, whatever its shape — handles both
+// an in-progress slip leg (legs[]/teamLegs[], live fields hasHit/subbedOut)
+// and a saved bet's leg (b.legs[], settled via bl.outcome instead) with the
+// same logic, so liveCombinedProb() below can mix either without the caller
+// caring which one it's looking at. Returns null for a push/ppd leg (excluded
+// from the product, since it neither helps nor hurts the parlay) or when
+// there's simply no probability to fall back on.
+function _liveLegProb(l){
+  if(l.outcome==='won' || l.outcome==='hit' || l.hasHit) return 1;
+  if(l.outcome==='lost' || l.outcome==='miss' || l.subbedOut) return 0;
+  if(l.outcome==='push' || l.outcome==='ppd') return null;
+  if(l.betType==='ml'){
+    const gpk = l.gamePk ? String(l.gamePk) : null;
+    const ls = gpk ? _liveLinescore.get(gpk) : null;
+    if(ls?.isLive){
+      const [away, home] = (l.matchup||'').split(' @ ').map(s=>s.trim());
+      const isHome = canonTeamAbbr(home) === canonTeamAbbr(l.team);
+      const liveP = estimateLiveWinProb(ls, isHome);
+      if(liveP!=null) return liveP;
+    }
+  }
+  return (l.p>0 && l.p<=1) ? l.p : null;
+}
+// combined (product) live probability across every leg of a parlay — same
+// "multiply the independent probabilities" approach saveBet()'s trueP
+// already uses, just fed live-resolved per-leg values instead of the frozen
+// pregame ones. Returns null if nothing in the set has a usable probability.
+function liveCombinedProb(legsArr){
+  const probs = (legsArr||[]).map(_liveLegProb).filter(p=>p!=null);
+  if(!probs.length) return null;
+  return probs.reduce((a,p)=>a*p,1);
+}
+
+// pending bets in save order (oldest first) — the stable numbering both the
+// pills and their drawer title use ("Bet #1" always refers to the same bet
+// as long as it stays pending, regardless of savedBets' unshift-newest-first
+// array order).
+function _pendingBetsSorted(){
+  return (savedBets||[]).filter(b=>b.status==='pending').sort((a,b)=>a.id-b.id);
+}
+let _openBetPillId = null;
+// tinted bg+border+text triplet per probability tier — same recipe as
+// .hitbadge/.missbadge/.subbedbadge (rgba tint, not a plain CSS var() with an
+// alpha suffix hacked on, which isn't valid CSS and rendered wrong).
+function _probTierStyle(prob){
+  if(prob==null) return {bg:'rgba(156,151,141,.1)', border:'rgba(156,151,141,.3)', text:'var(--sage)'};
+  if(prob>=0.6)  return {bg:'rgba(178,208,126,.14)', border:'rgba(178,208,126,.4)', text:'var(--good)'};
+  if(prob<=0.4)  return {bg:'rgba(231,150,110,.14)', border:'rgba(231,150,110,.4)', text:'var(--bad)'};
+  return               {bg:'rgba(235,178,105,.14)', border:'rgba(235,178,105,.4)', text:'var(--amber)'};
+}
+function renderBetPills(){
+  const container = document.getElementById('bet-pills');
+  if(!container) return;
+  // hide pills for bets already mathematically lost (a leg has a confirmed
+  // loss, so liveCombinedProb multiplies to exactly 0) even though they're
+  // still status==='pending' until the next settle.py run catches up —
+  // only genuinely still-live/undecided bets should occupy the pill row.
+  // null (no info yet) is not the same as 0 (a hard loss) and stays visible.
+  const pending = _pendingBetsSorted().filter(b => liveCombinedProb(b.legs||[]) !== 0);
+  container.innerHTML = pending.map((b,i) => {
+    const prob = liveCombinedProb(b.legs||[]);
+    const s = _probTierStyle(prob);
+    const pctStr = prob==null ? '' : `${Math.round(prob*100)}%`;
+    return `<div class="bet-pill" style="background:${s.bg};border:1px solid ${s.border};color:${s.text}" onclick="openBetPillDrawer(${b.id})" title="Live combined win probability">
+      <span class="bp-dot" style="background:${s.text}"></span>
+      <span>Bet #${i+1}</span>
+      ${pctStr?`<span style="font-weight:700">${pctStr}</span>`:''}
+    </div>`;
+  }).join('');
+  // keep an already-open drawer's contents live too, not just the pills
+  if(_openBetPillId!=null) openBetPillDrawer(_openBetPillId);
+}
+function openBetPillDrawer(id){
+  const b = savedBets.find(x=>x.id===id);
+  if(!b) return;
+  const idx = _pendingBetsSorted().findIndex(x=>x.id===id);
+  document.getElementById('bet-pill-drawer-title').textContent = `Bet #${idx+1}`;
+  document.getElementById('bet-pill-drawer-body').innerHTML = _betCardHtml(b, {readonly:true});
+  document.getElementById('bet-pill-drawer').classList.add('drawer-open');
+  _openBetPillId = id;
+}
+function closeBetPillDrawer(){
+  document.getElementById('bet-pill-drawer').classList.remove('drawer-open');
+  _openBetPillId = null;
 }
 
 // does `team` (in this gamePk/matchup) have an active moneyline pick right
