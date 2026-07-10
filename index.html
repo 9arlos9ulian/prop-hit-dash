@@ -413,7 +413,6 @@
     50% {opacity:1; transform:scale(1.04) translate(1%,1%)}
     100%{opacity:.85;transform:scale(1.02) translate(-1%,-1%)}
   }
-  #bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.3}
   .wrap{position:relative;z-index:1}
 
   /* ── header ── */
@@ -740,7 +739,6 @@
   </div>
 </div>
 
-<canvas id="bg-canvas"></canvas>
 <div class="bg-gradient"></div>
 
 <div class="wrap auth-hidden">
@@ -2971,6 +2969,7 @@ function _loadBetsFromServer(){
 const _liveLinescore = new Map(); // gamePk -> {inning, ordinal, half, outs, isLive, isFinal}
 const _liveBatterHit = new Map(); // gamePk+'|'+batterId -> true/false
 const _liveBatterSubbedOut = new Map(); // gamePk+'|'+batterId -> true/false, independent of today's `legs` (see autoSettleBets)
+const _finalBoxscoreDone = new Set(); // gamePks whose boxscore has been fetched once since going Final — never refetched again (see fetchLiveGameData)
 let _livePoller = null;
 let _lastLiveFetch = null;
 
@@ -3127,21 +3126,31 @@ async function fetchLiveGameData(){
   // reads whatever's in _bsCache/_pbpCache instead of re-fetching.
   await Promise.all([...gamePks].map(async gpk => {
 
-    // boxscore — per-batter hit count
-    try {
-      _bsCache.delete(gpk);
-      const bs = await _fetchBoxscore(gpk);
-      if(!bs) return;
-      bs.players.forEach((batting, batterId) => {
-        const key = gpk+'|'+String(batterId);
-        const gotHit = (batting.hits || 0) > 0;
-        _liveBatterHit.set(key, gotHit);
-        const subbedOut = isSubbedOut(bs, batterId);
-        _liveBatterSubbedOut.set(key, subbedOut);
-        // push hasHit/subbedOut back into the leg directly
-        legs.forEach(l => { if(String(l.gamePk)===gpk && String(l.batterId)===String(batterId)){ l.hasHit=gotHit; l.subbedOut=subbedOut; } });
-      });
-    } catch(_) {}
+    // boxscore — per-batter hit count. A Final game's box score can never
+    // change again, so once we've fetched it once post-final, skip it on
+    // every subsequent tick instead of force-refetching forever — this
+    // loop otherwise keeps re-downloading + re-parsing every finished
+    // game's full boxscore every 30s for the rest of the session (real
+    // waste flagged 2026-07-10: a 15-game night still refetches all 15
+    // finished boxscores on every poll hours after they're over).
+    if(!(_finalBoxscoreDone.has(gpk))){
+      try {
+        _bsCache.delete(gpk);
+        const bs = await _fetchBoxscore(gpk);
+        if(bs){
+          bs.players.forEach((batting, batterId) => {
+            const key = gpk+'|'+String(batterId);
+            const gotHit = (batting.hits || 0) > 0;
+            _liveBatterHit.set(key, gotHit);
+            const subbedOut = isSubbedOut(bs, batterId);
+            _liveBatterSubbedOut.set(key, subbedOut);
+            // push hasHit/subbedOut back into the leg directly
+            legs.forEach(l => { if(String(l.gamePk)===gpk && String(l.batterId)===String(batterId)){ l.hasHit=gotHit; l.subbedOut=subbedOut; } });
+          });
+          if(_liveLinescore.get(gpk)?.isFinal) _finalBoxscoreDone.add(gpk);
+        }
+      } catch(_) {}
+    }
 
     // play-by-play — this at-bat's earlier trips (liveMatchupLine's TV-style
     // codes); only worth refreshing for games still actually in progress
@@ -6647,36 +6656,4 @@ function canonMatchup(matchup){
   });
 })();
 
-// ── background particles ──────────────────────────────────────────────────
-(function(){
-  const cv = document.getElementById('bg-canvas');
-  if(!cv) return;
-  const ctx = cv.getContext('2d');
-  let W, H, pts = [];
-  function resize(){ W = cv.width = innerWidth; H = cv.height = innerHeight; }
-  resize(); addEventListener('resize', resize);
-  function mkPt(){
-    return { x:Math.random()*W, y:Math.random()*H,
-             vx:(Math.random()-.5)*.2, vy:(Math.random()-.5)*.2,
-             r:Math.random()*1.2+.3, a:Math.random()*.6+.2 };
-  }
-  for(let i=0;i<60;i++) pts.push(mkPt());
-  function draw(){
-    ctx.clearRect(0,0,W,H);
-    for(const p of pts){
-      p.x+=p.vx; p.y+=p.vy;
-      if(p.x<0)p.x=W; if(p.x>W)p.x=0;
-      if(p.y<0)p.y=H; if(p.y>H)p.y=0;
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle=`rgba(178,208,126,${p.a*.4})`; ctx.fill();
-    }
-    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
-      const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
-      if(d<120){ ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y);
-        ctx.strokeStyle=`rgba(178,208,126,${(1-d/120)*.05})`; ctx.lineWidth=1; ctx.stroke(); }
-    }
-    requestAnimationFrame(draw);
-  }
-  draw();
-})();
 </script>
