@@ -569,9 +569,13 @@
   /* wide-tab (Scores only) switches the single column to a real grid at
      wider viewports — each .card becomes its own query container (below)
      so its internal breakpoints react to the column's actual width, not
-     the viewport, once there's more than one column on screen. */
+     the viewport, once there's more than one column on screen. Capped at
+     2 columns always (not 3 at 1400px+, removed 2026-07-10 per feedback)
+     — a 3rd column squeezed each card narrow enough to trip its own
+     mobile away/home tab fallback even on a huge monitor, the opposite of
+     what a wide breakpoint should do. Two full side-by-side lineups beats
+     three narrow tabbed ones. */
   @media(min-width:900px)  { .wide-tab #scores-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;align-items:start} }
-  @media(min-width:1400px) { .wide-tab #scores-grid{grid-template-columns:repeat(3,1fr)} }
 
   /* ── batter popup ── */
   #batter-popup-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
@@ -4483,10 +4487,12 @@ function batterPopupHtml(l){
 }
 function switchTab(name, btn) {
   currentTab = name;
-  // Scores/All Batters get a wider stage (3-col game grid / full-width
-  // batters table) — everything else keeps the original 1080px reading
-  // width. See .wrap.wide-tab in the CSS.
-  document.querySelector('.wrap').classList.toggle('wide-tab', name==='scores'||name==='allbatters');
+  // every tab gets the wider 1800px stage now (2026-07-10, was Scores/All
+  // Batters only) — the 1080px reading-width cap left large empty margins
+  // on every other tab on a big monitor ("windowed" look). The class also
+  // still gates #scores-grid's multi-column layout (see .wide-tab in the
+  // CSS), which simply has no effect on tabs without that element.
+  document.querySelector('.wrap').classList.add('wide-tab');
   document.getElementById('tab-dugout').style.display     = 'none'; // removed from nav 2026-07-02, kept for #pool/slip state only
   document.getElementById('tab-scores').style.display     = name==='scores'     ? '' : 'none';
   document.getElementById('tab-allbatters').style.display = name==='allbatters' ? '' : 'none';
