@@ -451,7 +451,13 @@
   .gm-header{box-shadow:0 4px 10px -4px rgba(0,0,0,.6);position:relative;z-index:1;transition:box-shadow .2s}
   .gamecard-collapsible>.gm-header{cursor:pointer;user-select:none}
   .gamecard-collapsible.collapsed>.gm-header{box-shadow:0 2px 6px -2px rgba(0,0,0,.5)}
-  .gamecard-collapsible.collapsed>*:not(.gm-header){display:none!important}
+  /* footer (lean chip/eval result + O/U row) stays visible collapsed too,
+     same as .gm-header — a collapsed card used to hide the one row that
+     summarizes the game at a glance, the exact thing you'd want left
+     visible after collapsing it. Needs its own top border since it's no
+     longer adjacent to the (hidden) side-wrap rows above it. */
+  .gamecard-collapsible.collapsed>.gm-footer{border-top:1px solid var(--line)}
+  .gamecard-collapsible.collapsed>*:not(.gm-header):not(.gm-footer){display:none!important}
   .gm-footer-cell{display:flex;align-items:center;justify-content:center;gap:12px}
   /* @container, not @media — these are all about how much room this specific
      card has, not the browser viewport (see .card{container-type} above and
@@ -5010,9 +5016,7 @@ function buildScoreCard(matchup, batters, betKeys) {
         <div class="scores-mobile-divider" style="width:1px;background:var(--line)"></div>
         <div class="scores-side-wrap${mobileSide==='away'?' scores-mobile-hide':''}">${sideHtml(homeSide, homeTeam, homeMu)}</div>
       </div>
-      ${muRow}
-      ${evalRow}
-      ${ouRow}
+      ${(muRow||evalRow||ouRow) ? `<div class="gm-footer">${muRow}${evalRow}${ouRow}</div>` : ''}
     </div>`;
   }
 
