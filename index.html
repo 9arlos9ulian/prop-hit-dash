@@ -806,8 +806,6 @@
           <button id="exp-upcomingBtn" class="ghost fchip" onclick="filterUpcoming=!filterUpcoming;if(filterUpcoming)filterLiveOnly=false,document.getElementById('exp-liveBtn').classList.remove('amber');this.classList.toggle('amber',filterUpcoming);renderScoresAllBatters()">Upcoming</button>
           <button id="exp-hideSettledBtn" class="ghost fchip" onclick="filterHideSettled=!filterHideSettled;this.classList.toggle('amber',filterHideSettled);renderScoresAllBatters()" title="Hide batters whose game has ended">✓ Hide Final</button>
           <button id="exp-confirmedBtn" class="ghost fchip" onclick="filterConfirmed=!filterConfirmed;this.classList.toggle('amber',filterConfirmed);renderScoresAllBatters()" title="Hide estimated lineups">✓ Confirmed</button>
-          <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
-          <button id="allbatters-oubadge-btn" class="ghost fchip amber" title="Show/hide the team O/U-performance badge (▲/▼/–) next to team names" onclick="toggleOuBadge()">▲/▼ O/U perf</button>
         </div>
         <div class="poolbar-row" style="flex-wrap:wrap">
           <span class="fchip-lbl">Slot</span>
@@ -4540,10 +4538,8 @@ function switchTab(name, btn) {
 let showOuBadge = true;
 function toggleOuBadge(){
   showOuBadge = !showOuBadge;
-  ['scores-oubadge-btn','allbatters-oubadge-btn'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.classList.toggle('amber', showOuBadge);
-  });
+  const el = document.getElementById('scores-oubadge-btn');
+  if(el) el.classList.toggle('amber', showOuBadge);
   renderActiveTab();
 }
 let scoresSort = 'time'; // 'time' | 'rating' | 'diff'
