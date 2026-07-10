@@ -2118,7 +2118,10 @@ function pitchDominantBadge(l){
   else if(bb!=null&&bb>=0.40){label='BRK-H';full='Breaking-ball-heavy';pct=bb;}
   else if(os!=null&&os>=0.30){label='OFF-H';full='Offspeed-heavy';pct=os;}
   if(!label) return '';
-  return `<span title="${full} — ${Math.round(pct*100)}% usage, a heavily favored pitch mix" style="font-family:var(--mono);font-size:9px;color:#a78bfa;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.35);border-radius:3px;padding:1px 5px">${label} ${Math.round(pct*100)}%</span>`;
+  // drop the inline % (matches sibling badges like HH/KB/DOMINANT, which
+  // are label-only too) — exact usage still lives in the tooltip, just not
+  // taking up badge-row width by default anymore.
+  return `<span title="${full} — ${Math.round(pct*100)}% usage, a heavily favored pitch mix" style="font-family:var(--mono);font-size:9px;color:#a78bfa;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.35);border-radius:3px;padding:1px 5px">${label}</span>`;
 }
 function avgAbLine(l){
   if(l.bAvgAb==null||isNaN(l.bAvgAb)||!l.bGamesPlayed||l.bGamesPlayed<10) return '';
