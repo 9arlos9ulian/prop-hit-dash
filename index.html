@@ -134,11 +134,21 @@
      border, which can't actually apply an alpha channel on top of a
      var(--good)-style token and rendered wrong. Refreshed on the same 30s
      poll that drives every other live indicator in the app. */
-  #bet-pills{display:flex;align-items:center;gap:6px;max-width:55vw;overflow-x:auto;flex:none}
-  .bet-pill{display:flex;align-items:center;gap:6px;border-radius:14px;padding:5px 12px;cursor:pointer;font-family:var(--mono);font-size:10px;font-weight:600;transition:opacity .15s;white-space:nowrap;flex:none}
+  #bet-pills{display:flex;align-items:center;gap:6px;max-width:55vw;overflow-x:auto;flex:none;scroll-behavior:smooth}
+  /* right-edge fade instead of a hard clip when the row overflows — a
+     mid-pill clip with no visual cue read as the pills "cutting into" the
+     SLIP button next to them (real bug reported 2026-07-09, mobile). The
+     class is toggled by JS (see renderBetPills) only when the row actually
+     overflows, and removed once scrolled to the end, so a short list that
+     fits fully never gets an unnecessary fade on its last pill. */
+  #bet-pills.has-overflow{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent 100%);mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent 100%)}
+  .bet-pill{display:flex;align-items:center;gap:6px;border-radius:14px;padding:5px 12px;cursor:pointer;font-family:var(--mono);font-size:10px;font-weight:600;transition:opacity .15s;white-space:nowrap;flex:none;scroll-snap-align:start}
   .bet-pill:hover{opacity:.8}
   .bet-pill .bp-dot{width:7px;height:7px;border-radius:50%;flex:none}
-  @media(max-width:480px){#bet-pills{max-width:45vw}}
+  /* narrower cap + explicit gap from #slip-fab on mobile, so a full row of
+     pills never crowds flush against the Slip button — was 45vw with only
+     the row's own 8px gap, easy to fill edge-to-edge on a busy night. */
+  @media(max-width:480px){#bet-pills{max-width:38vw;scroll-snap-type:x proximity;margin-right:2px}}
   /* second drawer, identical shell to #slip-drawer, just for viewing one
      saved bet read-only when its pill is clicked — kept independent of
      #slip-drawer's open/close state so viewing a bet doesn't disturb
@@ -1375,10 +1385,12 @@ function _fetchBoxscore(gamePk){
       const players = new Map();
       const pitching = new Map();
       const battingOrders = new Map(); // pid -> raw battingOrder string, e.g. "500" (starter) or "501" (1st sub)
+      const names = new Map(); // pid -> fullName, used by the name+date historical settle fallback (see _fetchHistoricalBatterData)
       ['away','home'].forEach(side=>{
         const pl=d.teams?.[side]?.players||{};
         Object.values(pl).forEach(p=>{
           const pid=String(p.person?.id||''); if(!pid) return;
+          if(p.person?.fullName) names.set(pid, p.person.fullName);
           const bat=p.stats?.batting;
           if(bat) players.set(pid, bat);
           if(p.battingOrder) battingOrders.set(pid, p.battingOrder);
@@ -1391,7 +1403,7 @@ function _fetchBoxscore(gamePk){
           });
         });
       });
-      const result={players, pitching, battingOrders};
+      const result={players, pitching, battingOrders, names};
       _bsCache.set(gamePk,result);
       return result;
     }).catch(()=>null);
@@ -2952,6 +2964,7 @@ function _loadBetsFromServer(){
 // ---- live game data (Tonight + Bets tabs) ----
 const _liveLinescore = new Map(); // gamePk -> {inning, ordinal, half, outs, isLive, isFinal}
 const _liveBatterHit = new Map(); // gamePk+'|'+batterId -> true/false
+const _liveBatterSubbedOut = new Map(); // gamePk+'|'+batterId -> true/false, independent of today's `legs` (see autoSettleBets)
 let _livePoller = null;
 let _lastLiveFetch = null;
 
@@ -2966,6 +2979,96 @@ function _linescoreToGameState(d){
   if(note.includes('final') || note.includes('game over')) return 'Final';
   if((d.currentInning||0) > 0) return 'In Progress';
   return '';
+}
+
+// gamePks referenced by any still-pending saved bet's legs, regardless of
+// whether that game is part of today's loaded slate — a bet whose game
+// already finished on a prior day (dashboard wasn't open when it ended, or
+// the daily slate rotated before autoSettleBets caught up) otherwise has
+// no path to ever resolve, since today's `legs` array only has today's
+// batters. Real bug fixed 2026-07-10 ("stale bets/pills from yesterday").
+function _pendingBetGamePks(){
+  const s = new Set();
+  (savedBets||[]).forEach(b=>{
+    if(b.status!=='pending') return;
+    (b.legs||[]).forEach(bl=>{ if(bl.gamePk) s.add(String(bl.gamePk)); });
+  });
+  return s;
+}
+// resolves game status for gamePks not covered by today's normal schedule
+// fetch. Real bug found 2026-07-10: MLB's schedule endpoint looks like it
+// accepts a comma-joined gamePk list (some other statsapi endpoints do),
+// but it actually 400s on more than one value, and a repeated ?gamePk=
+// param silently keeps only the last one — either way, a batch of pending
+// bets spanning several games meant only 0 or 1 of them ever resolved, and
+// once the first request 400'd the whole promise chain in the caller broke
+// silently (no console noise the user would necessarily notice), which is
+// why stale bets/pills never cleared even after a hard refresh. One
+// request per gamePk, in parallel, is the only combination that's
+// confirmed to actually work against this endpoint.
+async function _fetchGameStatusByPk(gamePks){
+  if(!gamePks.length) return;
+  await Promise.all(gamePks.map(async gpk => {
+    try{
+      const r = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&hydrate=linescore&gamePk=${gpk}`);
+      if(!r.ok) return;
+      const d = await r.json();
+      (d.dates||[]).forEach(dt => (dt.games||[]).forEach(g => {
+        const gpk2 = String(g.gamePk);
+        const absState = (g.status?.abstractGameState||'').toLowerCase();
+        const ld = g.linescore || {};
+        _liveLinescore.set(gpk2, {
+          inning: ld.currentInning||0, ordinal: ld.currentInningOrdinal||'',
+          half: ld.inningHalf||'', outs: ld.outs||0,
+          inningState: ld.inningState||'',
+          isLive: absState==='live', isFinal: absState==='final',
+          awayR: ld.teams?.away?.runs ?? null, homeR: ld.teams?.home?.runs ?? null,
+        });
+      }));
+    }catch(_){}
+  }));
+}
+
+// name+date fallback for legacy bet legs saved before gamePk/batterId were
+// captured on every leg (older Supabase rows predate that field) — the
+// gamePk-based path above can't resolve those at all since it has nothing
+// to key off. Fetches a whole day's schedule + final boxscores once per
+// date and caches the result, mirroring loadHistoricalScores() but built
+// as a name-keyed lookup autoSettleBets can actually consult, rather than
+// mutating `legs` (which only ever holds today's slate).
+const _historicalBatterLookup = new Map(); // normName+'|'+ISOdate -> {hasHit, isFinal}
+const _historicalDatesFetched = new Set();
+function _pendingBetHistoricalDates(){
+  const todayISO = new Date().toLocaleDateString('en-CA');
+  const s = new Set();
+  (savedBets||[]).forEach(b=>{
+    if(b.status!=='pending') return;
+    const hasBareLeg = (b.legs||[]).some(bl => !bl.betType && !(bl.gamePk && bl.batterId));
+    if(!hasBareLeg) return;
+    const d = _betDate(b);
+    if(d && d !== todayISO) s.add(d);
+  });
+  return s;
+}
+async function _fetchHistoricalBatterData(date){
+  if(_historicalDatesFetched.has(date)) return;
+  _historicalDatesFetched.add(date);
+  try{
+    const r = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${date}`);
+    if(!r.ok) return;
+    const d = await r.json();
+    const games = d.dates?.[0]?.games || [];
+    const finalGamePks = games.filter(g => (g.status?.abstractGameState||'').toLowerCase()==='final').map(g=>String(g.gamePk));
+    await Promise.all(finalGamePks.map(async gpk => {
+      const bs = await _fetchBoxscore(gpk).catch(()=>null);
+      if(!bs) return;
+      bs.players.forEach((batting, pid) => {
+        const name = bs.names.get(pid);
+        if(!name) return;
+        _historicalBatterLookup.set(_normName(name)+'|'+date, {hasHit:(batting.hits||0)>0, isFinal:true});
+      });
+    }));
+  }catch(_){}
 }
 
 async function fetchLiveGameData(){
@@ -2984,7 +3087,31 @@ async function fetchLiveGameData(){
     if(live || final) gamePks.add(gpk);
     if(live) liveGamePks.add(gpk);
   });
-  if(!gamePks.size) return;
+
+  // also cover games referenced by still-pending saved bets even when
+  // they're not in today's slate at all (see _pendingBetGamePks above).
+  const pendingGpks = _pendingBetGamePks();
+  const unresolved = [...pendingGpks].filter(gpk => !_liveLinescore.has(gpk));
+  if(unresolved.length) await _fetchGameStatusByPk(unresolved);
+  pendingGpks.forEach(gpk => {
+    const ls = _liveLinescore.get(gpk);
+    if(!ls) return;
+    if(ls.isLive || ls.isFinal) gamePks.add(gpk);
+    if(ls.isLive) liveGamePks.add(gpk);
+  });
+
+  // legacy bets (no gamePk/batterId captured on their legs) — resolve via
+  // the name+date historical fallback instead. Must happen before the
+  // gamePks.size early-return below, and autoSettleBets() must still run
+  // even when there are zero live/final gamePks to box-score-fetch (e.g.
+  // only stale legacy bets pending, nothing live today).
+  const histDates = _pendingBetHistoricalDates();
+  if(histDates.size) await Promise.all([...histDates].map(_fetchHistoricalBatterData));
+
+  if(!gamePks.size){
+    if(histDates.size){ autoSettleBets(); renderActiveTab(); renderBetPills(); }
+    return;
+  }
 
   // boxscore + play-by-play used to be fetched by two independent, uncoordinated
   // loops (this 30s poller, and the header ticker's own 45s refresh) — same
@@ -3004,6 +3131,7 @@ async function fetchLiveGameData(){
         const gotHit = (batting.hits || 0) > 0;
         _liveBatterHit.set(key, gotHit);
         const subbedOut = isSubbedOut(bs, batterId);
+        _liveBatterSubbedOut.set(key, subbedOut);
         // push hasHit/subbedOut back into the leg directly
         legs.forEach(l => { if(String(l.gamePk)===gpk && String(l.batterId)===String(batterId)){ l.hasHit=gotHit; l.subbedOut=subbedOut; } });
       });
@@ -3267,18 +3395,58 @@ function autoSettleBets(){
         if(bl.outcome==='lost') anyLoss=true;
         return;
       }
+      // prefer gamePk+batterId against the live-tracking maps — unlike the
+      // name+gameDate lookup below, these aren't limited to whatever's in
+      // today's loaded slate, so a bet whose game already finished on a
+      // prior day (dashboard wasn't open, or the day rolled over before
+      // this ran) still resolves once fetchLiveGameData() pulls that
+      // gamePk in via _pendingBetGamePks(). Real bug fixed 2026-07-10 —
+      // "stale bets/pills from yesterday" stuck in Active forever.
+      const gpk = bl.gamePk ? String(bl.gamePk) : null;
+      const bid = bl.batterId ? String(bl.batterId) : null;
+      if(gpk && bid){
+        const ls = _liveLinescore.get(gpk);
+        const hit = _liveBatterHit.get(gpk+'|'+bid);
+        const subbedOut = _liveBatterSubbedOut.get(gpk+'|'+bid);
+        if(hit === undefined){ allSettled=false; return; }
+        if(hit === true){ bl.outcome='hit'; return; }
+        const fin = ls?.isFinal || (subbedOut && !hit);
+        if(!fin){ allSettled=false; return; }
+        bl.outcome='miss'; anyLoss=true;
+        return;
+      }
+      // legacy fallback — bets saved before batterId/gamePk were captured
+      // on every leg. First try today's loaded slate, then the name+date
+      // historical lookup (see _fetchHistoricalBatterData) for any other
+      // date — this is the only path that can resolve a legacy leg from a
+      // prior day at all, since it has no gamePk/batterId to key off.
       const live = lookup.get(_normName(bl.name)+'|'+(bl.gameDate||''));
-      if(!live){ allSettled=false; return; }
-      const fin = isFinal(live.gameState) || (live.subbedOut && !live.hasHit);
-      const ppd = isPostponed(live.gameState);
-      if(!fin && !ppd){ allSettled=false; return; }
-      if(ppd){ anyPpd=true; bl.outcome='ppd'; return; }
-      bl.outcome = live.hasHit ? 'hit' : 'miss';
-      if(!live.hasHit) anyLoss=true;
+      if(live){
+        const fin = isFinal(live.gameState) || (live.subbedOut && !live.hasHit);
+        const ppd = isPostponed(live.gameState);
+        if(!fin && !ppd){ allSettled=false; return; }
+        if(ppd){ anyPpd=true; bl.outcome='ppd'; return; }
+        bl.outcome = live.hasHit ? 'hit' : 'miss';
+        if(!live.hasHit) anyLoss=true;
+        return;
+      }
+      const hist = bl.gameDate ? _historicalBatterLookup.get(_normName(bl.name)+'|'+bl.gameDate) : null;
+      if(!hist){ allSettled=false; return; }
+      bl.outcome = hist.hasHit ? 'hit' : 'miss';
+      if(!hist.hasHit) anyLoss=true;
     });
-    if(allSettled){
-      if(anyPpd && !anyLoss) b.status='void';
-      else if(anyLoss) b.status='lost';
+    // a parlay needs every leg to hit — one confirmed loss on a leg whose
+    // game/at-bat is already final is decisive regardless of whether other
+    // legs are still in progress. Settle to 'lost' immediately instead of
+    // waiting for allSettled, so a bet with e.g. a 7pm leg that already
+    // busted doesn't sit in "Today — Active" (and keep occupying a fab
+    // pill) until a 10pm leg on the other coast finally finishes too.
+    if(anyLoss){
+      b.status='lost';
+      changed=true;
+      changedIds.push(b.id);
+    } else if(allSettled){
+      if(anyPpd) b.status='void';
       else b.status='won';
       changed=true;
       changedIds.push(b.id);
@@ -4124,11 +4292,20 @@ _sb.auth.getSession().then(({data})=>{
 
 // ── tab switching ─────────────────────────────────────────────────────────────
 function renderActiveTab() {
+  // full innerHTML rebuilds below run on every ~30s live-poll tick, not
+  // just on an explicit tab switch — mobile Safari doesn't reliably keep
+  // scroll position through a big innerHTML swap and jumps to the top,
+  // which meant losing your place mid-game every poll cycle (real bug
+  // reported 2026-07-10). Restore it after layout settles instead of
+  // leaving the jump in place; 0 is left alone since there's nothing to
+  // restore (and it'd be a no-op anyway).
+  const _scrollY = window.scrollY;
   if(currentTab==='scores') renderScores();
   else if(currentTab==='allbatters') renderScoresAllBatters();
   else if(currentTab==='bets') renderBetsTab();
-  else { render(); return; } // history/about have no dedicated builder; render() already calls renderSlip() itself
+  else { render(); if(_scrollY>0) requestAnimationFrame(()=>window.scrollTo(0,_scrollY)); return; } // history/about have no dedicated builder; render() already calls renderSlip() itself
   renderSlip(); // keep the bet slip drawer current regardless of which tab is active
+  if(_scrollY > 0) requestAnimationFrame(() => window.scrollTo(0, _scrollY));
 }
 // ── batter popup — the single place a batter's full card lives now (replaces
 // the old Tonight tab). Opened by name/row clicks from every Scores density
@@ -5966,6 +6143,23 @@ function renderBetPills(){
   }).join('');
   // keep an already-open drawer's contents live too, not just the pills
   if(_openBetPillId!=null) openBetPillDrawer(_openBetPillId);
+  _updatePillsOverflowFade(container);
+}
+// toggles the right-edge fade (see .has-overflow in CSS) based on actual
+// scroll position — on while there's more to scroll to, off once the last
+// pill is fully in view, so the fade never lingers over content that's
+// already fully visible.
+function _updatePillsOverflowFade(container){
+  const update = () => {
+    const scrollable = container.scrollWidth - container.clientWidth > 2;
+    const atEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 2;
+    container.classList.toggle('has-overflow', scrollable && !atEnd);
+  };
+  update();
+  if(!container._overflowFadeBound){
+    container.addEventListener('scroll', update, {passive:true});
+    container._overflowFadeBound = true;
+  }
 }
 function openBetPillDrawer(id){
   const b = savedBets.find(x=>x.id===id);
