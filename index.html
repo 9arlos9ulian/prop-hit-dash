@@ -487,6 +487,15 @@
   .allbatters-table td{padding:3px 8px;color:var(--chalk);border-bottom:1px solid rgba(255,255,255,.04)}
   .allbatters-table tbody tr:nth-child(even){background:rgba(255,255,255,.015)}
   .allbatters-table tbody tr:hover{background:rgba(255,255,255,.06)}
+  /* Name column stays put horizontally while the rest of the (very wide) table
+     scrolls under it — sticky needs an opaque background per row state (plain
+     td backgrounds are transparent, letting scrolled-under cells show through)
+     and a higher z-index than the sticky header so the top-left corner cell
+     layers correctly over both the header row and the scrolling body. */
+  .allbatters-table .col-name{position:sticky;left:0;background:var(--surf)}
+  .allbatters-table th.col-name{z-index:2;background:var(--raised)}
+  .allbatters-table tbody tr:nth-child(even) td.col-name{background:color-mix(in srgb, var(--surf), white 1.5%)}
+  .allbatters-table tbody tr:hover td.col-name{background:color-mix(in srgb, var(--surf), white 6%)}
   .gm-score-stacked{display:flex}
   .gm-score-stacked .teamtag{font-size:14px}
   .gm-mid-wrap{padding:8px 20px;margin-right:10px}
@@ -738,6 +747,18 @@
   .auth-card input:focus{border-color:var(--amber)}
   .auth-card button{width:100%;margin-top:4px}
   #auth-error{font-family:var(--mono);font-size:11px;color:var(--bad);margin-top:10px;min-height:14px}
+
+  /* ── performance tab (awards page) ── */
+  .perf-award-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:14px 15px}
+  .perf-award{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .perf-award-lbl{font-family:var(--disp);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--sage);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+  .perf-rank{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;font-family:var(--mono);font-size:12px}
+  .perf-rank:not(:last-child){border-bottom:1px solid rgba(255,255,255,.04)}
+  .perf-rank-name{display:flex;align-items:center;gap:6px;color:var(--chalk);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .perf-rank-val{color:var(--amber);font-weight:600;flex:none}
+  .perf-rank1{border-radius:6px;padding-left:6px;padding-right:6px;margin:0 -6px}
+  .perf-medal{font-size:13px;flex:none}
+  .perf-empty{color:var(--sage);opacity:.6;font-size:11px;padding:2px 0}
 </style>
 
 <div id="auth-gate">
@@ -782,6 +803,7 @@
     <div class="tabs-spacer"></div>
     <button class="tab" onclick="switchTab('bets',this)">Bets<span id="tab-bets-badge" style="display:none;font-family:var(--mono);font-size:9px;opacity:.6;margin-left:5px;font-weight:400"></span></button>
     <button class="tab" onclick="switchTab('history',this)">History</button>
+    <button class="tab" onclick="switchTab('performance',this)">Performance</button>
   </div>
 
   <!-- SCORES TAB -->
@@ -791,13 +813,12 @@
         <div class="poolbar-row" style="flex-wrap:wrap">
           <span class="fchip-lbl">Sort</span>
           <button id="scores-sort-time" class="ghost fchip amber" onclick="scoresSort='time';_setScoresSortBtn(this);renderScores()">Time</button>
-          <button id="scores-sort-rating" class="ghost fchip" onclick="scoresSort='rating';_setScoresSortBtn(this);renderScores()">Best Lean</button>
-          <button id="scores-sort-diff" class="ghost fchip" title="Most lopsided matchups first (either STRONG or AVOID), regardless of direction — different from Best Lean, which only favors STRONG" onclick="scoresSort='diff';_setScoresSortBtn(this);renderScores()">Matchup Diff</button>
+          <button id="scores-sort-level" class="ghost fchip" title="Most lopsided matchups first, either strongly favorable or strongly unfavorable" onclick="scoresSort='diff';_setScoresSortBtn(this);renderScores()">Matchup Level</button>
+          <button id="scores-sort-dir" class="ghost fchip" title="Reverse the current sort order" onclick="scoresSortDir=-scoresSortDir;_setScoresSortDirBtn();renderScores()">▼</button>
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
           <button id="scores-live-btn" class="ghost fchip" onclick="scoresLiveOnly=!scoresLiveOnly;scoresUpcoming=false;this.classList.toggle('amber',scoresLiveOnly);document.getElementById('scores-upcoming-btn').classList.remove('amber');renderScores()">● Live</button>
           <button id="scores-upcoming-btn" class="ghost fchip" onclick="scoresUpcoming=!scoresUpcoming;scoresLiveOnly=false;this.classList.toggle('amber',scoresUpcoming);document.getElementById('scores-live-btn').classList.remove('amber');renderScores()">Upcoming</button>
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
-          <button id="scores-oubadge-btn" class="ghost fchip amber" title="Show/hide the team O/U-performance badge (▲/▼/–) next to team names" onclick="toggleOuBadge()">▲/▼ O/U perf</button>
           <button id="scores-collapse-toggle" class="ghost fchip" onclick="toggleAllScoreCards()">Expand All</button>
         </div>
       </div>
@@ -932,6 +953,21 @@
       <div id="h-slot-chart" style="padding:0 15px 12px"><div class="empty">—</div></div>
     </div>
 
+  </div>
+
+  <!-- PERFORMANCE TAB -->
+  <div id="tab-performance" style="display:none;margin-top:18px">
+    <div class="card">
+      <div class="poolbar">
+        <div class="poolbar-row">
+          <span class="fchip-lbl">Window</span>
+          <button id="perf-win-week" class="ghost fchip amber" onclick="setPerfWindow('week')">This Week</button>
+          <button id="perf-win-month" class="ghost fchip" onclick="setPerfWindow('month')">This Month</button>
+          <span id="perf-notice" style="font-family:var(--mono);font-size:11px;color:var(--sage);margin-left:auto"></span>
+        </div>
+      </div>
+    </div>
+    <div id="perf-body"><div class="card" style="margin-top:14px"><div class="empty">Loading…</div></div></div>
   </div>
 
   <!-- NH HISTORY TAB -->
@@ -4357,6 +4393,7 @@ function renderActiveTab() {
   if(currentTab==='scores') renderScores();
   else if(currentTab==='allbatters') renderScoresAllBatters();
   else if(currentTab==='bets') renderBetsTab();
+  else if(currentTab==='performance') { renderPerformanceTab(); return; } // no bet slip on this tab
   else { render(); return; } // history/about have no dedicated builder; render() already calls renderSlip() itself
   renderSlip(); // keep the bet slip drawer current regardless of which tab is active
 }
@@ -4525,10 +4562,12 @@ function switchTab(name, btn) {
   document.getElementById('tab-history').style.display    = name==='history'    ? '' : 'none';
   document.getElementById('tab-about').style.display      = name==='about'      ? '' : 'none';
   document.getElementById('tab-bets').style.display       = name==='bets'       ? '' : 'none';
+  document.getElementById('tab-performance').style.display= name==='performance'? '' : 'none';
   document.querySelectorAll('.tabs .tab').forEach(b => b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   updateSlipCount();
   if(name==='history') { initCollapsibleCards(); loadHistory(); }
+  if(name==='performance') loadPerformanceTab();
   if((name==='bets' || name==='scores' || name==='allbatters') && !viewingDate) startLivePolling(); else stopLivePolling();
   if(name==='bets') renderBetsTab();
   if(name==='allbatters') renderScoresAllBatters();
@@ -4543,25 +4582,32 @@ function switchTab(name, btn) {
 }
 
 // ── scores tab ─────────────────────────────────────────────────────────────
-// shared show/hide toggle for the ▲/▼/– team O/U-performance badge, used by
-// both Scores (teamHalf/scoreStacked) and All Batters (teamCell) — replaces
-// the old All-Batters-only "Over-performing/Under-performing" row filter,
-// which hid whole rows by team without showing why, hence "removed" instead
-// of kept: this is a plain visibility toggle on the badge itself instead.
+// ▲/▼/– team O/U-performance badge is always shown now (used by both Scores
+// (teamHalf/scoreStacked) and All Batters (teamCell)) — the old show/hide
+// toggle was removed, this stays a plain module-level constant-ish flag so
+// the render call sites don't need to change.
 let showOuBadge = true;
-function toggleOuBadge(){
-  showOuBadge = !showOuBadge;
-  const el = document.getElementById('scores-oubadge-btn');
-  if(el) el.classList.toggle('amber', showOuBadge);
-  renderActiveTab();
-}
-let scoresSort = 'time'; // 'time' | 'rating' | 'diff'
-// three mutually-exclusive sort chips share one active-button toggle
-// instead of each hardcoding "add mine, remove the other two".
+let scoresSort = 'time'; // 'time' | 'diff'
+// two mutually-exclusive sort chips share one active-button toggle instead
+// of each hardcoding "add mine, remove the other one". 'rating' (Best Lean)
+// and 'diff' (Matchup Diff) used to be separate sort modes; merged into one
+// "Matchup Level" chip using the 'diff' (most-lopsided-either-direction)
+// ranking, since it's a superset of what Best Lean surfaced.
 function _setScoresSortBtn(el){
-  ['scores-sort-time','scores-sort-rating','scores-sort-diff'].forEach(id=>{
+  ['scores-sort-time','scores-sort-level'].forEach(id=>{
     document.getElementById(id)?.classList.toggle('amber', document.getElementById(id)===el);
   });
+}
+// 1 = normal order for the active sort (earliest time first / most lopsided
+// first), -1 = reversed (latest time first / most neutral first) — a single
+// direction flag applied as a multiplier in the comparator, rather than a
+// literal A-Z/Z-A since the sort keys (time, lopsidedness) aren't alphabetic.
+let scoresSortDir = 1;
+function _setScoresSortDirBtn(){
+  const el = document.getElementById('scores-sort-dir');
+  if(!el) return;
+  el.textContent = scoresSortDir === 1 ? '▼' : '▲';
+  el.classList.toggle('amber', scoresSortDir === -1);
 }
 let scoresLiveOnly = false;
 let scoresUpcoming = false;
@@ -5125,16 +5171,11 @@ function _renderScoresInner() {
       const pitScore  = {A:0,B:1,C:2,D:3,F:4}[pitchGrade] ?? 2;
       return offScore + pitScore;
     }
-    if(scoresSort === 'rating') {
-      return gameScore(b[1]) - gameScore(a[1]);
-    }
     if(scoresSort === 'diff') {
-      // most lopsided matchups first, either direction (STRONG or AVOID) —
-      // different from Best Lean, which only ranks STRONG-favoring games
-      // first (AVOID sinks to the bottom there). Same gameScore()/delta-
-      // from-neutral math as the lean badges themselves (score 0-8, 4 is
-      // neutral), just ranked by |delta| instead of raw value.
-      return Math.abs(gameScore(b[1])-4) - Math.abs(gameScore(a[1])-4);
+      // most lopsided matchups first, either direction (STRONG or AVOID).
+      // Same gameScore() math as the lean badges themselves (score 0-8, 4
+      // is neutral), ranked by |delta| from neutral instead of raw value.
+      return scoresSortDir * (Math.abs(gameScore(b[1])-4) - Math.abs(gameScore(a[1])-4));
     }
     function timeVal(t){
       if(!t) return 9999;
@@ -5145,7 +5186,7 @@ function _renderScoresInner() {
       if(!pm && h===12) h=0;
       return h*60+min;
     }
-    return timeVal(a[1][0]?.startTime) - timeVal(b[1][0]?.startTime);
+    return scoresSortDir * (timeVal(a[1][0]?.startTime) - timeVal(b[1][0]?.startTime));
   });
 
   if(!games.length) {
@@ -5211,8 +5252,6 @@ function _renderScoresAllBattersInner() {
   const cols = [
     ['Pick',   null,                                                   'center', null, 'Add or remove this batter from your bet slip'],
     ['Scr',    l => Math.round((l.p||0)*100),                          'right',   l => dotCol(l.p||0), 'Model probability of ≥1 hit tonight. Dark green ≥75%, green ≥68%, amber ≥55%, red below'],
-    ['Multi',  l => pct(l.pMultihit),                                  'right',   l => hiLoCol(l.pMultihit,.28,.15), 'Model probability of 2+ hits tonight — a separate, newer model (see calibration_multihit.png). Green ≥28%, red ≤15%. League base rate is ~20%'],
-    ['H+R+RBI',l => pct(l.pHrRbi),                                    'right',   l => hiLoCol(l.pHrRbi,.50,.35), 'Model probability of combined hits+runs+RBI ≥ 2 tonight — a separate model (see calibration_hrrbi.png). Green ≥50%, red ≤35%. League base rate is ~43%'],
     ['#',      l => l.slot||'',                                        'center', null, 'Batting order slot (1-9)'],
     ['Team',   null,                                                   'center', null, "Batter's team"],
     ['Name',   null,                                                   'left', null, 'Batter name, colored by score tier — click to expand full detail'],
@@ -5238,8 +5277,10 @@ function _renderScoresAllBattersInner() {
     ['P.HH%',  l => pct(l.pHH),                                        'right',   l => l.pHH==null||isNaN(l.pHH) ? 'var(--sage)' : (l.pHH*100)>=44 ? 'var(--bad)' : (l.pHH*100)<=30 ? 'var(--good)' : 'var(--chalk)', 'Hard-hit rate the pitcher allows. Lower is better for the pitcher (worse for the batter) — green ≤30% allowed, red ≥44% allowed'],
     ['P.Rest', l => l.pDaysRest??'—',                                  'right',   l => pRestCol(l.pDaysRest), "Days since the pitcher's last outing. Amber if ≤2d (short rest — bullpen arm or opener) or ≥18d (possible IL return); otherwise normal rotation rest"],
     ['P.Rk',   l => l.pIsRookie?'Y':'',                                'center', null, "Pitcher is a rookie this season (Y = yes) — informational only, not good or bad"],
+    ['Multi',  l => pct(l.pMultihit),                                  'right',   l => hiLoCol(l.pMultihit,.28,.15), 'Model probability of 2+ hits tonight — a separate, newer model (see calibration_multihit.png). Green ≥28%, red ≤15%. League base rate is ~20%'],
+    ['HRR',    l => pct(l.pHrRbi),                                    'right',   l => hiLoCol(l.pHrRbi,.50,.35), 'Model probability of combined hits+runs+RBI ≥ 2 tonight — a separate model (see calibration_hrrbi.png). Green ≥50%, red ≤35%. League base rate is ~43%'],
   ];
-  const thead = `<tr>${cols.map(([lbl,,align,,tip])=>`<th style="text-align:${align};cursor:help" title="${esc(tip||'')}">${lbl}</th>`).join('')}</tr>`;
+  const thead = `<tr>${cols.map(([lbl,,align,,tip])=>`<th class="${lbl==='Name'?'col-name':''}" style="text-align:${align};cursor:help" title="${esc(tip||'')}">${lbl}</th>`).join('')}</tr>`;
   const tbody = rows.map(l => {
     const noHit = isFinal(l.gameState) && !l.hasHit;
     const subbedTag = battingStatus(l)==='subbed';
@@ -5248,7 +5289,7 @@ function _renderScoresAllBattersInner() {
     const teamCell = `<td style="text-align:center;white-space:nowrap">${l.team?`${ouBadge}<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}</td>`;
     const pTeam = pitcherTeam(l);
     const pTeamCell = `<td style="text-align:center">${pTeam?`<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(pTeam)}">${esc(pTeam)}</span>`:''}</td>`;
-    const nameCell = `<td style="text-align:left;cursor:${l.batterId?'pointer':'default'}" ${l.batterId?`onclick="goToBatter('${l.batterId}','${l.gamePk||''}')"`:''}>
+    const nameCell = `<td class="col-name" style="text-align:left;cursor:${l.batterId?'pointer':'default'}" ${l.batterId?`onclick="goToBatter('${l.batterId}','${l.gamePk||''}')"`:''}>
       <span style="color:${dotCol(l.p||0)};${l.hasHit?'text-decoration:line-through;opacity:.45':''}">${esc(l.name)}</span>
       ${subbedTag?'<span title="Subbed out of the game — no more plate appearances" style="color:var(--sage);opacity:.85;font-size:8px;margin-left:5px">SUBBED</span>':noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
     </td>`;
@@ -5258,6 +5299,282 @@ function _renderScoresAllBattersInner() {
   el.innerHTML = `<div class="card" style="overflow-x:auto;padding:0">
     <table class="allbatters-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>
   </div>`;
+}
+
+// ── performance tab (awards page) ───────────────────────────────────────────
+// Independent data layer from History's historyRows/parseLogCSV() below —
+// that parser dedupes by (date, name) and drops game_pk/actual_multihit/
+// actual_hrRbi/p_multihit/p_hrRbi entirely, which this tab needs. Fetches
+// its own copies of picks_log.csv and the new pitcher_history.csv instead.
+let perfWindow = 'week'; // 'week' | 'month' — rolling N days from today, not calendar week/month
+let perfBatterRows = null;  // null = not yet loaded; [] = loaded but empty
+let perfPitcherRows = null;
+
+function parsePerfBatterCSV(text) {
+  const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+  if(lines.length < 2) return [];
+  const head = lines[0].split(',').map(h => h.trim().toLowerCase());
+  const idx = k => head.findIndex(h => h === k);
+  const iDate=idx('date'), iGamePk=idx('game_pk'), iBatter=idx('batter'), iName=idx('name'),
+        iTeam=idx('team'), iMatchup=idx('matchup'), iActual=idx('actual_hit'),
+        iActualMulti=idx('actual_multihit'), iActualHrRbi=idx('actual_hrrbi');
+  // dedupe by (game_pk, batter) — the settle.py keying convention this
+  // project locked in after a real data-corruption bug (see settle.py's
+  // docstring / tests/test_settle_keying.py), NOT (date, name) like
+  // parseLogCSV() below.
+  const map = new Map();
+  lines.slice(1).forEach(line => {
+    const c = line.split(',').map(v => v.trim());
+    const name = c[iName] || ''; if(!name) return;
+    const gamePk = c[iGamePk] || '', batter = c[iBatter] || '';
+    map.set(gamePk + '|' + batter, {
+      date: c[iDate] || '', gamePk, batter, name,
+      team: c[iTeam] || '', matchup: c[iMatchup] || '',
+      actual:      (c[iActual]      || '').trim(),
+      actualMulti: (c[iActualMulti] || '').trim(),
+      actualHrRbi: (c[iActualHrRbi] || '').trim(),
+    });
+  });
+  return [...map.values()];
+}
+
+function parsePitcherHistCSV(text) {
+  const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+  if(lines.length < 2) return [];
+  const head = lines[0].split(',').map(h => h.trim().toLowerCase());
+  const idx = k => head.findIndex(h => h === k);
+  const iDate=idx('game_date'), iGamePk=idx('game_pk'), iPid=idx('pitcher_id'), iName=idx('pitcher_name'),
+        iTeam=idx('team'), iRole=idx('role'), iBf=idx('bf'), iKs=idx('ks'), iBbs=idx('bbs'),
+        iHH=idx('hardhit_allowed'), iCsw=idx('csw'), iPitches=idx('pitches');
+  return lines.slice(1).map(line => {
+    const c = line.split(',').map(v => v.trim());
+    const name = c[iName] || ''; if(!name) return null;
+    const hh = parseFloat(c[iHH]);
+    return {
+      date: c[iDate] || '', gamePk: c[iGamePk] || '', pitcherId: c[iPid] || '', name,
+      team: c[iTeam] || '', role: (c[iRole] || 'RP') === 'SP' ? 'SP' : 'RP',
+      bf: parseFloat(c[iBf]) || 0, ks: parseFloat(c[iKs]) || 0, bbs: parseFloat(c[iBbs]) || 0,
+      hh: isNaN(hh) ? null : hh,
+      csw: parseFloat(c[iCsw]) || 0, pitches: parseFloat(c[iPitches]) || 0,
+    };
+  }).filter(Boolean);
+}
+
+function loadPerformanceTab() {
+  if(perfBatterRows && perfPitcherRows) { renderPerformanceTab(); return; }
+  const notice = document.getElementById('perf-notice');
+  if(notice) notice.textContent = 'Loading…';
+  Promise.all([
+    fetch('./picks_log.csv?t='+Date.now()).then(r => r.ok ? r.text() : '').catch(() => ''),
+    fetch('./pitcher_history.csv?t='+Date.now()).then(r => r.ok ? r.text() : '').catch(() => ''),
+  ]).then(([batterText, pitcherText]) => {
+    perfBatterRows = batterText ? parsePerfBatterCSV(batterText) : [];
+    perfPitcherRows = pitcherText ? parsePitcherHistCSV(pitcherText) : [];
+    renderPerformanceTab();
+  });
+}
+
+function setPerfWindow(w) {
+  perfWindow = w;
+  document.getElementById('perf-win-week').classList.toggle('amber', w === 'week');
+  document.getElementById('perf-win-month').classList.toggle('amber', w === 'month');
+  renderPerformanceTab();
+}
+
+function _perfCutoff(days) {
+  const d = new Date(); d.setDate(d.getDate() - days);
+  return d.toLocaleDateString('en-CA'); // same "today" convention used elsewhere in this file
+}
+
+// Hot streak needs each batter's FULL chronological actual_hit sequence (not
+// window-filtered) so a streak that started before the window boundary isn't
+// artificially truncated — only batters who picked within the window are
+// shown, matching whatever recency the user has selected. Deliberately not
+// streakHits()/streakBadge() above (those read the live-slate-only `last5`
+// string field, shaped for "today's snapshot", not a historical date
+// sequence spanning many logged days).
+function _perfHotStreaks(cutoff) {
+  const byBatter = new Map();
+  perfBatterRows.forEach(r => {
+    if(r.actual !== '0' && r.actual !== '1') return; // settled rows only
+    const key = r.batter || r.name.toLowerCase();
+    if(!byBatter.has(key)) byBatter.set(key, []);
+    byBatter.get(key).push(r);
+  });
+  const out = [];
+  byBatter.forEach(rows => {
+    rows.sort((a, b) => a.date.localeCompare(b.date) || a.gamePk.localeCompare(b.gamePk));
+    const last = rows[rows.length - 1];
+    if(last.date < cutoff) return; // not active in the selected window
+    let streak = 0;
+    for(let i = rows.length - 1; i >= 0; i--) {
+      if(rows[i].actual === '1') streak++; else break;
+    }
+    if(streak >= 2) out.push({ name: last.name, team: last.team, value: streak });
+  });
+  return out.sort((a, b) => b.value - a.value);
+}
+
+function _perfGroupBatters(rows) {
+  const g = new Map();
+  rows.forEach(r => {
+    const key = r.batter || r.name.toLowerCase();
+    if(!g.has(key)) g.set(key, { name: r.name, team: r.team, hits: 0, multi: 0, hrRbi: 0, settled: 0 });
+    const e = g.get(key);
+    e.team = r.team || e.team;
+    if(r.actual === '1') { e.hits++; e.settled++; }
+    else if(r.actual === '0') { e.settled++; }
+    if(r.actualMulti === '1') e.multi++;
+    if(r.actualHrRbi === '1') e.hrRbi++;
+  });
+  return [...g.values()];
+}
+
+function _perfGroupPitchers(rows) {
+  const g = new Map();
+  rows.forEach(r => {
+    const key = r.pitcherId || r.name.toLowerCase();
+    if(!g.has(key)) g.set(key, { name: r.name, team: r.team, starts: 0, ks: 0, bbs: 0, csw: 0, pitches: 0, hhSum: 0, hhN: 0 });
+    const e = g.get(key);
+    e.team = r.team || e.team;
+    e.starts++; e.ks += r.ks; e.bbs += r.bbs; e.csw += r.csw; e.pitches += r.pitches;
+    if(r.hh != null) { e.hhSum += r.hh * r.bf; e.hhN += r.bf; }
+  });
+  return [...g.values()].map(e => ({
+    ...e,
+    cswPct: e.pitches > 0 ? e.csw / e.pitches : null,
+    kbb: e.ks / (e.bbs + 0.5), // +0.5 smoothing so a zero-walk start doesn't divide by zero
+    hhPct: e.hhN > 0 ? e.hhSum / e.hhN : null,
+  }));
+}
+
+function _perfFmtPct(v, d) { return v == null || isNaN(v) ? '—' : (v * 100).toFixed(d ?? 0) + '%'; }
+
+function _awardRankHtml(entries, fmt) {
+  const top = entries.slice(0, 3);
+  if(!top.length) return '<div class="perf-empty">Not enough settled data yet</div>';
+  return top.map((e, i) => `
+    <div class="perf-rank${i === 0 ? ' perf-rank1 pick-glow' : ''}">
+      <span class="perf-rank-name"><span class="perf-medal">${['🥇','🥈','🥉'][i]}</span>${e.team ? `<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(e.team)}">${esc(e.team)}</span>` : ''} ${esc(e.name)}</span>
+      <span class="perf-rank-val">${fmt(e)}</span>
+    </div>`).join('');
+}
+
+function _perfAwardTile(label, icon, entries, fmt) {
+  return `<div class="perf-award">
+    <div class="perf-award-lbl">${icon} ${esc(label)}</div>
+    ${_awardRankHtml(entries, fmt)}
+  </div>`;
+}
+
+function _perfBattersCard(bRows, cutoff, minBatter) {
+  const grouped = _perfGroupBatters(bRows);
+  const hotStreaks = _perfHotStreaks(cutoff);
+  const mostHits = [...grouped].filter(e => e.settled > 0).sort((a, b) => b.hits - a.hits);
+  const multiMachine = [...grouped].filter(e => e.multi > 0).sort((a, b) => b.multi - a.multi);
+  const powerHitter = [...grouped].filter(e => e.hrRbi > 0).sort((a, b) => b.hrRbi - a.hrRbi);
+  const bestAvg = [...grouped].filter(e => e.settled >= minBatter)
+    .map(e => ({ ...e, avg: e.hits / e.settled })).sort((a, b) => b.avg - a.avg);
+  return `<div class="card" style="margin-top:14px">
+    <h2>Top Batters</h2>
+    <div class="perf-award-grid">
+      ${_perfAwardTile('Longest Active Hit Streak', '🔥', hotStreaks, e => e.value + ' games')}
+      ${_perfAwardTile('Most Games With a Hit', '🎯', mostHits, e => e.hits)}
+      ${_perfAwardTile('Most 2+ Hit Games', '⚡', multiMachine, e => e.multi)}
+      ${_perfAwardTile('Most Games With H+R+RBI ≥ 2 (HRR)', '💪', powerHitter, e => e.hrRbi)}
+      ${_perfAwardTile(`Best Hit Rate (min ${minBatter} picks)`, '🏆', bestAvg, e => _perfFmtPct(e.avg))}
+    </div>
+  </div>`;
+}
+
+// SP and RP stat lines aren't comparable (a 1-inning relief appearance vs a
+// 5-6 inning start), so these always get separate cards/leaderboards, never
+// pooled together — same reasoning as offGrade()/pGrade elsewhere treating
+// starters and relievers as different animals.
+function _perfPitchersCard(title, unit, pRows, minPitcher) {
+  const grouped = _perfGroupPitchers(pRows);
+  const bestCsw = grouped.filter(e => e.starts >= minPitcher && e.cswPct != null).sort((a, b) => b.cswPct - a.cswPct);
+  const bestKbb = grouped.filter(e => e.starts >= minPitcher).sort((a, b) => b.kbb - a.kbb);
+  const stingiest = grouped.filter(e => e.starts >= minPitcher && e.hhPct != null).sort((a, b) => a.hhPct - b.hhPct);
+  const minLbl = `min ${minPitcher} ${unit}${minPitcher>1?'s':''}`;
+  return `<div class="card" style="margin-top:14px">
+    <h2>${esc(title)}</h2>
+    <div class="perf-award-grid">
+      ${_perfAwardTile(`Best Called-Strike + Whiff Rate — CSW% (${minLbl})`, '🎯', bestCsw, e => _perfFmtPct(e.cswPct))}
+      ${_perfAwardTile(`Best Strikeout-to-Walk Ratio — K/BB (${minLbl})`, '⚔️', bestKbb, e => e.kbb.toFixed(2))}
+      ${_perfAwardTile(`Lowest Hard-Hit Rate Allowed (${minLbl})`, '🛡️', stingiest, e => _perfFmtPct(e.hhPct))}
+    </div>
+  </div>`;
+}
+
+function _perfTeamsCard(bRows, pRows, minTeam) {
+  const off = new Map(), pit = new Map();
+  bRows.forEach(r => {
+    if(!r.team) return;
+    if(!off.has(r.team)) off.set(r.team, { hits: 0, settled: 0, multi: 0 });
+    const e = off.get(r.team);
+    if(r.actual === '1') { e.hits++; e.settled++; } else if(r.actual === '0') { e.settled++; }
+    if(r.actualMulti === '1') e.multi++;
+  });
+  pRows.forEach(r => {
+    if(!r.team) return;
+    if(!pit.has(r.team)) pit.set(r.team, { csw: 0, pitches: 0, starts: 0 });
+    const e = pit.get(r.team);
+    e.csw += r.csw; e.pitches += r.pitches; e.starts++;
+  });
+  const bestOffense = [...off.entries()].filter(([, e]) => e.settled >= minTeam)
+    .map(([team, e]) => ({ name: team, team, value: e.hits / e.settled }))
+    .sort((a, b) => b.value - a.value);
+  const bestPower = [...off.entries()].filter(([, e]) => e.settled >= minTeam)
+    .map(([team, e]) => ({ name: team, team, value: e.multi / e.settled }))
+    .sort((a, b) => b.value - a.value);
+  // team-pitching-staff floor is scaled off start count, not pick count —
+  // a separate, smaller sample than the batter-side minTeam (tunable).
+  const minStaffStarts = minTeam / 4;
+  const bestStaff = [...pit.entries()].filter(([, e]) => e.starts >= minStaffStarts && e.pitches > 0)
+    .map(([team, e]) => ({ name: team, team, value: e.csw / e.pitches }))
+    .sort((a, b) => b.value - a.value);
+  return `<div class="card" style="margin-top:14px">
+    <h2>Team Leaderboards</h2>
+    <div class="perf-award-grid">
+      ${_perfAwardTile(`Best Team Hit Rate — Offense (min ${minTeam} picks)`, '🏟️', bestOffense, e => _perfFmtPct(e.value))}
+      ${_perfAwardTile(`Best Team 2+ Hit Rate — Power (min ${minTeam} picks)`, '💥', bestPower, e => _perfFmtPct(e.value))}
+      ${_perfAwardTile(`Best Team CSW% — Pitching Staff (min ${minStaffStarts} outings)`, '🛡️', bestStaff, e => _perfFmtPct(e.value))}
+    </div>
+  </div>`;
+}
+
+function renderPerformanceTab() {
+  const el = document.getElementById('perf-body');
+  if(!el) return;
+  if(!perfBatterRows) { el.innerHTML = '<div class="card" style="margin-top:14px"><div class="empty">Loading…</div></div>'; return; }
+
+  const days = perfWindow === 'week' ? 7 : 30;
+  const cutoff = _perfCutoff(days);
+  const bRows = perfBatterRows.filter(r => r.date >= cutoff);
+  const pRows = perfPitcherRows.filter(r => r.date >= cutoff);
+  const spRows = pRows.filter(r => r.role === 'SP');
+  const rpRows = pRows.filter(r => r.role === 'RP');
+  const minBatter = perfWindow === 'week' ? 5 : 12;
+  const minTeam   = perfWindow === 'week' ? 20 : 60;
+  // SP appearances are naturally scarce (~1/5 games each), RP appearances
+  // are much more frequent per pitcher — separate floors so RP awards
+  // aren't gated by a threshold sized for starters, and vice versa.
+  const minSP = perfWindow === 'week' ? 1 : 3;
+  const minRP = perfWindow === 'week' ? 2 : 6;
+
+  const notice = document.getElementById('perf-notice');
+  if(notice) notice.textContent = `${bRows.length} batter picks · ${spRows.length} SP outings · ${rpRows.length} RP outings in window`;
+
+  if(!perfBatterRows.length && !perfPitcherRows.length) {
+    el.innerHTML = '<div class="card" style="margin-top:14px"><div class="empty">No data yet — run live_slate.py / backfill_pitcher_history.py to generate picks_log.csv and pitcher_history.csv.</div></div>';
+    return;
+  }
+
+  el.innerHTML = _perfBattersCard(bRows, cutoff, minBatter)
+    + _perfPitchersCard('Top Starters (SP)', 'start', spRows, minSP)
+    + _perfPitchersCard('Top Relievers (RP)', 'appearance', rpRows, minRP)
+    + _perfTeamsCard(bRows, pRows, minTeam);
 }
 
 // ── history tab ───────────────────────────────────────────────────────────────
