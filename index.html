@@ -457,17 +457,27 @@
      longer adjacent to the (hidden) side-wrap rows above it. */
   .gamecard-collapsible.collapsed>.gm-footer{border-top:1px solid var(--line)}
   .gamecard-collapsible.collapsed>*:not(.gm-header):not(.gm-footer){display:none!important}
-  .gm-footer-cell{display:flex;align-items:center;justify-content:center;gap:12px}
-  /* @container, not @media — these are all about how much room this specific
-     card has, not the browser viewport (see .card{container-type} above and
-     the wide-tab multi-column grid this makes safe). */
-  @container(max-width:480px){.gm-footer-cell{flex-direction:column;gap:4px}}
-  .mu-chip{display:flex;flex-direction:column;align-items:center;gap:6px}
-  .mu-bar-wrap{width:100%;max-width:150px}
-  @container(min-width:420px){
-    .mu-chip{flex-direction:row;gap:14px}
-    .mu-bar-wrap{width:150px}
+  /* .gm-footer-cell is its own size container (not just .card above) —
+     each cell is one team's HALF of the card (away/home split side by
+     side), so sizing its internals off the whole card's width (the old
+     behavior) meant a 2-column grid's ~870px card read as "plenty of
+     room" and switched everything to a wide row layout, when each actual
+     cell only had ~420px to work with. That's what was clipping "🔥
+     STRONG" and the eval-result text against the card edge. Compact pass
+     2026-07-10: smaller bar, tighter gaps/fonts, and an ellipsis safety
+     net (min-width:0 is required for the ellipsis to actually engage on a
+     flex child instead of just overflowing) so a genuinely tight cell
+     truncates cleanly instead of hard-clipping mid-word. */
+  .gm-footer-cell{display:flex;align-items:center;justify-content:center;gap:6px;container-type:inline-size;min-width:0}
+  @container(max-width:230px){.gm-footer-cell{flex-direction:column;gap:3px}}
+  .mu-chip{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+  .mu-bar-wrap{width:100%;max-width:100px}
+  @container(min-width:190px){
+    .mu-chip{flex-direction:row;gap:8px}
+    .mu-bar-wrap{width:100px}
   }
+  .mu-lean-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:64px}
+  .gm-eval-cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
   /* Compact mode's footer cells are always narrower (2-3 per row grid), so
      stack the lean chip above the eval result unconditionally, not just on
      narrow viewports like .gm-footer-cell does */
@@ -4936,10 +4946,10 @@ function buildScoreCard(matchup, batters, betKeys) {
             <div style="height:100%;width:${avgPct}%;background:${avgBarCol};border-radius:2px;box-shadow:0 0 8px ${avgBarCol}66"></div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:6px">
-          <span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;color:${mu.col}">${mu.lbl}</span>
-          <span style="font-family:var(--mono);font-size:11px;font-weight:900;color:${deltaCol};background:${deltaCol==='var(--sage)'?'rgba(120,120,130,.1)':deltaCol==='var(--good)'?'rgba(178,208,126,.12)':'rgba(218,110,81,.12)'};border:1px solid ${deltaCol}33;border-radius:5px;padding:0 6px;line-height:18px">${sign}${mu.delta}</span>
-          <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${mu.score}/8</span>
+        <div style="display:flex;align-items:center;justify-content:center;gap:4px;min-width:0">
+          <span class="mu-lean-lbl" style="font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.3px;color:${mu.col}" title="${esc(mu.lbl)}">${mu.lbl}</span>
+          <span style="font-family:var(--mono);font-size:10px;font-weight:900;color:${deltaCol};background:${deltaCol==='var(--sage)'?'rgba(120,120,130,.1)':deltaCol==='var(--good)'?'rgba(178,208,126,.12)':'rgba(218,110,81,.12)'};border:1px solid ${deltaCol}33;border-radius:4px;padding:0 4px;line-height:16px;flex:none">${sign}${mu.delta}</span>
+          <span style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.7;flex:none">${mu.score}/8</span>
         </div>
       </div>`;
     }
@@ -4956,8 +4966,8 @@ function buildScoreCard(matchup, batters, betKeys) {
                       (lbl==='NEUTRAL' && hr>=0.45 && hr<0.65)||(lbl==='AVOID' && hr<0.50);
       const icon = correct ? '✓' : '✗';
       const col  = correct ? 'var(--good)' : '#f87171';
-      return `<div style="font-family:var(--mono);font-size:9px;display:flex;align-items:center;gap:5px">
-        <span style="color:${col};font-weight:700;font-size:11px">${icon}</span>
+      return `<div class="gm-eval-cell" style="font-family:var(--mono);font-size:8px;display:flex;align-items:center;gap:4px" title="${hits}/${settled.length} got hits (${hrPct}%)">
+        <span style="color:${col};font-weight:700;font-size:10px;flex:none">${icon}</span>
         <span style="color:var(--chalk)">${hits}/${settled.length} got hits</span>
         <span style="color:var(--sage)">(${hrPct}%)</span>
       </div>`;
