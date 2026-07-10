@@ -4055,7 +4055,8 @@ function _currentBankroll(){
   return BANK_START + (totalWon - totalLost);
 }
 
-function renderBetsTab(){
+function renderBetsTab(){ _scrollPreserved(_renderBetsTabInner); }
+function _renderBetsTabInner(){
   const cardsEl = document.getElementById('bets-cards');
   const sumEl   = document.getElementById('bets-summary');
   if(!cardsEl) return;
@@ -4296,22 +4297,29 @@ _sb.auth.getSession().then(({data})=>{
   // else: leave #auth-gate visible, _bootApp() doesn't run until sign-in
 });
 
+// full innerHTML rebuilds of a tab's content run on every ~30s live-poll
+// tick AND on plenty of direct clicks that don't go through
+// renderActiveTab at all — mobile side tabs, sort/filter chips, the pin
+// toggle, settle/edit/delete flows, etc. Mobile Safari doesn't reliably
+// keep scroll position through a big innerHTML swap and jumps to the top,
+// so wrapping renderActiveTab alone wasn't enough (real bug reported
+// 2026-07-10, twice — first on live-poll refresh, then again on tapping a
+// team's lineup tab). Wrapping each render function itself instead covers
+// every call site uniformly. 0 is left alone since there's nothing to
+// restore (and it'd be a no-op anyway).
+function _scrollPreserved(fn){
+  const y = window.scrollY;
+  fn();
+  if(y > 0) requestAnimationFrame(() => window.scrollTo(0, y));
+}
+
 // ── tab switching ─────────────────────────────────────────────────────────────
 function renderActiveTab() {
-  // full innerHTML rebuilds below run on every ~30s live-poll tick, not
-  // just on an explicit tab switch — mobile Safari doesn't reliably keep
-  // scroll position through a big innerHTML swap and jumps to the top,
-  // which meant losing your place mid-game every poll cycle (real bug
-  // reported 2026-07-10). Restore it after layout settles instead of
-  // leaving the jump in place; 0 is left alone since there's nothing to
-  // restore (and it'd be a no-op anyway).
-  const _scrollY = window.scrollY;
   if(currentTab==='scores') renderScores();
   else if(currentTab==='allbatters') renderScoresAllBatters();
   else if(currentTab==='bets') renderBetsTab();
-  else { render(); if(_scrollY>0) requestAnimationFrame(()=>window.scrollTo(0,_scrollY)); return; } // history/about have no dedicated builder; render() already calls renderSlip() itself
+  else { render(); return; } // history/about have no dedicated builder; render() already calls renderSlip() itself
   renderSlip(); // keep the bet slip drawer current regardless of which tab is active
-  if(_scrollY > 0) requestAnimationFrame(() => window.scrollTo(0, _scrollY));
 }
 // ── batter popup — the single place a batter's full card lives now (replaces
 // the old Tonight tab). Opened by name/row clicks from every Scores density
@@ -5021,7 +5029,8 @@ function buildScoreCard(matchup, batters, betKeys) {
   }
 
 
-function renderScores() {
+function renderScores(){ _scrollPreserved(_renderScoresInner); }
+function _renderScoresInner() {
   const el = document.getElementById('scores-grid');
   if(!el) return;
   if(!legs.length) {
@@ -5113,7 +5122,8 @@ function renderScores() {
 // reuses the same slotVisible() filter conditions plus the over/under team filter
 // ── All Batters: a real spreadsheet — every stat field as its own column,
 // no chips/badges/gimmicks. Fixed sort by score descending.
-function renderScoresAllBatters() {
+function renderScoresAllBatters(){ _scrollPreserved(_renderScoresAllBattersInner); }
+function _renderScoresAllBattersInner() {
   const el = document.getElementById('allbatters-grid');
   if(!el) return;
   if(!legs.length) {
