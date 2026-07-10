@@ -3480,14 +3480,28 @@ function autoSettleBets(){
   }
 }
 
+// settled bets (won/lost/void) default to collapsed on render — nothing
+// left to watch, no reason to take up the same space as a bet still in
+// play — while pending bets still default open. _betCardExpanded is the
+// explicit override: click a settled card open and it stays open across
+// re-renders (frequent, every ~30s live-poll tick) until collapsed again,
+// same as _betCardCollapsed already did for the opposite direction.
 const _betCardCollapsed = new Set();
+const _betCardExpanded = new Set();
 function toggleBetCard(id){
-  if(_betCardCollapsed.has(id)) _betCardCollapsed.delete(id);
-  else _betCardCollapsed.add(id);
   const body = document.getElementById('bc-body-'+id);
   const chev = document.getElementById('bc-chev-'+id);
-  if(body) body.style.display = _betCardCollapsed.has(id) ? 'none' : '';
-  if(chev) chev.textContent = _betCardCollapsed.has(id) ? '▸' : '▾';
+  if(!body) return;
+  const wasCollapsed = body.style.display === 'none';
+  if(wasCollapsed){
+    _betCardCollapsed.delete(id);
+    _betCardExpanded.add(id);
+  } else {
+    _betCardExpanded.delete(id);
+    _betCardCollapsed.add(id);
+  }
+  body.style.display = wasCollapsed ? '' : 'none';
+  if(chev) chev.textContent = wasCollapsed ? '▾' : '▸';
 }
 
 // ---- pick history ----
@@ -3869,7 +3883,9 @@ function _betCardHtml(b, opts){
     ? `<div style="padding:4px 12px;border-top:1px solid var(--line)"><button class="ghost" style="font-size:9px;padding:2px 6px;opacity:.35" onclick="settleBet(${b.id},'pending')">reopen</button></div>`
     : '';
 
-  const collapsed = _betCardCollapsed.has(b.id);
+  // default: settled bets start collapsed, pending bets start open —
+  // either can be overridden by an explicit click (see toggleBetCard).
+  const collapsed = _betCardExpanded.has(b.id) ? false : (_betCardCollapsed.has(b.id) || !storedPending);
   const bodyDisplay = collapsed ? 'none' : '';
   const chevron = collapsed ? '▸' : '▾';
 
