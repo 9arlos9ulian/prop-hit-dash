@@ -3078,6 +3078,7 @@ async function _fetchGameStatusByPk(gamePks){
           half: ld.inningHalf||'', outs: ld.outs||0,
           inningState: ld.inningState||'',
           isLive: absState==='live', isFinal: absState==='final',
+          detailedState: g.status?.detailedState || '',
           awayR: ld.teams?.away?.runs ?? null, homeR: ld.teams?.home?.runs ?? null,
         });
       }));
@@ -3444,7 +3445,16 @@ function autoSettleBets(){
         // (gamePk-keyed, far more reliable than the batter path's
         // name+date lookup) instead of the leg-pool lookup above
         const ls = bl.gamePk ? _liveLinescore.get(String(bl.gamePk)) : null;
-        if(!ls || !ls.isFinal){ allSettled=false; return; }
+        if(!ls){ allSettled=false; return; }
+        // a postponed game can come back with isFinal=true and a 0-0
+        // "score" (no game was ever played) — checked before isFinal/score
+        // math below, which would otherwise silently misread that 0-0 as a
+        // real result (e.g. every ml bet on the home team resolving 'lost'
+        // by default). Terminal regardless of isFinal, since a postponed
+        // game's original gamePk never gets more data (a makeup game is a
+        // new gamePk).
+        if(isPostponed(ls.detailedState)){ anyPpd=true; bl.outcome='ppd'; return; }
+        if(!ls.isFinal){ allSettled=false; return; }
         const [awayTeam, homeTeam] = (bl.matchup||'').split(' @ ').map(s=>s.trim());
         if(bl.betType==='ml'){
           const winner = (ls.homeR||0) > (ls.awayR||0) ? homeTeam : awayTeam;
@@ -3472,6 +3482,12 @@ function autoSettleBets(){
       const bid = bl.batterId ? String(bl.batterId) : null;
       if(gpk && bid){
         const ls = _liveLinescore.get(gpk);
+        // same postponed guard as the ml/ou branch above — without it, a
+        // postponed batter-prop leg just sits with hit===undefined forever
+        // (no boxscore will ever exist for that gamePk), so the whole bet
+        // never settles and quietly falls out of anything that expects
+        // pending bets to eventually resolve.
+        if(ls && isPostponed(ls.detailedState)){ anyPpd=true; bl.outcome='ppd'; return; }
         const hit = _liveBatterHit.get(gpk+'|'+bid);
         const subbedOut = _liveBatterSubbedOut.get(gpk+'|'+bid);
         if(hit === undefined){ allSettled=false; return; }
@@ -5829,6 +5845,7 @@ async function loadHistoricalScores(date){
         half:    ld.inningHalf || '',   outs:    ld.outs || 0,
         inningState: ld.inningState || '',
         isLive:  absState === 'live',   isFinal: absState === 'final',
+        detailedState: detailedState || '',
         onFirst:  !!ld.offense?.first, onSecond: !!ld.offense?.second, onThird: !!ld.offense?.third,
         awayH: ld.teams?.away?.hits ?? null,  homeH: ld.teams?.home?.hits ?? null,
         awayR: ld.teams?.away?.runs ?? null,  homeR: ld.teams?.home?.runs ?? null,
@@ -6837,6 +6854,7 @@ function canonMatchup(matchup){
             // showing the mirrored pregame strip until the game actually starts.
             isWarmup: absState === 'live' && !ld.currentInningOrdinal,
             isFinal: absState === 'final',
+            detailedState: g.status?.detailedState || '',
             onFirst:  !!ld.offense?.first,
             onSecond: !!ld.offense?.second,
             onThird:  !!ld.offense?.third,
@@ -6894,6 +6912,7 @@ function canonMatchup(matchup){
                 half: ld.inningHalf||'', outs: ld.outs||0,
                 inningState: ld.inningState||'',
                 isLive: absState==='live', isFinal: absState==='final',
+                detailedState: g.status?.detailedState || '',
               });
               const newState = absState==='final' ? (g.status?.detailedState||'Final') : absState==='live' ? 'In Progress' : '';
               if(newState) legs.forEach(l => { if(String(l.gamePk)===gpk) l.gameState=newState; });
