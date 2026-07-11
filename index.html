@@ -279,7 +279,12 @@
   #slip-fab-count{background:var(--amber);color:#000;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;min-width:18px;text-align:center;display:none}
   @keyframes slipBump{0%{transform:scale(1)}35%{transform:scale(1.5)}100%{transform:scale(1)}}
   #slip-fab-count.bump{animation:slipBump .35s ease}
-  #slip-drawer{position:fixed;bottom:0;right:24px;width:380px;max-height:82vh;background:var(--raised);border:1px solid var(--line);border-bottom:none;border-radius:14px 14px 0 0;box-shadow:0 -6px 40px rgba(0,0,0,.55);z-index:201;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+  /* closed state translates the box fully off-screen, but its own
+     box-shadow (blur 40px) still bled back up into view since the box's
+     top edge lands exactly at the viewport boundary — invisible in dark
+     mode (a near-black shadow over a near-black page) but obvious in
+     light mode. The extra +60px clears the shadow's blur radius too. */
+  #slip-drawer{position:fixed;bottom:0;right:24px;width:380px;max-height:82vh;background:var(--raised);border:1px solid var(--line);border-bottom:none;border-radius:14px 14px 0 0;box-shadow:0 -6px 40px rgba(0,0,0,.55);z-index:201;transform:translateY(calc(100% + 60px));transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
   #slip-drawer.drawer-open{transform:translateY(0)}
   #slip-drawer-handle{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 8px;border-bottom:1px solid var(--line);cursor:pointer;flex:none}
   #slip-drawer-handle:hover{background:rgba(var(--overlay-rgb),.03)}
@@ -314,7 +319,7 @@
      saved bet read-only when its pill is clicked — kept independent of
      #slip-drawer's open/close state so viewing a bet doesn't disturb
      whatever's being built in the main slip. */
-  #bet-pill-drawer{position:fixed;bottom:0;right:24px;width:380px;max-height:82vh;background:var(--raised);border:1px solid var(--line);border-bottom:none;border-radius:14px 14px 0 0;box-shadow:0 -6px 40px rgba(0,0,0,.55);z-index:203;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+  #bet-pill-drawer{position:fixed;bottom:0;right:24px;width:380px;max-height:82vh;background:var(--raised);border:1px solid var(--line);border-bottom:none;border-radius:14px 14px 0 0;box-shadow:0 -6px 40px rgba(0,0,0,.55);z-index:203;transform:translateY(calc(100% + 60px));transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
   #bet-pill-drawer.drawer-open{transform:translateY(0)}
   #bet-pill-drawer-handle{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 8px;border-bottom:1px solid var(--line);cursor:pointer;flex:none}
   #bet-pill-drawer-handle:hover{background:rgba(var(--overlay-rgb),.03)}
