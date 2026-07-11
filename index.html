@@ -534,12 +534,16 @@
     .gm-inning-box{display:flex!important}
     .gm-matchup-mid{align-items:center}
     /* match diamond+score's combined width with the inning box's, so the
-       two ends of the scoreboard bar are symmetric — 230px comfortably
-       fits real diamond+score content (observed 175-222px). Inning box
-       gets min-width (not width) so a wide extra-innings line score grid
-       can still grow past it instead of clipping/wrapping. */
-    .gm-left-group{width:230px}
-    .gm-inning-box{min-width:230px}
+       two ends of the scoreboard bar are symmetric. Was 230px (observed
+       175-222px at the time) but real content (diamond 106px + 1px divider
+       + score block ~131px with a moneyline +/pick-glow button showing)
+       measured up to ~238px — the fixed width was clipping the score block,
+       so its digits rendered underneath the next divider line instead of
+       to its left. Inning box gets min-width (not width) so a wide
+       extra-innings line score grid can still grow past it instead of
+       clipping/wrapping. */
+    .gm-left-group{width:255px}
+    .gm-inning-box{min-width:255px}
   }
   /* pregame top strip — mirrored two-team layout (see teamHalf() /
      scoreboardPregame in buildScoreCard). The center gutter sits symmetrically
