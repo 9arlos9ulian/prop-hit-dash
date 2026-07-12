@@ -5494,7 +5494,77 @@ function _renderScoresInner() {
 // ── All Batters mode: flat, filterable table of every batter today — no per-game grouping,
 // reuses the same slotVisible() filter conditions plus the over/under team filter
 // ── All Batters: a real spreadsheet — every stat field as its own column,
-// no chips/badges/gimmicks. Fixed sort by score descending.
+// no chips/badges/gimmicks. Click a header to sort by it (desc first, click
+// again to flip); shift-click adds it as an additional tie-break level on
+// top of whatever's already active (Excel-style multi-column sort).
+let allBattersSort = [{ label: 'Scr', dir: -1 }];
+
+function toggleAllBattersSort(label, additive) {
+  if(label === 'Pick') return;
+  const idx = allBattersSort.findIndex(s => s.label === label);
+  if(additive) {
+    if(idx >= 0) allBattersSort[idx].dir *= -1;
+    else allBattersSort.push({ label, dir: -1 });
+  } else {
+    if(idx === 0 && allBattersSort.length === 1) allBattersSort[0].dir *= -1;
+    else allBattersSort = [{ label, dir: -1 }];
+  }
+  renderScoresAllBatters();
+}
+
+// raw (unformatted) comparable value per column — kept separate from the
+// display `fn` in `cols` below since several of those format to strings
+// ('+3', '.312 (4)', etc.) that don't sort correctly as-is
+function _allBattersSortVal(label, l) {
+  const pitcherTeam = l => {
+    const [away,home] = (l.matchup||'').split(' @ ').map(s=>s.trim());
+    return l.team===away ? home : l.team===home ? away : '';
+  };
+  switch(label) {
+    case 'Scr':     return l.p ?? -Infinity;
+    case '3AB':     return l.bQuality3 ?? -Infinity;
+    case '#':       return l.slot ?? Infinity;
+    case 'Team':    return l.team || '';
+    case 'Name':    return l.name || '';
+    case 'AVG':     return l.bHitRate ?? -Infinity;
+    case 'xBA':     return l.bXba ?? -Infinity;
+    case 'HH%':     return l.bHH ?? -Infinity;
+    case 'BABIP':   return l.bBabip ?? -Infinity;
+    case 'vsL':     return l.vsL ?? -Infinity;
+    case 'vsR':     return l.vsR ?? -Infinity;
+    case 'Split':   return l.splitDiff ?? -Infinity;
+    case 'SP':      return l.bHitRateVsSp ?? -Infinity;
+    case 'RP':      return l.bHitRateVsRp ?? -Infinity;
+    case 'BvP':     return l.bvpAb ? l.bvpAvg : -Infinity;
+    case 'AB/G':    return l.bAvgAb ?? -Infinity;
+    case 'Rest':    return l.bDaysRest ?? -Infinity;
+    case 'Rk':      return l.bIsRookie ? 1 : 0;
+    case 'ParkF':   return l.parkFactor ?? -Infinity;
+    case 'P.Team':  return pitcherTeam(l);
+    case 'Pitcher': return l.pitcher || '';
+    case 'P.Grd':   return l.pGrade || '';
+    case 'P.CSW':   return l.pCsw ?? -Infinity;
+    case 'P.K/BB':  return l.pKbb ?? -Infinity;
+    case 'P.HH%':   return l.pHH ?? -Infinity;
+    case 'P.Rest':  return l.pDaysRest ?? -Infinity;
+    case 'P.Rk':    return l.pIsRookie ? 1 : 0;
+    case 'Multi':   return l.pMultihit ?? -Infinity;
+    case 'HRR':     return l.pHrRbi ?? -Infinity;
+    default:        return null;
+  }
+}
+
+function _allBattersCompare(a, b) {
+  for(const { label, dir } of allBattersSort) {
+    const av = _allBattersSortVal(label, a), bv = _allBattersSortVal(label, b);
+    const cmp = (typeof av === 'string' || typeof bv === 'string')
+      ? String(av).localeCompare(String(bv))
+      : (av ?? -Infinity) - (bv ?? -Infinity);
+    if(cmp) return cmp * dir;
+  }
+  return 0;
+}
+
 function renderScoresAllBatters(){ _scrollPreserved(_renderScoresAllBattersInner); }
 function _renderScoresAllBattersInner() {
   const el = document.getElementById('allbatters-grid');
@@ -5511,7 +5581,7 @@ function _renderScoresAllBattersInner() {
   }
   const rows = legs
     .filter(l => slotVisible(l))
-    .sort((a,b) => (b.p||0)-(a.p||0));
+    .sort(_allBattersCompare);
   if(!rows.length) {
     el.innerHTML = '<div class="card"><div class="empty">No batters match this filter.</div></div>';
     return;
@@ -5574,7 +5644,15 @@ function _renderScoresAllBattersInner() {
     ['Multi',  l => pct(l.pMultihit),                                  'right',   l => hiLoCol(l.pMultihit,.28,.15), 'Model probability of 2+ hits tonight — a separate, newer model (see calibration_multihit.png). Green ≥28%, red ≤15%. League base rate is ~20%'],
     ['HRR',    l => pct(l.pHrRbi),                                    'right',   l => hiLoCol(l.pHrRbi,.50,.35), 'Model probability of combined hits+runs+RBI ≥ 2 tonight — a separate model (see calibration_hrrbi.png). Green ≥50%, red ≤35%. League base rate is ~43%'],
   ];
-  const thead = `<tr>${cols.map(([lbl,,align,,tip])=>`<th class="${lbl==='Name'?'col-name':''}" style="text-align:${align};cursor:help" title="${esc(tip||'')}">${lbl}</th>`).join('')}</tr>`;
+  const thead = `<tr>${cols.map(([lbl,,align,,tip])=>{
+    const sortable = lbl !== 'Pick';
+    const sIdx = allBattersSort.findIndex(s => s.label === lbl);
+    const arrow = sIdx >= 0
+      ? `<span style="opacity:.7;font-size:8px;margin-left:2px">${allBattersSort[sIdx].dir===1?'▲':'▼'}${allBattersSort.length>1?`<sub>${sIdx+1}</sub>`:''}</span>`
+      : '';
+    const tipFull = esc(tip||'') + (sortable ? ' — click to sort, shift+click to add as a secondary sort' : '');
+    return `<th class="${lbl==='Name'?'col-name':''}" style="text-align:${align};cursor:${sortable?'pointer':'help'}" title="${tipFull}"${sortable?` onclick="toggleAllBattersSort('${lbl}', event.shiftKey)"`:''}>${lbl}${arrow}</th>`;
+  }).join('')}</tr>`;
   const tbody = rows.map(l => {
     const noHit = isFinal(l.gameState) && !l.hasHit;
     const subbedTag = battingStatus(l)==='subbed';
