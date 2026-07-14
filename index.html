@@ -2702,6 +2702,10 @@ function gameUrl(date, gamePk, matchup, gameState){
 }
 
 const TEAM_COLORS = {
+  // AL/NL — the All-Star Game roster's "team" is the league itself, not a
+  // real franchise (see get_slate()'s AL=159/NL=160 special-case in
+  // live_slate.py) — classic ASG red-vs-blue, not any single team's color.
+  AL: '#B8322E', NL: '#1E4B8E',
   ARI:'#8C1D40', AZ: '#8C1D40', ATL:'#CE1141', BAL:'#FC4C02', BOS:'#BD3039',
   CHC:'#0E3386', CWS:'#C4CED4', CHW:'#C4CED4', CIN:'#C6011F',
   CLE:'#E31937', COL:'#6B3FA0', DET:'#FA4616', HOU:'#EB6E1F',
@@ -4984,6 +4988,10 @@ function _findLiveScore(date, matchup, gamePk){
 // full per-game card, called from renderScores()'s map below
 function buildScoreCard(matchup, batters, betKeys) {
     const [awayTeam, homeTeam] = matchup.split(' @ ').map(s => s.trim());
+    // AL vs NL rosters (see live_slate.py's get_slate() AL=159/NL=160
+    // special-case) — an exhibition game, not two real franchises, gets its
+    // own festive banner below instead of the normal storyline tag.
+    const isAllStarGame = (awayTeam==='AL' && homeTeam==='NL') || (awayTeam==='NL' && homeTeam==='AL');
     const awaySide = batters.filter(l => l.team === awayTeam).sort((a,b)=>(a.slot||9)-(b.slot||9));
     const homeSide = batters.filter(l => l.team === homeTeam).sort((a,b)=>(a.slot||9)-(b.slot||9));
     const startTime  = batters[0]?.startTime  || '';
@@ -5388,9 +5396,11 @@ function buildScoreCard(matchup, batters, betKeys) {
     // for a while (seemed pointless once the card got the full desktop
     // layout), restored per feedback
     const collapsed = _isCardCollapsed(cardId);
-    return `<div class="card gamecard-collapsible${collapsed?' collapsed':''}" id="${cardId}" style="padding:0;overflow:hidden">
+    return `<div class="card gamecard-collapsible${collapsed?' collapsed':''}" id="${cardId}" style="padding:0;overflow:hidden${isAllStarGame?';border-top:2px solid #D4AF37':''}">
       <div class="gm-header" onclick="if(!event.target.closest('a'))toggleCard('${cardId}')">
-        ${storyline?`<div style="padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(var(--overlay-rgb),.02);text-align:center"><span title="${esc(storyline.title)}" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:${storyline.color}">✦ ${storyline.label}</span></div>`:''}
+        ${isAllStarGame
+          ? `<div style="padding:5px 10px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(184,50,46,.16),rgba(212,175,55,.14),rgba(30,75,142,.16));text-align:center"><span title="MLB All-Star Game — exhibition rosters, not real franchise matchups; lean grades below still compare each side's lineup vs. the opposing pitcher, same math as any other game" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#D4AF37">⭐ MLB ALL-STAR GAME ⭐</span></div>`
+          : storyline?`<div style="padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(var(--overlay-rgb),.02);text-align:center"><span title="${esc(storyline.title)}" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:${storyline.color}">✦ ${storyline.label}</span></div>`:''}
         ${isPregame ? scoreboardPregame : scoreboardLiveFinal}
       </div>
       <div class="scores-mobile-tabs" style="border-bottom:1px solid var(--line)">
@@ -5450,25 +5460,35 @@ function _renderScoresInner() {
     return true;
   }).sort((a,b) => {
     // pinned games always float to the top, regardless of sort mode — the
-    // chosen sort (Time/Best Lean) still governs order within the pinned
+    // chosen sort (Time/Matchup Level) still governs order within the pinned
     // group and within the rest, same "tracked-first" shape as the live
     // ticker's gameSortKey().
     const pa = _isGamePinned(String(a[1][0]?.gamePk||'')) ? 0 : 1;
     const pb = _isGamePinned(String(b[1][0]?.gamePk||'')) ? 0 : 1;
     if(pa !== pb) return pa - pb;
-    function gameScore(bat) {
-      const pitchGrade = bat[0]?.pGrade || 'C';
-      const avgP = bat.reduce((s,l)=>s+(l.p||0),0) / (bat.length||1);
-      const og = offGrade(avgP);
-      const offScore = {A:4,B:3,C:2,D:1,F:0}[og] ?? 2;
-      const pitScore  = {A:0,B:1,C:2,D:3,F:4}[pitchGrade] ?? 2;
-      return offScore + pitScore;
+    // A card shows a lean per SIDE (awayMu/homeMu in buildScoreCard), each
+    // side graded against the pitcher that side actually faces. So the sort
+    // key has to be per-side too: how lopsided is the more lopsided half of
+    // this card. Pooling both lineups into one average (what this used to do)
+    // cancelled the two sides out — a card reading AVOID -3 on one side
+    // scored *more neutral* than a card reading -2/+2, so the most lopsided
+    // games sorted to the bottom. Reuses muLabel()/offGrade() so the sort key
+    // and the footer chips can't drift apart.
+    function gameLopsidedness(bat) {
+      const [away, home] = (bat[0]?.matchup || '').split(' @ ').map(s => s.trim());
+      const sideDelta = team => {
+        const s = bat.filter(l => l.team === team);
+        if(!s.length) return null;
+        const avg = s.reduce((x,l) => x+(l.p||0), 0) / s.length;
+        return muLabel(offGrade(avg), s[0]?.pGrade || 'C').delta;
+      };
+      const deltas = [sideDelta(away), sideDelta(home)]
+        .filter(d => d != null).map(Math.abs);
+      return deltas.length ? Math.max(...deltas) : 0;
     }
     if(scoresSort === 'diff') {
-      // most lopsided matchups first, either direction (STRONG or AVOID).
-      // Same gameScore() math as the lean badges themselves (score 0-8, 4
-      // is neutral), ranked by |delta| from neutral instead of raw value.
-      return scoresSortDir * (Math.abs(gameScore(b[1])-4) - Math.abs(gameScore(a[1])-4));
+      // most lopsided matchups first, either direction (STRONG or AVOID)
+      return scoresSortDir * (gameLopsidedness(b[1]) - gameLopsidedness(a[1]));
     }
     function timeVal(t){
       if(!t) return 9999;
