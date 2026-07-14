@@ -5251,9 +5251,14 @@ function buildScoreCard(matchup, batters, betKeys) {
       // fetch failed during the slate run). Native <select>, matching the
       // only dropdown convention this file uses (no custom popup pattern
       // exists anywhere else here).
+      // SP grouped before RP (ASG-style games cycle through several starters
+      // in the early innings — surfacing them first makes those the easy
+      // picks), n_games desc within each group; unlabeled role (no trailing
+      // sample to classify from) sorts last.
+      const _roleOrder = { SP: 0, RP: 1, '': 2 };
       const previewOptions = candidatesForTeam ? Object.entries(candidatesForTeam)
-        .sort((a, b) => (b[1].n_games || 0) - (a[1].n_games || 0))
-        .map(([pid, c]) => `<option value="${pid}"${pid === previewPitcherId ? ' selected' : ''}>${esc(c.name)} · ${c.n_games}G${c.n_games < 8 ? ' ⚠' : ''}</option>`)
+        .sort((a, b) => (_roleOrder[a[1].role ?? ''] - _roleOrder[b[1].role ?? '']) || ((b[1].n_games || 0) - (a[1].n_games || 0)))
+        .map(([pid, c]) => `<option value="${pid}"${pid === previewPitcherId ? ' selected' : ''}>${c.role ? `(${c.role}) ` : ''}${esc(c.name)} · ${c.n_games}G${c.n_games < 8 ? ' ⚠' : ''}</option>`)
         .join('') : '';
       const previewPicker = candidatesForTeam ? `<select onchange="setScoresPitcherPreview('${gamePk}','${team}', this.value)" onclick="event.stopPropagation()" title="Preview this side against a different pitcher off the opposing roster" style="background:var(--field);color:var(--sage);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font-size:9px;font-family:var(--mono);cursor:pointer">
         <option value="">Preview pitcher…</option>
