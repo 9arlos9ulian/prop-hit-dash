@@ -4934,6 +4934,18 @@ function setScoresMobileSide(gamePk, side){
   scoresMobileSide[gamePk] = side;
   renderScores();
 }
+// manual bullpen-preview picker (Piece 2) — which alt pitcher the user chose
+// to preview for a given side, keyed by `${gamePk}|${team}` (team = the
+// BATTING side's own code, so each side has an independent slot). Plain
+// object, not localStorage — a preview pick is a "poke around right now"
+// action, not a saved preference, same as scoresMobileSide above.
+const scoresPitcherPreview = {};
+function setScoresPitcherPreview(gamePk, team, pitcherId){
+  const key = gamePk + '|' + team;
+  if(pitcherId) scoresPitcherPreview[key] = pitcherId;
+  else delete scoresPitcherPreview[key];
+  renderScores();
+}
 
 // Game-level offense/pitching grading — shared by Scores' Compact/Normal/Expanded modes.
 function offGrade(avg) {
@@ -5190,18 +5202,28 @@ function buildScoreCard(matchup, batters, betKeys) {
     function sideHtml(side, team, mu) {
       if(!side.length) return `<div style="flex:1;padding:14px;color:var(--sage);font-size:11px;font-family:var(--mono);text-align:center">no lineup</div>`;
 
-      // live pitcher swap — cross-reference the schedule's real current
-      // pitcher (score.pitcher.id, already fetched for the live ticker)
-      // against live_slate.py's precomputed bullpen_preview.json. Gated to
-      // isLiveGame: pregame has no "current" pitcher to differ from, and
-      // post-Final the last live pitcher isn't meaningful to keep swapped.
-      // opponentTeam, not `team` — the bullpen JSON is keyed by the
-      // PITCHING team, which for this side's batters is the other team.
+      // pitcher swap — two sources, manual preview wins over the live
+      // auto-swap. opponentTeam, not `team`: the bullpen JSON is keyed by
+      // the PITCHING team, which for this side's batters is the other team.
       const opponentTeam = team === awayTeam ? homeTeam : awayTeam;
+      const candidatesForTeam = window._bullpenPreview?.[gamePk]?.[opponentTeam] || null;
+
+      // manual preview (Piece 2) — an explicit user choice, independent of
+      // game state, always wins when set.
+      const previewPitcherId = scoresPitcherPreview[gamePk + '|' + team] || null;
+      const previewAlt = (previewPitcherId && candidatesForTeam) ? candidatesForTeam[previewPitcherId] : null;
+
+      // live auto-swap (Piece 1) — cross-reference the schedule's real
+      // current pitcher (score.pitcher.id, already fetched for the live
+      // ticker) against bullpen_preview.json. Gated to isLiveGame: pregame
+      // has no "current" pitcher to differ from, and post-Final the last
+      // live pitcher isn't meaningful to keep swapped.
       const livePitcherId = (isLiveGame && score?.pitcher?.id) ? String(score.pitcher.id) : null;
-      const altTeamData = livePitcherId ? window._bullpenPreview?.[gamePk]?.[opponentTeam] : null;
-      const alt = altTeamData ? altTeamData[livePitcherId] : null;
-      const usingAlt = !!alt && livePitcherId !== side[0]?.pitcherId;
+      const liveAlt = (livePitcherId && candidatesForTeam) ? candidatesForTeam[livePitcherId] : null;
+      const usingLiveSwap = !previewAlt && !!liveAlt && livePitcherId !== side[0]?.pitcherId;
+
+      const alt = previewAlt || liveAlt;
+      const usingAlt = !!previewAlt || usingLiveSwap;
 
       // no precomputed letter grade for an alt candidate (compute_pitcher_rating's
       // 0-100 composite isn't shipped in bullpen_preview.json) — omit rather
@@ -5213,12 +5235,30 @@ function buildScoreCard(matchup, batters, betKeys) {
       const pitcherName = pitcherFullName ? pitcherFullName.split(' ').slice(-1)[0] : '';
       const pitcherHandDisp = usingAlt ? alt.hand : side[0]?.pitcherHand;
       const handTag = pitcherHandDisp ? `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${pitcherHandDisp}HP</span>` : '';
-      const liveSwapBadge = usingAlt ? `<span title="Now facing ${esc(alt.name)} in relief — original probable was ${esc(side[0]?.pitcher||'TBD')}. Still framed as 'if this pitcher's profile applied all game', same simplification as the pregame number." style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--amber);background:rgba(var(--amber-rgb),.12);border:1px solid rgba(var(--amber-rgb),.35);border-radius:3px;padding:1px 5px">🔄 LIVE</span>` : '';
+      const liveSwapBadge = previewAlt
+        ? `<span title="Hypothetical preview — showing ${esc(alt.name)}, not necessarily who's actually pitching. Still framed as 'if this pitcher's profile applied all game', same simplification as the pregame number." style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--sage);background:rgba(var(--sage-rgb),.12);border:1px solid rgba(var(--sage-rgb),.35);border-radius:3px;padding:1px 5px">👁 PREVIEW</span>`
+        : usingLiveSwap
+          ? `<span title="Now facing ${esc(alt.name)} in relief — original probable was ${esc(side[0]?.pitcher||'TBD')}. Still framed as 'if this pitcher's profile applied all game', same simplification as the pregame number." style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--amber);background:rgba(var(--amber-rgb),.12);border:1px solid rgba(var(--amber-rgb),.35);border-radius:3px;padding:1px 5px">🔄 LIVE</span>`
+          : '';
       const pNGames = usingAlt ? (alt.n_games || 0) : (side[0]?.pNGames || 0);
       const pDaysRest = usingAlt ? (alt.days_rest || 0) : (side[0]?.pDaysRest || 0);
       const pHH = usingAlt ? alt.p_hardhit_allowed : side[0]?.pHH;
       const pKbb = usingAlt ? alt.p_k_bb : side[0]?.pKbb;
       const pCsw = usingAlt ? alt.p_csw : side[0]?.pCsw;
+
+      // manual bullpen-preview picker — only rendered when this side actually
+      // has precomputed candidates (graceful degrade if that team's roster
+      // fetch failed during the slate run). Native <select>, matching the
+      // only dropdown convention this file uses (no custom popup pattern
+      // exists anywhere else here).
+      const previewOptions = candidatesForTeam ? Object.entries(candidatesForTeam)
+        .sort((a, b) => (b[1].n_games || 0) - (a[1].n_games || 0))
+        .map(([pid, c]) => `<option value="${pid}"${pid === previewPitcherId ? ' selected' : ''}>${esc(c.name)} · ${c.n_games}G${c.n_games < 8 ? ' ⚠' : ''}</option>`)
+        .join('') : '';
+      const previewPicker = candidatesForTeam ? `<select onchange="setScoresPitcherPreview('${gamePk}','${team}', this.value)" onclick="event.stopPropagation()" title="Preview this side against a different pitcher off the opposing roster" style="background:var(--field);color:var(--sage);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font-size:9px;font-family:var(--mono);cursor:pointer">
+        <option value="">Preview pitcher…</option>
+        ${previewOptions}
+      </select>` : '';
 
       // same background color coding used for STRONG/LEAN/AVOID/NEUTRAL
       const colBg = !mu ? 'rgba(var(--neutral-rgb),.04)'
@@ -5289,6 +5329,7 @@ function buildScoreCard(matchup, batters, betKeys) {
               <a href="${pitcherUrl(pitcherFullName)}" target="_blank" rel="noopener" class="pbar-name" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(pitcherName)}</a>
               ${handTag}
               ${liveSwapBadge}
+              ${previewPicker}
             </div>
             ${pCsw!=null||pKbb!=null||pHH!=null ? `<div class="pbar-stats">
               ${pstat('CSW',pCsw!=null?pCsw*100:null,30,24,v=>v.toFixed(1)+'%')}
