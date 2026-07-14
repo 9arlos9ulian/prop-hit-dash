@@ -347,6 +347,10 @@
   .pbar-name{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent}
   .pbar-stats{display:flex;gap:10px}
   .pbar-badges{display:flex;gap:5px;flex-wrap:wrap}
+  .gm-subs-toggle{cursor:pointer;padding:5px 10px;font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--sage);list-style:none;display:flex;align-items:center;gap:5px}
+  .gm-subs-toggle::-webkit-details-marker{display:none}
+  .gm-subs-toggle .gm-subs-arrow{display:inline-block;transition:transform .12s;opacity:.7}
+  details[open]>.gm-subs-toggle .gm-subs-arrow{transform:rotate(90deg)}
   .detail-grid{display:flex;flex-direction:column;gap:10px}
   @media(min-width:820px){
     .pitcher-bar{flex-direction:row;align-items:center;flex-wrap:wrap;gap:16px}
@@ -1664,10 +1668,12 @@ function _fetchBoxscore(gamePk){
       const pitching = new Map();
       const battingOrders = new Map(); // pid -> raw battingOrder string, e.g. "500" (starter) or "501" (1st sub)
       const names = new Map(); // pid -> fullName, used by the name+date historical settle fallback (see _fetchHistoricalBatterData)
+      const sideOf = new Map(); // pid -> 'away'/'home', needed to scope the collapsible subs list to the right side (battingOrders/players are shared across both teams by pid alone)
       ['away','home'].forEach(side=>{
         const pl=d.teams?.[side]?.players||{};
         Object.values(pl).forEach(p=>{
           const pid=String(p.person?.id||''); if(!pid) return;
+          sideOf.set(pid, side);
           if(p.person?.fullName) names.set(pid, p.person.fullName);
           const bat=p.stats?.batting;
           if(bat) players.set(pid, bat);
@@ -1681,7 +1687,7 @@ function _fetchBoxscore(gamePk){
           });
         });
       });
-      const result={players, pitching, battingOrders, names};
+      const result={players, pitching, battingOrders, names, sideOf};
       _bsCache.set(gamePk,result);
       return result;
     }).catch(()=>null);
@@ -5325,6 +5331,34 @@ function buildScoreCard(matchup, batters, betKeys) {
         </div>`;
       }).join('');
 
+      // collapsible subs — bench players who've entered the game, derived
+      // from the boxscore's raw battingOrder convention (slot*100 + N; N>=1
+      // means a substitute batted in that slot, same field isSubbedOut()
+      // already reads). Not part of the pregame model at all (no p_hit —
+      // they were never in tonight's scored lineup), so this is purely
+      // informational: who's actually in the game right now beyond the 9
+      // starters. box.sideOf scopes battingOrders/players (shared maps
+      // across both teams by pid) to just this side.
+      const subs = (isLiveGame||isFinalGame) && box?.sideOf ? [...box.battingOrders.entries()]
+        .filter(([pid, order]) => box.sideOf.get(pid) === (team===awayTeam?'away':'home') && parseInt(order,10)%100 !== 0)
+        .map(([pid, order]) => {
+          const bat = box.players.get(pid);
+          return {
+            pid, name: box.names.get(pid) || pid,
+            slot: Math.floor(parseInt(order,10)/100),
+            h: bat?.hits ?? 0, ab: bat?.atBats ?? 0,
+          };
+        })
+        .sort((a,b) => a.slot-b.slot || a.pid.localeCompare(b.pid)) : [];
+      const subsSection = subs.length ? `<details>
+        <summary class="gm-subs-toggle"><span class="gm-subs-arrow">▸</span> Subs (${subs.length})</summary>
+        ${subs.map(s => `<div style="display:flex;align-items:center;gap:8px;padding:4px 10px;font-family:var(--mono);font-size:11px;border-top:1px solid var(--line)">
+          <span style="width:14px;flex:none;color:var(--sage);font-size:9px">${s.slot}</span>
+          <span style="flex:1;color:var(--chalk)">${esc(s.name)}</span>
+          <span style="color:${s.ab>0?(s.h>0?'var(--good)':'var(--bad)'):'var(--sage)'};width:34px;text-align:right">${s.ab>0?s.h+'-'+s.ab:'—'}</span>
+        </div>`).join('')}
+      </details>` : '';
+
       return `<div style="flex:1;min-width:0;${colBg.startsWith('linear')?`background:${colBg}`:`background:${colBg}`}">
         <div style="padding:8px 10px;border-bottom:1px solid var(--line)">
           ${pitcherName ? `<div class="pitcher-bar">
@@ -5368,6 +5402,7 @@ function buildScoreCard(matchup, batters, betKeys) {
         </div>
         ${headerRow}
         ${rows}
+        ${subsSection}
       </div>`;
     }
 
