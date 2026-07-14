@@ -1586,6 +1586,25 @@ async function _loadStaticKalshiOdds() {
   } catch(_) { /* silently fail */ }
 }
 
+// live-pitcher-swap data (live_slate.py's build_bullpen_preview) — one
+// alt-pitcher scenario per candidate reliever, keyed by
+// {gamePk: {pitchingTeamAbbr: {pitcherId: {...,batters:{batterId:p_hit}}}}}.
+// Fetched once at load, same graceful-degrade convention as every other
+// optional data source here: missing/failed fetch just leaves {} in place,
+// so sideHtml() silently falls back to the CSV's probable-starter display.
+window._bullpenPreview = {};
+let _bullpenPreviewLoaded = false;
+async function _loadBullpenPreview() {
+  if(_bullpenPreviewLoaded) return;
+  _bullpenPreviewLoaded = true;
+  try {
+    const res = await fetch('./bullpen_preview.json?t=' + Date.now());
+    if(!res.ok) return;
+    window._bullpenPreview = await res.json() || {};
+    renderActiveTab();   // pick up the swap on whatever's already on screen
+  } catch(_) { /* silently fail — sideHtml() falls back cleanly */ }
+}
+
 async function fetchMoneylines() {
   // Kalshi KXMLBGAME series — per-game MLB winner markets (server.py proxies
   // /kalshi/winner to that series; KXMLB alone is the season championship futures)
@@ -4606,6 +4625,8 @@ function _bootApp(){
     renderActiveTab();
   }
 
+  _loadBullpenPreview();
+
   if(location.protocol==='http:'||location.protocol==='https:'){
     const isLocalServer = location.hostname==='localhost'||location.hostname==='127.0.0.1';
     // cache-bust unconditionally — a bare '/csv' URL (no query string) let the
@@ -5168,15 +5189,36 @@ function buildScoreCard(matchup, batters, betKeys) {
 
     function sideHtml(side, team, mu) {
       if(!side.length) return `<div style="flex:1;padding:14px;color:var(--sage);font-size:11px;font-family:var(--mono);text-align:center">no lineup</div>`;
-      const pGrade = side[0]?.pGrade || '';
+
+      // live pitcher swap — cross-reference the schedule's real current
+      // pitcher (score.pitcher.id, already fetched for the live ticker)
+      // against live_slate.py's precomputed bullpen_preview.json. Gated to
+      // isLiveGame: pregame has no "current" pitcher to differ from, and
+      // post-Final the last live pitcher isn't meaningful to keep swapped.
+      // opponentTeam, not `team` — the bullpen JSON is keyed by the
+      // PITCHING team, which for this side's batters is the other team.
+      const opponentTeam = team === awayTeam ? homeTeam : awayTeam;
+      const livePitcherId = (isLiveGame && score?.pitcher?.id) ? String(score.pitcher.id) : null;
+      const altTeamData = livePitcherId ? window._bullpenPreview?.[gamePk]?.[opponentTeam] : null;
+      const alt = altTeamData ? altTeamData[livePitcherId] : null;
+      const usingAlt = !!alt && livePitcherId !== side[0]?.pitcherId;
+
+      // no precomputed letter grade for an alt candidate (compute_pitcher_rating's
+      // 0-100 composite isn't shipped in bullpen_preview.json) — omit rather
+      // than fabricate one with different math than the real grade badge.
+      const pGrade = usingAlt ? '' : (side[0]?.pGrade || '');
       const pgCol = gradeCol(pGrade || 'C');
       const pgBg  = gradeBg(pGrade  || 'C');
-      const pitcherFullName = side[0]?.pitcher || '';
+      const pitcherFullName = usingAlt ? alt.name : (side[0]?.pitcher || '');
       const pitcherName = pitcherFullName ? pitcherFullName.split(' ').slice(-1)[0] : '';
-      const handTag = side[0]?.pitcherHand ? `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${side[0].pitcherHand}HP</span>` : '';
-      const pNGames = side[0]?.pNGames || 0;
-      const pDaysRest = side[0]?.pDaysRest || 0;
-      const pHH = side[0]?.pHH, pKbb = side[0]?.pKbb, pCsw = side[0]?.pCsw;
+      const pitcherHandDisp = usingAlt ? alt.hand : side[0]?.pitcherHand;
+      const handTag = pitcherHandDisp ? `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${pitcherHandDisp}HP</span>` : '';
+      const liveSwapBadge = usingAlt ? `<span title="Now facing ${esc(alt.name)} in relief — original probable was ${esc(side[0]?.pitcher||'TBD')}. Still framed as 'if this pitcher's profile applied all game', same simplification as the pregame number." style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--amber);background:rgba(var(--amber-rgb),.12);border:1px solid rgba(var(--amber-rgb),.35);border-radius:3px;padding:1px 5px">🔄 LIVE</span>` : '';
+      const pNGames = usingAlt ? (alt.n_games || 0) : (side[0]?.pNGames || 0);
+      const pDaysRest = usingAlt ? (alt.days_rest || 0) : (side[0]?.pDaysRest || 0);
+      const pHH = usingAlt ? alt.p_hardhit_allowed : side[0]?.pHH;
+      const pKbb = usingAlt ? alt.p_k_bb : side[0]?.pKbb;
+      const pCsw = usingAlt ? alt.p_csw : side[0]?.pCsw;
 
       // same background color coding used for STRONG/LEAN/AVOID/NEUTRAL
       const colBg = !mu ? 'rgba(var(--neutral-rgb),.04)'
@@ -5198,7 +5240,11 @@ function buildScoreCard(matchup, batters, betKeys) {
         const isBet = betKeys.has(gamePk+'|'+String(l.batterId||''));
         const bat = box && l.batterId ? box.players.get(String(l.batterId)) : null;
         const hit = l.hasHit;
-        const nameCol = dotCol(l.p||0);
+        // swap this batter's displayed score to the live reliever's p_hit
+        // when one was precomputed for them; otherwise fall back to the
+        // CSV's probable-starter-based score, same as when usingAlt is false.
+        const effP = (usingAlt && alt.batters?.[String(l.batterId)] != null) ? alt.batters[String(l.batterId)] : (l.p||0);
+        const nameCol = dotCol(effP);
         let boxTxt = '—', boxCol = 'var(--sage)';
         if(bat) {
           const h = bat.hits??0, ab = bat.atBats??0;
@@ -5223,7 +5269,7 @@ function buildScoreCard(matchup, batters, betKeys) {
         return `<div ${rowClasses?`class="${rowClasses}" `:''}${clickAttr}position:relative;display:flex;align-items:center;gap:8px;padding:4px 10px;background:${restBg};border-left:2px solid ${isBet?'var(--amber)':'transparent'};transition:background .12s" onmouseover="this.style.background='rgba(var(--overlay-rgb),.06)'" onmouseout="this.style.background='${restBg}'">
           <span style="font-family:var(--mono);font-size:9px;color:var(--sage);flex:none;width:14px">${l.slot||''}</span>
           <span style="flex:none;width:12px;text-align:center" title="Trending vs. model expectation">${performanceArrow(l)}</span>
-          <span style="font-family:var(--mono);font-size:10px;color:${nameCol};flex:none;width:28px;text-align:right">${Math.round((l.p||0)*100)}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:${nameCol};flex:none;width:28px;text-align:right">${Math.round(effP*100)}</span>
           ${quality3Badge(l)}
           <span style="font-family:var(--mono);font-size:11px;color:${nameCol};${hit?'text-decoration:line-through;opacity:.45':''};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
           ${subbedTag?`<span class="scores-hit-col" title="Subbed out of the game — no more plate appearances" style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.85;flex:none">SUBBED</span>`:noHit?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:8px;color:var(--bad);opacity:.75;flex:none">NO HIT</span>`:''}
@@ -5242,6 +5288,7 @@ function buildScoreCard(matchup, batters, betKeys) {
               ${pGrade?`<span style="font-family:var(--mono);font-size:9px;font-weight:600;border-radius:3px;padding:1px 5px;white-space:nowrap;color:${pgCol};background:${pgBg};border:1px solid ${pgCol}55">${pGrade}</span>`:''}
               <a href="${pitcherUrl(pitcherFullName)}" target="_blank" rel="noopener" class="pbar-name" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(pitcherName)}</a>
               ${handTag}
+              ${liveSwapBadge}
             </div>
             ${pCsw!=null||pKbb!=null||pHH!=null ? `<div class="pbar-stats">
               ${pstat('CSW',pCsw!=null?pCsw*100:null,30,24,v=>v.toFixed(1)+'%')}
@@ -5252,8 +5299,8 @@ function buildScoreCard(matchup, batters, betKeys) {
               })}
             </div>` : ''}
             <div class="pbar-badges">
-              ${pitchDominantBadge(side[0]||{})}
-              ${rookieBadge(side[0]?.pIsRookie)}
+              ${usingAlt ? '' : pitchDominantBadge(side[0]||{})}
+              ${usingAlt ? '' : rookieBadge(side[0]?.pIsRookie)}
               ${pNGames < 8 ? `<span title="Small sample — only ${pNGames} starts" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(var(--amber-rgb),.1);border:1px solid rgba(var(--amber-rgb),.3);border-radius:3px;padding:1px 5px">⚠ ${pNGames}G</span>` : ''}
               ${pDaysRest >= 15 ? `<span title="${pDaysRest} days since last appearance" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(var(--amber-rgb),.1);border:1px solid rgba(var(--amber-rgb),.3);border-radius:3px;padding:1px 5px">⚠ ${pDaysRest}D</span>` : ''}
               ${pHH != null && pHH >= 0.43 ? `<span title="High hard-hit rate allowed: ${(pHH*100).toFixed(0)}%" style="font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(var(--bad-rgb),.1);border:1px solid rgba(var(--bad-rgb),.3);border-radius:3px;padding:1px 5px">HH</span>` : ''}
