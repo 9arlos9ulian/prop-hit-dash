@@ -3436,6 +3436,17 @@ async function _fetchHistoricalBatterData(date){
 }
 
 async function fetchLiveGameData(){
+  // Real bug found 2026-07-17: neither this 30s poller nor the header
+  // ticker's 45s refresh() ever paused while the tab was backgrounded —
+  // both kept doing full network fetches + a full innerHTML rebuild of
+  // the entire Scores grid indefinitely, even hours into a session with
+  // the tab just sitting in the background. Reported as the browser tab
+  // (and the machine) visibly heating up over a long working session.
+  // Cheap, safe fix: no-op here while hidden — the interval itself costs
+  // nothing left running, this just skips the actual fetch+render work.
+  // Nothing needs to "catch up" specially on refocus: this fires again
+  // within 30s regardless once visible.
+  if(document.hidden) return;
   // Only fetch boxscores for games that are live or final — pre-game boxscores
   // return season stats (batting.hits = season total), which would incorrectly
   // mark every batter as hasHit=true before the game starts.
@@ -7337,6 +7348,13 @@ function canonMatchup(matchup){
 
   async function refresh(){
     clearTimeout(_timer);
+    // Same fix as fetchLiveGameData()'s — this loop never paused while the
+    // tab was backgrounded either, doing its own schedule fetch + full
+    // ticker-track innerHTML rebuild every 45s indefinitely. Reschedule and
+    // bail without fetching/rendering while hidden; the existing
+    // visibilitychange listener below already calls refresh() immediately
+    // on refocus to catch up, so nothing is missed.
+    if(document.hidden){ _timer = setTimeout(refresh, 45000); return; }
     const track = document.getElementById('ticker-track');
     if(!track) return;
     try{
