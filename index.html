@@ -4407,7 +4407,7 @@ function _betsStatusFilterChips(){
     `<button class="ghost fchip${betsStatusFilter===val?' amber':''}" onclick="setBetsStatusFilter('${val}')">${lbl}</button>`
   ).join('');
   const dates = [...new Set(savedBets.map(_betDate).filter(d=>d))].sort().reverse();
-  const dateSelect = dates.length ? `<select onchange="_jumpToBetDate(this.value)" style="margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--field);color:var(--sage);border:1px solid var(--line);border-radius:4px;padding:2px 6px">
+  const dateSelect = dates.length ? `<select id="bets-jump-to-date" onchange="_jumpToBetDate(this.value)" style="margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--field);color:var(--sage);border:1px solid var(--line);border-radius:4px;padding:2px 6px">
     <option value="">Jump to date…</option>
     ${dates.map(d=>{
       const dt = new Date(d+'T12:00:00');
@@ -5340,7 +5340,7 @@ function buildScoreCard(matchup, batters, betKeys) {
         .sort((a, b) => (_roleOrder[a[1].role ?? ''] - _roleOrder[b[1].role ?? '']) || ((b[1].n_games || 0) - (a[1].n_games || 0)))
         .map(([pid, c]) => `<option value="${pid}"${pid === previewPitcherId ? ' selected' : ''}>${c.role ? `(${c.role}) ` : ''}${esc(c.name)} · ${c.n_games}G${c.n_games < 8 ? ' ⚠' : ''}</option>`)
         .join('') : '';
-      const previewPicker = candidatesForTeam ? `<select onchange="setScoresPitcherPreview('${gamePk}','${team}', this.value)" onclick="event.stopPropagation()" title="Preview this side against a different pitcher off the opposing roster" style="background:var(--field);color:var(--sage);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font-size:9px;font-family:var(--mono);cursor:pointer">
+      const previewPicker = candidatesForTeam ? `<select id="pitcher-preview-${gamePk}-${team}" onchange="setScoresPitcherPreview('${gamePk}','${team}', this.value)" onclick="event.stopPropagation()" title="Preview this side against a different pitcher off the opposing roster" style="background:var(--field);color:var(--sage);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font-size:9px;font-family:var(--mono);cursor:pointer">
         <option value="">Preview pitcher…</option>
         ${previewOptions}
       </select>` : '';
