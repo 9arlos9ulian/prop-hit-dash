@@ -4709,8 +4709,18 @@ _sb.auth.getSession().then(({data})=>{
 // restore (and it'd be a no-op anyway).
 function _scrollPreserved(fn){
   const y = window.scrollY;
-  fn();
-  if(y > 0) requestAnimationFrame(() => window.scrollTo(0, y));
+  // try/finally, not try/catch: a render error mid-fn() (transient bad data
+  // from the 30s/45s auto-refresh, a badge helper choking on an unexpected
+  // field, etc.) used to skip the restore entirely, since it lived after
+  // fn() in the same synchronous flow with nothing to run it if fn() threw
+  // — silently stranding the page at the top with every future auto-refresh
+  // repeating the same jump. finally guarantees the restore attempt either
+  // way while still letting the underlying error surface in the console.
+  try {
+    fn();
+  } finally {
+    if(y > 0) requestAnimationFrame(() => window.scrollTo(0, y));
+  }
 }
 
 // ── tab switching ─────────────────────────────────────────────────────────────
