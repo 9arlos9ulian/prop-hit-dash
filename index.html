@@ -4749,6 +4749,34 @@ _sb.auth.getSession().then(({data})=>{
 // restore (and it'd be a no-op anyway).
 function _scrollPreserved(fn){
   const y = window.scrollY;
+  // Anchor-based restore (2026-07-17, confirmed via a dedicated code-audit
+  // workflow): a plain absolute-pixel save/restore doesn't know that a LIVE
+  // game's card can change HEIGHT between one render and the next (a "Subs"
+  // block appearing mid-game, an extra-innings line score grid widening,
+  // etc.) — if anything ABOVE the old scroll position grows or shrinks
+  // during the rebuild, restoring to the same numeric y now points at
+  // different logical content, which reads as an unexplained jump with
+  // nothing in the console. Fix: find the topmost element with a stable id
+  // (game cards use id="scoregame-<gamePk>", keyed to game identity, not
+  // DOM position, so the same id exists after the rebuild) whose top edge
+  // is at/near the viewport top, remember its offset, then after the
+  // rebuild look up that same id and reposition it to the same offset —
+  // this survives a height change anywhere in the list, not just below the
+  // anchor. Falls back to the old plain pixel restore when no id'd element
+  // is found near the top (e.g. All Batters' flat table rows have none).
+  let anchorId = null, anchorOffset = 0;
+  if(y > 0){
+    const candidates = [...document.querySelectorAll('[id]')].filter(el => {
+      const r = el.getBoundingClientRect();
+      return r.top <= 4 && r.bottom > 0; // currently straddling or just above the viewport top
+    });
+    if(candidates.length){
+      // prefer whichever candidate's top is closest to (but not below) 0
+      candidates.sort((a, b) => b.getBoundingClientRect().top - a.getBoundingClientRect().top);
+      anchorId = candidates[0].id;
+      anchorOffset = candidates[0].getBoundingClientRect().top;
+    }
+  }
   // try/finally, not try/catch: a render error mid-fn() (transient bad data
   // from the 30s/45s auto-refresh, a badge helper choking on an unexpected
   // field, etc.) used to skip the restore entirely, since it lived after
@@ -4759,7 +4787,14 @@ function _scrollPreserved(fn){
   try {
     fn();
   } finally {
-    if(y > 0) requestAnimationFrame(() => window.scrollTo(0, y));
+    if(y > 0) requestAnimationFrame(() => {
+      const newEl = anchorId && document.getElementById(anchorId);
+      if(newEl){
+        window.scrollTo(0, window.scrollY + (newEl.getBoundingClientRect().top - anchorOffset));
+      } else {
+        window.scrollTo(0, y); // no anchor found (or it no longer exists) — old behavior
+      }
+    });
   }
 }
 
@@ -7556,7 +7591,26 @@ function canonMatchup(matchup){
       const csvDates = [...new Set(legs.map(l=>csvDateToISO(l.gameDate)).filter(Boolean))];
       const staleDates = viewingDate ? [] : csvDates.filter(d => d && d !== today);
       if(staleDates.length) {
-        staleDates.forEach(async staleDate => {
+        // Second, more severe part of the same 2026-07-17 recursion bug
+        // documented on fetchLiveGameData()/refresh() above: this used to
+        // be an un-awaited `staleDates.forEach(async staleDate => {...})`,
+        // so control fell straight through to the unconditional
+        // renderActiveTab() below before any of these fetches resolved —
+        // and each callback, once IT resolved, called fetchLiveGameData()
+        // directly (which itself calls refreshTicker()=refresh() right
+        // back at its own end). That's the actual mutual-recursion trigger
+        // an added reentrancy guard alone doesn't fully close, since
+        // fetchLiveGameData() doesn't await its own fire-and-forget call to
+        // refreshTicker() — the outer guard released before the chain it
+        // kicked off had finished, so the sequential relay could keep
+        // going indefinitely. Fixed properly here: await every staleDate
+        // fetch with Promise.all (so this whole branch resolves before the
+        // fallthrough render below runs), and drop the redundant
+        // fetchLiveGameData() call entirely — the independent 30s poller
+        // already covers that, so this branch only ever needs to update
+        // _liveLinescore/_liveScores and let ONE render (the one at the
+        // bottom of this function) pick up the result.
+        await Promise.all(staleDates.map(async staleDate => {
           try {
             const sr = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&hydrate=linescore,team&date=${staleDate}`);
             if(!sr.ok) return;
@@ -7612,10 +7666,8 @@ function canonMatchup(matchup){
               const ls = _liveLinescore.get(String(l.gamePk));
               if(ls?.isFinal && !isFinal(l.gameState)) l.gameState = 'Final';
             });
-            fetchLiveGameData();
-            renderActiveTab();
           } catch(_){}
-        });
+        }));
       }
       // don't redraw the active tab for this tick if the user is browsing a
       // historical date — nothing in today's ticker fetch is relevant to what's
