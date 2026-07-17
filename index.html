@@ -1042,6 +1042,7 @@
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
           <button id="exp-minPBtn" class="fchip ghost" onclick="filterMinP=filterMinP?0:0.70;this.classList.toggle('amber',!!filterMinP);renderScoresAllBatters()" title="Only show batters with 70%+ model probability">70%+</button>
           <button id="exp-hotBtn" class="ghost fchip" onclick="filterHotOnly=!filterHotOnly;this.classList.toggle('amber',filterHotOnly);renderScoresAllBatters()" title="Only show batters with 7+ hits in last 10 games">🔥 Hot</button>
+          <button id="exp-3abBtn" class="ghost fchip" onclick="filter3abPositive=!filter3abPositive;this.classList.toggle('amber',filter3abPositive);renderScoresAllBatters()" title="Only show batters with a positive 3AB value — display-only, park/pitcher-neutralized first-3-PA quality above league average">3AB +</button>
           <button id="exp-charlieBtn" class="fchip ghost" onclick="filterMinP=filterMinP?0:0.70;filterHotOnly=!filterHotOnly;setSlotFilter(1);document.getElementById('exp-minPBtn').classList.toggle('amber',!!filterMinP);document.getElementById('exp-hotBtn').classList.toggle('amber',filterHotOnly);renderScoresAllBatters()" title="Slot 1 · p≥70% · Hot streak">⚡ Charlie's Special</button>
         </div>
       </div>
@@ -1053,7 +1054,7 @@
        density mode via goToBatter()/openBatterPopup() -->
   <div id="batter-popup-backdrop" onclick="if(event.target===this)closeBatterPopup()">
     <div id="batter-popup-card" class="card">
-      <button id="batter-popup-close" onclick="closeBatterPopup()">✕ close</button>
+      <button id="batter-popup-close" onclick="closeBatterPopup()" title="← → to browse other batters, Esc to close">✕ close</button>
       <div id="batter-popup-body"></div>
     </div>
   </div>
@@ -1889,6 +1890,7 @@ document.addEventListener('click', e => {
 let filterLiveOnly  = false;
 let filterUpcoming  = false;
 let filterHotOnly     = false;
+let filter3abPositive = false;
 let filterConfirmed   = false;
 let filterHideSettled = false;
 let charlieMode       = false;
@@ -2598,6 +2600,7 @@ function slotVisible(l){
   if(filterLiveOnly && !isLive(l.gameState)) return false;
   if(filterUpcoming && (isLive(l.gameState)||isFinal(l.gameState))) return false;
   if(filterHotOnly     && streakHits(l) < 7)  return false;
+  if(filter3abPositive && !(l.bQuality3!=null && l.bQuality3 > 0)) return false;
   if(filterConfirmed   && l.lineupEst)        return false;
   if(filterHideSettled && (isFinal(l.gameState)||isPostponed(l.gameState))) return false;
   if(filterGame   && l.matchup !== filterGame)                return false;
@@ -4729,6 +4732,44 @@ function goToBatter(batterId, gamePk) { openBatterPopup(batterId, gamePk); }
 // in two legs (one per game), and matching by batterId alone always
 // resolved to whichever leg happened to be first in `legs`, showing the
 // wrong game's pitcher/matchup/state regardless of which card was clicked.
+// Ordered list of batters to step through with the popup's Prev/Next
+// keyboard nav — mirrors whatever's actually on-screen for the tab the
+// popup was opened from, so arrowing through matches what the user sees
+// (All Batters' current filter+sort; Scores' current game sort, batters
+// within each game in their existing render order). Snapshotted once when
+// the popup opens rather than recomputed on every step, so navigating
+// doesn't shift under you if live data refreshes mid-browse.
+function _batterNavOrder(){
+  if(currentTab === 'allbatters'){
+    return legs.filter(l => slotVisible(l)).sort(_allBattersCompare);
+  }
+  if(currentTab === 'scores'){
+    const gameMap = new Map();
+    legs.forEach(l => {
+      const key = (l.matchup || 'Unknown') + '|' + (l.gamePk || '');
+      if(!gameMap.has(key)) gameMap.set(key, []);
+      gameMap.get(key).push(l);
+    });
+    const games = [...gameMap.entries()].filter(([,batters]) => {
+      const gs = batters[0]?.gameState || '';
+      if(scoresLiveOnly) return isLive(gs);
+      if(scoresUpcoming) return !isLive(gs) && !isFinal(gs);
+      return true;
+    });
+    return games.flatMap(([,batters]) => batters);
+  }
+  return legs; // bets/history/etc. — fall back to natural order
+}
+
+let _popupNavList = [];
+let _popupNavIdx  = -1;
+
+function _findLegIndex(list, batterId, gamePk){
+  const byBoth = list.findIndex(x => String(x.batterId)===String(batterId) && String(x.gamePk)===String(gamePk));
+  if(byBoth >= 0) return byBoth;
+  return list.findIndex(x => String(x.batterId)===String(batterId));
+}
+
 function openBatterPopup(batterId, gamePk){
   const l = gamePk
     ? (legs.find(x => String(x.batterId) === String(batterId) && String(x.gamePk) === String(gamePk))
@@ -4740,12 +4781,35 @@ function openBatterPopup(batterId, gamePk){
   if(!body || !backdrop) return;
   body.innerHTML = batterPopupHtml(l);
   backdrop.classList.add('open');
+  _popupNavList = _batterNavOrder();
+  _popupNavIdx  = _findLegIndex(_popupNavList, l.batterId, l.gamePk);
+}
+function _stepBatterPopup(dir){
+  if(!_popupNavList.length || _popupNavIdx < 0) return;
+  const next = _popupNavIdx + dir;
+  if(next < 0 || next >= _popupNavList.length) return; // stop at either end, no wraparound
+  const l = _popupNavList[next];
+  const body = document.getElementById('batter-popup-body');
+  if(!body) return;
+  body.innerHTML = batterPopupHtml(l);
+  _popupNavIdx = next; // list itself stays the same snapshot — just move the pointer
 }
 function closeBatterPopup(){
   const backdrop = document.getElementById('batter-popup-backdrop');
   if(backdrop) backdrop.classList.remove('open');
+  _popupNavList = [];
+  _popupNavIdx  = -1;
 }
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeBatterPopup(); });
+document.addEventListener('keydown', e => {
+  const backdrop = document.getElementById('batter-popup-backdrop');
+  if(!backdrop || !backdrop.classList.contains('open')) return;
+  if(e.key==='Escape') { closeBatterPopup(); return; }
+  // ignore arrow keys while typing in a field (e.g. the batter search box)
+  const tag = (document.activeElement && document.activeElement.tagName) || '';
+  if(tag==='INPUT' || tag==='TEXTAREA') return;
+  if(e.key==='ArrowRight' || e.key==='ArrowDown') { e.preventDefault(); _stepBatterPopup(1); }
+  else if(e.key==='ArrowLeft' || e.key==='ArrowUp') { e.preventDefault(); _stepBatterPopup(-1); }
+});
 
 function livePopupLine(l){
   // live box score (h-ab) — same source Scores tables use, just surfaced here too
