@@ -3435,6 +3435,7 @@ async function _fetchHistoricalBatterData(date){
   }catch(_){}
 }
 
+let _liveFetchInFlight = false;
 async function fetchLiveGameData(){
   // Real bug found 2026-07-17: neither this 30s poller nor the header
   // ticker's 45s refresh() ever paused while the tab was backgrounded —
@@ -3447,6 +3448,34 @@ async function fetchLiveGameData(){
   // Nothing needs to "catch up" specially on refocus: this fires again
   // within 30s regardless once visible.
   if(document.hidden) return;
+  // Second, far more severe real bug found the same day, live on the public
+  // site during actual live games: this function calls refreshTicker()
+  // (=refresh(), below) at its own end, and refresh() itself calls this
+  // function back from its "stale CSV date" branch whenever the ticker's
+  // computed "today" doesn't match a leg's game_date (a real, persistent
+  // mismatch was caught live — the ticker had rolled to the next calendar
+  // day while the CSV's games were still dated "today"). That's an
+  // unbounded mutual recursion: fetchLiveGameData -> refreshTicker ->
+  // fetchLiveGameData -> ... with no throttle beyond raw network latency.
+  // Confirmed via direct instrumentation: ~4,864 fetch()/sec to
+  // statsapi.mlb.com and 6,145 window.scrollTo() calls in 5 seconds on the
+  // live public page — the actual cause of the reported overheating, the
+  // "scroll stuck" symptom (every iteration re-fires _scrollPreserved's
+  // restore), and the climbing DOM/DevTools issue count, not the earlier
+  // (separately real, separately fixed) suspects. This reentrancy guard is
+  // the structural fix: neither this function nor refresh() can ever be
+  // invoked again while an earlier call from either is still in flight, no
+  // matter what future code ends up calling what — closes off the whole
+  // class of bug, not just today's specific trigger.
+  if(_liveFetchInFlight) return;
+  _liveFetchInFlight = true;
+  try {
+    await _fetchLiveGameDataInner();
+  } finally {
+    _liveFetchInFlight = false;
+  }
+}
+async function _fetchLiveGameDataInner(){
   // Only fetch boxscores for games that are live or final — pre-game boxscores
   // return season stats (batting.hits = season total), which would incorrectly
   // mark every batter as hasHit=true before the game starts.
@@ -7346,6 +7375,7 @@ function canonMatchup(matchup){
     </div>`;
   }
 
+  let _tickerRefreshInFlight = false;
   async function refresh(){
     clearTimeout(_timer);
     // Same fix as fetchLiveGameData()'s — this loop never paused while the
@@ -7355,6 +7385,24 @@ function canonMatchup(matchup){
     // visibilitychange listener below already calls refresh() immediately
     // on refocus to catch up, so nothing is missed.
     if(document.hidden){ _timer = setTimeout(refresh, 45000); return; }
+    // Reentrancy guard — the actual severe bug found live 2026-07-17: this
+    // function's own "stale CSV date" branch below calls
+    // fetchLiveGameData(), which calls window.refreshTicker() (=this
+    // function) right back at ITS end, an unbounded mutual recursion with
+    // no throttle beyond raw network latency (confirmed live at ~4,864
+    // fetch()/sec against statsapi.mlb.com). fetchLiveGameData() now has
+    // its own matching guard; this one closes the loop from this side too,
+    // so neither function can ever re-enter while the other is still
+    // in-flight, regardless of which one a future code change calls first.
+    if(_tickerRefreshInFlight) return;
+    _tickerRefreshInFlight = true;
+    try {
+      await _refreshInner();
+    } finally {
+      _tickerRefreshInFlight = false;
+    }
+  }
+  async function _refreshInner(){
     const track = document.getElementById('ticker-track');
     if(!track) return;
     try{
