@@ -780,6 +780,18 @@
      three narrow tabbed ones. */
   @media(min-width:900px)  { .wide-tab #scores-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;align-items:start} }
 
+  /* History's secondary insight cards (Daily Scorecard/Team Performance/
+     Calibration/Lean Tag Calibration/By Batting Order) — single column by
+     default (each card's own margin-top:14px replaced by a grid gap so
+     spacing stays identical whether 1 or 2 columns), 2 columns at the
+     same 900px+ breakpoint used everywhere else in this file. An odd
+     count (5) just leaves the last card alone in its own row — no special
+     handling needed. Main summary/filter/log-table card above this grid
+     is unaffected — it stays full width at every size, it's a wide data
+     table, not a stat card. */
+  .history-insights-grid{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+  @media(min-width:900px){ .history-insights-grid{display:grid;grid-template-columns:repeat(2,1fr);align-items:start} }
+
   /* ── batter popup ── */
   #batter-popup-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
   #batter-popup-backdrop.open{display:flex}
@@ -1117,36 +1129,38 @@
       </div>
     </div>
 
-    <div class="card card-collapsible" style="margin-top:14px" id="h-daily-card">
-      <h2 onclick="toggleCard('h-daily-card')">Daily Scorecard <span id="h-daily-meta" style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0"></span></h2>
-      <div class="htable-wrap"><div id="h-daily-body"><div class="empty">No settled data yet.</div></div></div>
-      <div id="h-daily-pager" style="display:none;justify-content:center;align-items:center;gap:10px;padding:10px 15px 14px;border-top:1px solid var(--line);margin-top:4px;font-family:var(--mono);font-size:11px;color:var(--sage)">
-        <button onclick="hDailyPage(-1)" style="background:var(--raised);border:1px solid var(--line);color:var(--chalk);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;line-height:1">‹</button>
-        <span id="h-daily-pager-label"></span>
-        <button onclick="hDailyPage(1)" style="background:var(--raised);border:1px solid var(--line);color:var(--chalk);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;line-height:1">›</button>
+    <div class="history-insights-grid">
+      <div class="card card-collapsible" id="h-daily-card">
+        <h2 onclick="toggleCard('h-daily-card')">Daily Scorecard <span id="h-daily-meta" style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0"></span></h2>
+        <div class="htable-wrap"><div id="h-daily-body"><div class="empty">No settled data yet.</div></div></div>
+        <div id="h-daily-pager" style="display:none;justify-content:center;align-items:center;gap:10px;padding:10px 15px 14px;border-top:1px solid var(--line);margin-top:4px;font-family:var(--mono);font-size:11px;color:var(--sage)">
+          <button onclick="hDailyPage(-1)" style="background:var(--raised);border:1px solid var(--line);color:var(--chalk);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;line-height:1">‹</button>
+          <span id="h-daily-pager-label"></span>
+          <button onclick="hDailyPage(1)" style="background:var(--raised);border:1px solid var(--line);color:var(--chalk);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;line-height:1">›</button>
+        </div>
       </div>
-    </div>
 
-    <div class="card card-collapsible" style="margin-top:14px" id="h-team-card">
-      <h2 onclick="toggleCard('h-team-card')">Team Performance <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">expected vs actual hits · sorted by delta</span></h2>
-      <div class="htable-wrap"><div id="h-team-body"><div class="empty">No settled data yet.</div></div></div>
-    </div>
+      <div class="card card-collapsible" id="h-team-card">
+        <h2 onclick="toggleCard('h-team-card')">Team Performance <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">expected vs actual hits · sorted by delta</span></h2>
+        <div class="htable-wrap"><div id="h-team-body"><div class="empty">No settled data yet.</div></div></div>
+      </div>
 
-    <div class="card card-collapsible" style="margin-top:14px" id="h-cal-card">
-      <h2 onclick="toggleCard('h-cal-card')">Calibration <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">amber = predicted · green = actual</span></h2>
-      <div id="h-calvis" style="display:flex;align-items:flex-end;gap:8px;padding:12px 15px 0"></div>
-      <div class="htable-wrap" style="margin-top:8px"><div id="h-cal-body"><div class="empty">—</div></div></div>
-    </div>
+      <div class="card card-collapsible" id="h-cal-card">
+        <h2 onclick="toggleCard('h-cal-card')">Calibration <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">amber = predicted · green = actual</span></h2>
+        <div id="h-calvis" style="display:flex;align-items:flex-end;gap:8px;padding:12px 15px 0"></div>
+        <div class="htable-wrap" style="margin-top:8px"><div id="h-cal-body"><div class="empty">—</div></div></div>
+      </div>
 
-    <div class="card card-collapsible" style="margin-top:14px" id="h-lean-card">
-      <h2 onclick="toggleCard('h-lean-card')">Lean Tag Calibration <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">amber = predicted · green = actual · does STRONG/AVOID track real outcomes?</span></h2>
-      <div id="h-leanvis" style="display:flex;align-items:flex-end;gap:8px;padding:12px 15px 0"></div>
-      <div class="htable-wrap" style="margin-top:8px"><div id="h-lean-body"><div class="empty">—</div></div></div>
-    </div>
+      <div class="card card-collapsible" id="h-lean-card">
+        <h2 onclick="toggleCard('h-lean-card')">Lean Tag Calibration <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">amber = predicted · green = actual · does STRONG/AVOID track real outcomes?</span></h2>
+        <div id="h-leanvis" style="display:flex;align-items:flex-end;gap:8px;padding:12px 15px 0"></div>
+        <div class="htable-wrap" style="margin-top:8px"><div id="h-lean-body"><div class="empty">—</div></div></div>
+      </div>
 
-    <div class="card card-collapsible" style="margin-top:14px" id="h-slot-card">
-      <h2 onclick="toggleCard('h-slot-card')">By Batting Order <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">actual hit rate · avg model % · settled picks</span></h2>
-      <div id="h-slot-chart" style="padding:0 15px 12px"><div class="empty">—</div></div>
+      <div class="card card-collapsible" id="h-slot-card">
+        <h2 onclick="toggleCard('h-slot-card')">By Batting Order <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">actual hit rate · avg model % · settled picks</span></h2>
+        <div id="h-slot-chart" style="padding:0 15px 12px"><div class="empty">—</div></div>
+      </div>
     </div>
 
   </div>
