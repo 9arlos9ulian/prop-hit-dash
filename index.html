@@ -5064,8 +5064,13 @@ function switchTab(name, btn) {
 // toggle was removed, this stays a plain module-level constant-ish flag so
 // the render call sites don't need to change.
 let showOuBadge = true;
-// Disabled 2026-07-17 — see the previewPicker comment further down for why.
-let PITCHER_PREVIEW_ENABLED = false;
+// Disabled 2026-07-17 as a speculative mitigation for a scroll/overheating
+// bug report, before the real cause (an unbounded recursive network/render
+// loop between fetchLiveGameData() and the header ticker's refresh() — see
+// HANDOFF.md's "Recent session work (2026-07-17)") was found and fixed.
+// This picker was never actually the cause — re-enabled once that fix was
+// confirmed live.
+let PITCHER_PREVIEW_ENABLED = true;
 let scoresSort = 'time'; // 'time' | 'diff'
 // two mutually-exclusive sort chips share one active-button toggle instead
 // of each hardcoding "add mine, remove the other one". 'rating' (Best Lean)
@@ -5433,18 +5438,14 @@ function buildScoreCard(matchup, batters, betKeys) {
         .sort((a, b) => (_roleOrder[a[1].role ?? ''] - _roleOrder[b[1].role ?? '']) || ((b[1].n_games || 0) - (a[1].n_games || 0)))
         .map(([pid, c]) => `<option value="${pid}"${pid === previewPitcherId ? ' selected' : ''}>${c.role ? `(${c.role}) ` : ''}${esc(c.name)} · ${c.n_games}G${c.n_games < 8 ? ' ⚠' : ''}</option>`)
         .join('') : '';
-      // Disabled 2026-07-17 pending investigation — user reported an
-      // escalating "form field missing id/name" DevTools issue and a
-      // scroll-stuck-at-top bug; this <select> is rebuilt from scratch on
-      // every 30-45s live auto-refresh, one of only two dynamically-built
-      // elements in the whole file that lacked a stable id (both already
-      // fixed — see the id="pitcher-preview-..." below). The id fix alone
-      // didn't resolve it for the user, so disabling render entirely here
-      // as the safer next step while the real root cause gets found —
-      // flip PITCHER_PREVIEW_ENABLED back to true to re-enable once
-      // confirmed safe. Nothing else references previewPicker/
-      // candidatesForTeam/setScoresPitcherPreview, so this is a clean,
-      // reversible toggle, not a rip-out.
+      // Was briefly disabled 2026-07-17 as a speculative mitigation while
+      // chasing a scroll-stuck/overheating report — this <select> is
+      // rebuilt on every 30-45s live refresh, so it was a reasonable early
+      // suspect, and it also lacked a stable id at the time (fixed
+      // separately — see id="pitcher-preview-..." below). Neither was
+      // actually the cause; the real bug was an unbounded recursive
+      // network/render loop elsewhere (see HANDOFF.md), fixed and
+      // confirmed live, and this was re-enabled via PITCHER_PREVIEW_ENABLED.
       const previewPicker = (PITCHER_PREVIEW_ENABLED && candidatesForTeam) ? `<select id="pitcher-preview-${gamePk}-${team}" onchange="setScoresPitcherPreview('${gamePk}','${team}', this.value)" onclick="event.stopPropagation()" title="Preview this side against a different pitcher off the opposing roster" style="background:var(--field);color:var(--sage);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font-size:9px;font-family:var(--mono);cursor:pointer">
         <option value="">Preview pitcher…</option>
         ${previewOptions}
