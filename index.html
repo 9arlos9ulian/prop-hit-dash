@@ -4705,10 +4705,9 @@ function _bootApp(){
   renderSavedBets();
   _loadBetsFromServer(); // override localStorage with server-side bets.json if available
   loadHistory(); // populate window._teamBadge/_playerArrow before Scores/Tonight need them, not just on first History-tab visit
-  // the date-picker's real job (swapping Scores/All Batters to a past day's full
-  // lineups) is local-server-only — see syncHistoryDate()'s !_onServer guard —
-  // so just hide it on the public site instead of showing a control that does nothing there
-  if(!_onServer){ const gsel = document.getElementById('global-date-picker'); if(gsel) gsel.style.display = 'none'; }
+  // date picker works on the public site too as of 2026-07-17 — the archive
+  // ships as static files (slates/*.csv + slates_index.json, see
+  // push_to_dash()), so the old hide-on-public block here is gone.
   switchTab('scores', document.querySelector('.tabs .tab[onclick*="\'scores\'"]')); // Scores is the default landing tab as of 2026-07-02 — its container defaults to display:none in HTML like any non-Tonight tab used to, so boot must explicitly switch to it
 }
 
@@ -6414,8 +6413,18 @@ function mergeDatePickerOptions() {
   const gsel = document.getElementById('global-date-picker');
   if(gsel){
     const cur = gsel.value || viewingDate || today;
+    // dates without a slates/*.csv archive file (picks_log predates the
+    // archive) can only filter History, not swap the full Scores/All
+    // Batters lineup view — mark them so the picker doesn't look broken
+    // when picking one. Only meaningful once _archiveDates has loaded;
+    // before that (or on a stale mirror with no manifest) no marks show.
+    const hasArchive = new Set(_archiveDates);
     gsel.innerHTML = '<option value="">📅 Date</option>' +
-      all.map(d => `<option value="${d}">${d===today?'Today ('+d+')':d}</option>`).join('');
+      all.map(d => {
+        const lbl = d===today ? 'Today ('+d+')' : d;
+        const histOnly = hasArchive.size && !hasArchive.has(d) && d!==today;
+        return `<option value="${d}"${histOnly?' title="History only — no full-lineup archive for this date"':''}>${lbl}${histOnly?' ·':''}</option>`;
+      }).join('');
     gsel.value = [...gsel.options].some(o=>o.value===cur) ? cur : (viewingDate || '');
   }
 }
@@ -6426,12 +6435,11 @@ function syncHistoryDate(val){
   const hsel = document.getElementById('h-date-filter');
   if(hsel){ hsel.value = val; renderHistory(); } // unchanged existing behavior — History filters independently
 
-  // full-slate date swap (Scores/All Batters showing that day's lineups) needs
-  // /slate/<date> — a local-server-only route backed by slates/*.csv, never
-  // published to the public GitHub Pages mirror. On the public site, the date
-  // picker only re-filters History (done above); it can't swap Scores/All
-  // Batters, so stop here instead of hitting a 404.
-  if(!_onServer) return;
+  // full-slate date swap works on the public site too as of 2026-07-17 —
+  // the archive ships as static files (./slates/<date>.csv, see
+  // loadHistoricalSlate's dual-path URL), so no _onServer early-return here
+  // anymore. Dates with no archive file (picks_log predates the archive)
+  // degrade via loadHistoricalSlate's existing 404 handling.
 
   const today = new Date().toLocaleDateString('en-CA');
   const target = val === today ? '' : val; // "today" and "" (reset) both mean "live"
@@ -6446,12 +6454,14 @@ function syncHistoryDate(val){
   if(target) loadHistoricalSlate(target); else restoreLiveSlate();
 }
 
-// load a past day's full slate from the slates/*.csv archive (local server only) —
-// straight replace, not _mergeFresh: every row is a different game/day, there's
+// load a past day's full slate from the slates/*.csv archive — straight
+// replace, not _mergeFresh: every row is a different game/day, there's
 // nothing from the live board to reconcile against (parseCSV already initializes
-// each row's session fields like inSlip on its own)
+// each row's session fields like inSlip on its own). Dual-path URL, same
+// pattern as restoreLiveSlate(): the local server serves /slate/<date>;
+// the public mirror ships the same CSVs as static files under ./slates/.
 function loadHistoricalSlate(date){
-  fetch('/slate/' + date)
+  fetch(_onServer ? '/slate/' + date : './slates/' + date + '.csv')
     .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
     .then(text => {
       const fresh = parseCSV(text);
@@ -6465,7 +6475,14 @@ function loadHistoricalSlate(date){
       loadHistoricalScores(date); // one-shot fetch of that day's real final scores
     })
     .catch(err => {
-      alert('Could not load '+date+': '+err.message);
+      // common, expected case: picks_log history goes back to March but the
+      // slates/ archive only starts 2026-06-23 — History still filters to
+      // the picked date (syncHistoryDate did that before calling here),
+      // there's just no full lineup snapshot to swap Scores/All Batters to.
+      const msg = /HTTP 404/.test(err.message)
+        ? 'No archived slate for '+date+' — the full-lineup archive starts 2026-06-23. History tab still shows that date\'s results.'
+        : 'Could not load '+date+': '+err.message;
+      alert(msg);
       const gsel = document.getElementById('global-date-picker');
       if(gsel) gsel.value = viewingDate || new Date().toLocaleDateString('en-CA');
     });
@@ -7041,8 +7058,11 @@ function renderSlotChart() {
       renderActiveTab();
     }).catch(()=>{});
   }, 3 * 60 * 1000);
-  // populate the date pickers (local server only)
-  if(_onServer) fetch('/slates').then(r=>r.ok?r.json():null).then(dates=>{
+  // populate the date pickers — /slates route locally; on the public
+  // mirror, the static slates_index.json manifest push_to_dash() ships
+  // alongside slates/*.csv (GitHub Pages can't list directories). A stale
+  // mirror without the manifest just falls back to picks_log-only dates.
+  fetch(_onServer ? '/slates' : './slates_index.json').then(r=>r.ok?r.json():null).then(dates=>{
     if(!dates||!dates.length) return;
     _archiveDates = dates;
     mergeDatePickerOptions();
