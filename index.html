@@ -783,28 +783,50 @@
     .gm-pregame-center{width:58px}
   }
   #scores-grid{display:flex;flex-direction:column;gap:14px}
-  /* wide-tab (Scores only) switches the single column to a real grid at
-     wider viewports — each .card becomes its own query container (below)
-     so its internal breakpoints react to the column's actual width, not
-     the viewport, once there's more than one column on screen. Capped at
-     2 columns always (not 3 at 1400px+, removed 2026-07-10 per feedback)
-     — a 3rd column squeezed each card narrow enough to trip its own
-     mobile away/home tab fallback even on a huge monitor, the opposite of
-     what a wide breakpoint should do. Two full side-by-side lineups beats
-     three narrow tabbed ones. */
-  @media(min-width:900px)  { .wide-tab #scores-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;align-items:start} }
+  /* wide-tab (Scores only) switches the single column to a masonry layout
+     at wider viewports — each .card becomes its own query container
+     (below) so its internal breakpoints react to the column's actual
+     width, not the viewport, once there's more than one column on
+     screen. Capped at 2 columns always (not 3 at 1400px+, removed
+     2026-07-10 per feedback) — a 3rd column squeezed each card narrow
+     enough to trip its own mobile away/home tab fallback even on a huge
+     monitor, the opposite of what a wide breakpoint should do. Two full
+     side-by-side lineups beats three narrow tabbed ones.
+     Masonry via CSS multi-column (2026-07-17), not `grid-template-rows:
+     masonry` — that's Firefox-only behind a flag, not usable here. A real
+     `display:grid` 2-column layout row-aligns every card, so one tall
+     card in a row forces its shorter neighbor to leave a big empty gap
+     below it before the next row starts; `column-count` instead packs
+     each card immediately below whatever's already in its column,
+     top-to-bottom per column (first half of the sorted list fills column
+     1, second half fills column 2 — not shortest-column-first true
+     masonry, but a correct, JS-free approximation that reads fine for a
+     sorted feed). `break-inside:avoid` on each card is required — without
+     it a card can get visually sliced across the column boundary.
+     column-gap covers the horizontal gap; the vertical gap the old grid's
+     `gap` used to provide now has to come from each card's own
+     margin-bottom instead, since multi-column layout has no equivalent
+     of row-gap. */
+  @media(min-width:900px){
+    .wide-tab #scores-grid{display:block;column-count:2;column-gap:14px}
+    .wide-tab #scores-grid>.gamecard-collapsible{break-inside:avoid;margin-bottom:14px}
+  }
 
   /* History's secondary insight cards (Daily Scorecard/Team Performance/
      Calibration/Lean Tag Calibration/By Batting Order) — single column by
      default (each card's own margin-top:14px replaced by a grid gap so
-     spacing stays identical whether 1 or 2 columns), 2 columns at the
-     same 900px+ breakpoint used everywhere else in this file. An odd
-     count (5) just leaves the last card alone in its own row — no special
-     handling needed. Main summary/filter/log-table card above this grid
-     is unaffected — it stays full width at every size, it's a wide data
-     table, not a stat card. */
+     spacing stays identical whether 1 or 2 columns), masonry via the same
+     CSS multi-column technique as #scores-grid above at the same 900px+
+     breakpoint used everywhere else in this file — these 5 cards vary a
+     lot in height (a chart vs. a short table), so row-aligned grid
+     columns left visible gaps under the shorter ones. Main summary/
+     filter/log-table card above this grid is unaffected — it stays full
+     width at every size, it's a wide data table, not a stat card. */
   .history-insights-grid{display:flex;flex-direction:column;gap:14px;margin-top:14px}
-  @media(min-width:900px){ .history-insights-grid{display:grid;grid-template-columns:repeat(2,1fr);align-items:start} }
+  @media(min-width:900px){
+    .history-insights-grid{display:block;column-count:2;column-gap:14px;margin-top:14px}
+    .history-insights-grid>.card{break-inside:avoid;margin-bottom:14px}
+  }
 
   /* ── batter popup ── */
   #batter-popup-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
