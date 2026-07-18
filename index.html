@@ -5259,13 +5259,21 @@ function buildScoreCard(matchup, batters, betKeys) {
     const gameState  = batters[0]?.gameState  || '';
     const gamePk     = String(batters[0]?.gamePk || '');
     const parkFactor = batters[0]?.park_factor || null;
-    const mobileSide = scoresMobileSide[gamePk] || 'away';
-
     const ls    = _liveLinescore.get(gamePk);
     const gameDate = shortDateToISO(batters[0]?.gameDate);
     const score = _findLiveScore(gameDate, canonMatchup(matchup), gamePk);
     const isLiveGame  = ls ? (ls.isLive && !ls.isWarmup) : isLive(gameState);
     const isFinalGame = ls ? ls.isFinal : isFinal(gameState);
+    // Mobile lineup tab: when the user hasn't manually picked a side yet
+    // (scoresMobileSide[gamePk] is still undefined), default to whichever
+    // team is actually batting right now instead of always "away" — since
+    // this card re-renders every ~30-45s live-poll tick and the default is
+    // recomputed fresh each time, an unclicked tab naturally keeps tracking
+    // the batting team half-inning to half-inning. A manual click (which
+    // sets scoresMobileSide[gamePk] to an explicit 'away'/'home') always
+    // wins from then on — this only changes what happens before that.
+    const defaultMobileSide = (isLiveGame && ls?.half) ? (ls.half === 'Top' ? 'away' : 'home') : 'away';
+    const mobileSide = scoresMobileSide[gamePk] !== undefined ? scoresMobileSide[gamePk] : defaultMobileSide;
     // pregame gets its own mirrored top-strip layout (see scoreboardPregame
     // below) — live/final keep the original scoreboard bar untouched.
     const isPregame = !isLiveGame && !isFinalGame;
@@ -6039,8 +6047,15 @@ function _renderScoresAllBattersInner() {
     const teamCell = `<td style="text-align:center;white-space:nowrap">${l.team?`${ouBadge}<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}</td>`;
     const pTeam = pitcherTeam(l);
     const pTeamCell = `<td style="text-align:center">${pTeam?`<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(pTeam)}">${esc(pTeam)}</span>`:''}</td>`;
-    const nameCell = `<td class="col-name" style="text-align:left;cursor:${l.batterId?'pointer':'default'}" ${l.batterId?`onclick="goToBatter('${l.batterId}','${l.gamePk||''}')"`:''}>
+    // live-at-bat pulse, unlike buildScoreCard()'s Scores lineup row this
+    // isn't gated on isBet — All Batters is the one place every live
+    // batter is visible in one flat list regardless of betting status, so
+    // it should surface "who's up right now" for anyone, not just picks.
+    // Same _isPickAtBat() check + badge the Scores/slip/saved-bet rows use.
+    const atBat = isLive(l.gameState) && _isPickAtBat(l.batterId, l.gamePk);
+    const nameCell = `<td class="col-name${atBat?' sc-at-bat':''}" style="text-align:left;position:relative;cursor:${l.batterId?'pointer':'default'}" ${l.batterId?`onclick="goToBatter('${l.batterId}','${l.gamePk||''}')"`:''}>
       <span style="color:${dotCol(l.p||0)};${l.hasHit?'text-decoration:line-through;opacity:.45':''}">${esc(l.name)}</span>
+      ${atBat?'<span style="font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--amber);margin-left:5px">AT BAT</span>':''}
       ${subbedTag?'<span title="Subbed out of the game — no more plate appearances" style="color:var(--sage);opacity:.85;font-size:8px;margin-left:5px">SUBBED</span>':noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
     </td>`;
     const cells = cols.map(([lbl,fn,align,colorFn]) => lbl==='Pick' ? pickCell : lbl==='Team' ? teamCell : lbl==='P.Team' ? pTeamCell : lbl==='Name' ? nameCell : `<td style="text-align:${align};${colorFn?`color:${colorFn(l)}`:''}">${fn(l)}</td>`).join('');
