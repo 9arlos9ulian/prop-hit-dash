@@ -5149,10 +5149,21 @@ function muLabel(offG, pitchG) {
   return                {lbl:'NEUTRAL',    col:'var(--sage)', bg:'rgba(var(--overlay-rgb),.03)', border:'var(--line)', score:total, delta};
 }
 
-// default is collapsed — a card only counts as expanded once the user has
-// explicitly expanded it at least once (stored '0'); no stored value at all
-// (first visit, or a game not seen before) collapses by default.
-function _isCardCollapsed(id){ try{ const v = localStorage.getItem('card_collapsed_'+id); return v===null ? true : v==='1'; }catch(e){ return true; } }
+// Default depends on viewport width when there's no explicit user
+// preference stored yet: expanded at 900px+ (same breakpoint as the rest
+// of this file's desktop-vs-mobile layout swaps — there's room for the
+// full card, and a desktop user is more likely scanning several games at
+// once), collapsed below 900px (mobile — one game's full detail at a time
+// reads better than a long scroll of everything expanded). Once a user
+// explicitly toggles a card (stored '0'/'1'), that choice always wins
+// over the width default, at any width.
+function _isCardCollapsed(id){
+  try{
+    const v = localStorage.getItem('card_collapsed_'+id);
+    if(v !== null) return v === '1';
+  }catch(e){}
+  return window.innerWidth < 900;
+}
 
 // "pin to top" — persists per gamePk (naturally scoped per day, since each
 // day's games get fresh gamePks), read here and applied as the primary sort
