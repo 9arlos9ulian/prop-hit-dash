@@ -1138,6 +1138,12 @@
       <div class="htable-wrap" style="margin-top:8px"><div id="h-cal-body"><div class="empty">—</div></div></div>
     </div>
 
+    <div class="card card-collapsible" style="margin-top:14px" id="h-lean-card">
+      <h2 onclick="toggleCard('h-lean-card')">Lean Tag Calibration <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">amber = predicted · green = actual · does STRONG/AVOID track real outcomes?</span></h2>
+      <div id="h-leanvis" style="display:flex;align-items:flex-end;gap:8px;padding:12px 15px 0"></div>
+      <div class="htable-wrap" style="margin-top:8px"><div id="h-lean-body"><div class="empty">—</div></div></div>
+    </div>
+
     <div class="card card-collapsible" style="margin-top:14px" id="h-slot-card">
       <h2 onclick="toggleCard('h-slot-card')">By Batting Order <span style="font-family:var(--mono);font-size:11px;color:var(--sage);font-weight:400;letter-spacing:0">actual hit rate · avg model % · settled picks</span></h2>
       <div id="h-slot-chart" style="padding:0 15px 12px"><div class="empty">—</div></div>
@@ -6271,7 +6277,8 @@ function parseLogCSV(text) {
   const idx = k => head.findIndex(h => h === k);
   const iDate=idx('date'), iName=idx('name'), iTeam=idx('team'),
         iMatchup=idx('matchup'), iSlot=idx('slot'), iP=idx('p_hit'),
-        iHitOdds=idx('hit_odds'), iActual=idx('actual_hit'), iBatterId=idx('batter');
+        iHitOdds=idx('hit_odds'), iActual=idx('actual_hit'), iBatterId=idx('batter'),
+        iLeanTag=idx('lean_tag');
   return lines.slice(1).map(line => {
     const c = line.split(',').map(v => v.trim());
     return {
@@ -6283,6 +6290,11 @@ function parseLogCSV(text) {
       p:        parseFloat(c[iP]) || 0,
       odds:     c[iHitOdds] || '',
       batterId: c[iBatterId] || '',
+      // STRONG/LEAN/NEUTRAL/AVOID, computed pregame by live_slate.py the
+      // same way muLabel() computes it live on the Scores card — blank
+      // for rows predating the column (2026-07-17) or outside the
+      // slates/ archive's coverage (see backfill_lean_tag.py)
+      leanTag:  iLeanTag>=0 ? (c[iLeanTag] || '') : '',
       // used to blank out a '0' from today's date here, on the theory that a
       // same-day miss might be a stale leftover from before the game
       // actually finished — that's now handled at the source instead
@@ -6671,7 +6683,7 @@ function scrollToScoreGame(gamePk){
   }
 }
 function initCollapsibleCards() {
-  ['h-daily-card','h-team-card','h-cal-card','h-slot-card'].forEach(id => {
+  ['h-daily-card','h-team-card','h-cal-card','h-lean-card','h-slot-card'].forEach(id => {
     try { if(localStorage.getItem('card_collapsed_'+id)==='1') document.getElementById(id)?.classList.add('collapsed'); } catch(e){}
   });
 }
@@ -6823,6 +6835,61 @@ function renderHistory(resetPage) {
     const note = Math.abs(gap)<0.04?'well calibrated':gap<-0.08?'model too confident':gap<-0.04?'slightly overconfident':gap>0.08?'model undervaluing':'slight underestimate';
     return `<tr>
       <td style="color:var(--amber)">${c.label}</td>
+      <td class="r">${c.n}</td><td class="r">${c.hits}</td>
+      <td class="r">${pct(c.actRate)}</td>
+      <td class="r" style="color:var(--amber)">${pct(c.avgPred)}</td>
+      <td class="r ${gap>0.05?'diff-pos':gap<-0.05?'diff-neg':''}">${gapStr}</td>
+      <td style="font-size:11px;color:var(--sage)">${note}</td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+
+  // ── lean-tag buckets — same STRONG/LEAN/NEUTRAL/AVOID label the Scores
+  // card computes live (muLabel()), persisted pregame by live_slate.py as
+  // picks_log.csv's lean_tag column (added 2026-07-17; blank for rows
+  // predating it or outside the slates/ archive's coverage — see
+  // backfill_lean_tag.py). Same bar-chart-plus-table shape as the
+  // probability-decile Calibration block above, just 4 fixed buckets
+  // instead of 9 ranges. See LEAN_TAG_AUDIT_2026-07-17.md for the
+  // one-off manual version of this same analysis.
+  const leanColors = {
+    STRONG:  {col:'var(--good-dark)',       label:'🔥 STRONG'},
+    LEAN:    {col:'var(--mismatch-lean)',   label:'LEAN'},
+    NEUTRAL: {col:'var(--sage)',            label:'NEUTRAL'},
+    AVOID:   {col:'var(--mismatch-avoid)',  label:'AVOID'},
+  };
+  const leanBuckets = ['STRONG','LEAN','NEUTRAL','AVOID'].map(tag => {
+    const bs = settled.filter(r => r.leanTag === tag);
+    const bn = bs.length;
+    const bh = bs.filter(r=>r.actual==='1').length;
+    const avgPred = bn ? bs.reduce((s,r)=>s+r.p,0)/bn : 0;
+    const actRate = bn ? bh/bn : null;
+    return {tag, ...leanColors[tag], n:bn, hits:bh, avgPred, actRate};
+  });
+  const leanVis = document.getElementById('h-leanvis');
+  if(leanVis) leanVis.innerHTML = leanBuckets.map(c => {
+    const predH = Math.round(c.avgPred * 76);
+    const actH  = c.actRate!=null ? Math.round(c.actRate * 76) : 0;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0">
+      <div style="width:100%;position:relative;height:76px;display:flex;align-items:flex-end;justify-content:center">
+        <div style="width:60%;height:${predH}px;background:rgba(var(--amber-rgb),.35);border-radius:3px 3px 0 0;position:relative">
+          ${c.actRate!=null?`<div style="position:absolute;bottom:0;left:0;width:100%;height:${actH}px;background:rgba(var(--good-rgb),.5);border-radius:3px 3px 0 0"></div>`:''}
+        </div>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:${c.col}">${c.label}</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--chalk)">${c.n}</div>
+    </div>`;
+  }).join('');
+  const leanBody = document.getElementById('h-lean-body');
+  if(leanBody) leanBody.innerHTML = `<table class="hlog" style="margin-top:0"><thead><tr>
+    <th>Tag</th><th class="r">Sides</th><th class="r">Hits</th>
+    <th class="r">Actual %</th><th class="r">Pred avg</th><th class="r">Gap</th><th>Notes</th>
+  </tr></thead><tbody>${leanBuckets.map(c => {
+    if(!c.n) return `<tr><td style="color:${c.col}">${c.label}</td><td class="r" colspan="6" style="color:var(--sage)">No data</td></tr>`;
+    const gap = c.actRate - c.avgPred;
+    const gapStr = (gap>=0?'+':'')+pct(gap);
+    const note = Math.abs(gap)<0.04?'well calibrated':gap<-0.08?'model too confident':gap<-0.04?'slightly overconfident':gap>0.08?'model undervaluing':'slight underestimate';
+    return `<tr>
+      <td style="color:${c.col}">${c.label}</td>
       <td class="r">${c.n}</td><td class="r">${c.hits}</td>
       <td class="r">${pct(c.actRate)}</td>
       <td class="r" style="color:var(--amber)">${pct(c.avgPred)}</td>
