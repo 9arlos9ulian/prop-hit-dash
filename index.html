@@ -3,6 +3,9 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
   /* ── theme tokens ──────────────────────────────────────────────────────────
+     Palette: Gruvbox Hard (both dark and light variants), applied
+     2026-07-17 — replaces this project's original hand-tuned warm chalk/
+     sage/amber palette with Gruvbox's canonical color set throughout.
      Every color token below has a solid hex value AND a companion "-rgb"
      numeric-triplet value (e.g. --good / --good-rgb) — CSS can't append an
      alpha suffix directly onto a var() reference (var(--good)77 is invalid
@@ -21,41 +24,47 @@
          when the OS is light (otherwise the @media block above, later in
          source order, would win despite the user's explicit pick). */
   :root{
-    --field:#0D0C0B; --field-rgb:13,12,11;
-    --surf:#121110; --surf-rgb:18,17,16;
-    --raised:#181614; --raised-rgb:24,22,20;
-    --chalk:#EFE1C4; --chalk-rgb:239,225,196;
-    --sage:#9C978D; --sage-rgb:156,151,141;
-    --line:#292620; --line-rgb:41,38,32;
-    --good:#B2D07E; --good-rgb:178,208,126;
-    --good-dark:#4ADE80; --good-dark-rgb:74,222,128;
-    --bad:#E7966E; --bad-rgb:231,150,110;
-    --amber:#EBB269; --amber-rgb:235,178,105;
+    /* Gruvbox Hard (dark), applied 2026-07-17. Base scale: bg0_h/bg0/bg1/
+       bg2 for field/surf/raised/line, fg1/fg4 for chalk/sage. Accent hues
+       drawn from Gruvbox's 8-color set (red/green/yellow/blue/purple/aqua/
+       orange/gray), bright variants by default, neutral variants where a
+       deeper/more muted tone was wanted — same reuse pattern the original
+       palette already used (grade-c=amber, mismatch-strong=good-dark). */
+    --field:#1D2021; --field-rgb:29,32,33;
+    --surf:#282828; --surf-rgb:40,40,40;
+    --raised:#3C3836; --raised-rgb:60,56,54;
+    --chalk:#EBDBB2; --chalk-rgb:235,219,178;
+    --sage:#A89984; --sage-rgb:168,153,132;
+    --line:#504945; --line-rgb:80,73,69;
+    --good:#B8BB26; --good-rgb:184,187,38;
+    --good-dark:#8EC07C; --good-dark-rgb:142,192,124;
+    --bad:#FB4934; --bad-rgb:251,73,52;
+    --amber:#FABD2F; --amber-rgb:250,189,47;
     /* shadow-palette badge colors — previously hardcoded literals reused
        consistently across the style block and JS templates, now promoted
        to tokens so a light theme can reach them */
-    --live:#E05C5C; --live-rgb:224,92,92;
-    --opener:#A78BFA; --opener-rgb:167,139,250;
-    --thin:#B8860B; --thin-rgb:184,134,11;
-    --rest:#B756BE; --rest-rgb:183,86,190;
-    --rookie:#5496D8; --rookie-rgb:84,150,216;
-    --streak-hot:#F97316; --streak-hot-rgb:249,115,22;
-    --streak-max:#EF4444; --streak-max-rgb:239,68,68;
+    --live:#FE8019; --live-rgb:254,128,25;
+    --opener:#D3869B; --opener-rgb:211,134,155;
+    --thin:#D79921; --thin-rgb:215,153,33;
+    --rest:#B16286; --rest-rgb:177,98,134;
+    --rookie:#83A598; --rookie-rgb:131,165,152;
+    --streak-hot:#D65D0E; --streak-hot-rgb:214,93,14;
+    --streak-max:#FB4934; --streak-max-rgb:251,73,52;
     /* letter-grade colors (gradeCol()/gradeBg()) — grade-c intentionally
        equals --amber, not a separate value (they were the same literal) */
-    --grade-a:#A5CE6E; --grade-a-rgb:165,206,110;
-    --grade-b:#C7D78E; --grade-b-rgb:199,215,142;
+    --grade-a:#B8BB26; --grade-a-rgb:184,187,38;
+    --grade-b:#8EC07C; --grade-b-rgb:142,192,124;
     --grade-c:var(--amber); --grade-c-rgb:var(--amber-rgb);
-    --grade-d:#E99A4E; --grade-d-rgb:233,154,78;
-    --grade-f:#DA6E51; --grade-f-rgb:218,110,81;
+    --grade-d:#D65D0E; --grade-d-rgb:214,93,14;
+    --grade-f:#FB4934; --grade-f-rgb:251,73,52;
     /* matchup-mismatch label colors (muLabel()) — mismatch-strong
        intentionally equals --good-dark (same literal today) */
     --mismatch-strong:var(--good-dark); --mismatch-strong-rgb:var(--good-dark-rgb);
-    --mismatch-lean:#34D399; --mismatch-lean-rgb:52,211,153;
-    --mismatch-avoid:#F87171; --mismatch-avoid-rgb:248,113,113;
+    --mismatch-lean:#689D6A; --mismatch-lean-rgb:104,157,106;
+    --mismatch-avoid:#FB4934; --mismatch-avoid-rgb:251,73,52;
     /* header-title gradient shine (dark: glint = lightest stop; light
        mode inverts this — see the light block below) */
-    --amber-shine-1:var(--amber); --amber-shine-2:#DA9A48; --amber-shine-3:#F9D395;
+    --amber-shine-1:var(--amber); --amber-shine-2:#D79921; --amber-shine-3:#FBF1C7;
     /* generic "lighten on hover/zebra-stripe" tint — rgba(255,255,255,.0N)
        reads as a highlight on a dark surface; light mode needs a dark-ink
        tint at the same alphas instead, so this is its own token rather
@@ -63,110 +72,115 @@
     --overlay-rgb:255,255,255;
     /* found during the theme-token audit — small extras not in the original
        inventory, each with only 1-2 call sites */
-    --elite:#67E8F9; --elite-rgb:103,232,249;         /* CSW "ELITE" pitcher tier */
-    --opener-deep:#7C3AED; --opener-deep-rgb:124,58,237; /* isOpener left-border accent */
-    --neutral-rgb:120,120,130;                        /* neutral/no-data mismatch bg */
+    --elite:#83A598; --elite-rgb:131,165,152;         /* CSW "ELITE" pitcher tier */
+    --opener-deep:#B16286; --opener-deep-rgb:177,98,134; /* isOpener left-border accent */
+    --neutral-rgb:146,131,116;                        /* neutral/no-data mismatch bg */
     --disp:'JetBrains Mono',monospace; --mono:'JetBrains Mono',monospace; --body:'Inter',sans-serif;
   }
   @media (prefers-color-scheme: light){
     :root{
-      --field:#EDE6D6; --field-rgb:237,230,214;
-      --surf:#F6F1E4; --surf-rgb:246,241,228;
-      --raised:#FFFDF6; --raised-rgb:255,253,246;
-      --chalk:#2A2419; --chalk-rgb:42,36,25;
-      --sage:#6B6255; --sage-rgb:107,98,85;
-      --line:#DED2B8; --line-rgb:222,210,184;
-      --good:#356418; --good-rgb:53,100,24;
-      --good-dark:#0F7A52; --good-dark-rgb:15,122,82;
-      --bad:#A04A2A; --bad-rgb:160,74,42;
-      --amber:#8F5A17; --amber-rgb:143,90,23;
-      --live:#B23A3A; --live-rgb:178,58,58;
-      --opener:#6D4FC0; --opener-rgb:109,79,192;
-      --thin:#8A6408; --thin-rgb:138,100,8;
-      --rest:#8A3F91; --rest-rgb:138,63,145;
-      --rookie:#2E6FA8; --rookie-rgb:46,111,168;
-      --streak-hot:#A8480A; --streak-hot-rgb:168,72,10;
-      --streak-max:#C22B2B; --streak-max-rgb:194,43,43;
-      --grade-a:#3F7A22; --grade-a-rgb:63,122,34;
-      --grade-b:#5C7A2E; --grade-b-rgb:92,122,46;
+      /* Gruvbox Hard (light), applied 2026-07-17. Base scale: bg2/bg1/
+         bg0_h for field/surf/raised (progressively lighter, bg0_h being
+         Gruvbox's whitest "hard" tone), fg0/fg3 for chalk/sage. Accent
+         hues use Gruvbox's light-mode "neutral" variants — the bright
+         variants read fine on a dark bg but lose contrast on a light one. */
+      --field:#D5C4A1; --field-rgb:213,196,161;
+      --surf:#EBDBB2; --surf-rgb:235,219,178;
+      --raised:#F9F5D7; --raised-rgb:249,245,215;
+      --chalk:#282828; --chalk-rgb:40,40,40;
+      --sage:#665C54; --sage-rgb:102,92,84;
+      --line:#BDAE93; --line-rgb:189,174,147;
+      --good:#79740E; --good-rgb:121,116,14;
+      --good-dark:#427B58; --good-dark-rgb:66,123,88;
+      --bad:#9D0006; --bad-rgb:157,0,6;
+      --amber:#B57614; --amber-rgb:181,118,20;
+      --live:#AF3A03; --live-rgb:175,58,3;
+      --opener:#8F3F71; --opener-rgb:143,63,113;
+      --thin:#B57614; --thin-rgb:181,118,20;
+      --rest:#8F3F71; --rest-rgb:143,63,113;
+      --rookie:#076678; --rookie-rgb:7,102,120;
+      --streak-hot:#AF3A03; --streak-hot-rgb:175,58,3;
+      --streak-max:#9D0006; --streak-max-rgb:157,0,6;
+      --grade-a:#79740E; --grade-a-rgb:121,116,14;
+      --grade-b:#427B58; --grade-b-rgb:66,123,88;
       --grade-c:var(--amber); --grade-c-rgb:var(--amber-rgb);
-      --grade-d:#A85A1F; --grade-d-rgb:168,90,31;
-      --grade-f:#9C4622; --grade-f-rgb:156,70,34;
-      --mismatch-strong:#12804F; --mismatch-strong-rgb:18,128,79;
-      --mismatch-lean:#0B7A5F; --mismatch-lean-rgb:11,122,95;
-      --mismatch-avoid:#B23838; --mismatch-avoid-rgb:178,56,56;
+      --grade-d:#AF3A03; --grade-d-rgb:175,58,3;
+      --grade-f:#9D0006; --grade-f-rgb:157,0,6;
+      --mismatch-strong:#427B58; --mismatch-strong-rgb:66,123,88;
+      --mismatch-lean:#427B58; --mismatch-lean-rgb:66,123,88;
+      --mismatch-avoid:#9D0006; --mismatch-avoid-rgb:157,0,6;
       /* glint inverts to the richest/darkest stop — a light stop sweeping
          across cream (rather than near-black) would barely read at all */
-      --amber-shine-1:#8F5A17; --amber-shine-2:#6E4610; --amber-shine-3:#7A5010;
-      --overlay-rgb:26,22,14;
-      --elite:#0E7490; --elite-rgb:14,116,144;
-      --opener-deep:#5B21B6; --opener-deep-rgb:91,33,182;
-      --neutral-rgb:150,145,130;
+      --amber-shine-1:#B57614; --amber-shine-2:#AF3A03; --amber-shine-3:#3C3836;
+      --overlay-rgb:40,40,40;
+      --elite:#076678; --elite-rgb:7,102,120;
+      --opener-deep:#8F3F71; --opener-deep-rgb:143,63,113;
+      --neutral-rgb:146,131,116;
     }
   }
   :root[data-theme="light"]{
-    --field:#EDE6D6; --field-rgb:237,230,214;
-    --surf:#F6F1E4; --surf-rgb:246,241,228;
-    --raised:#FFFDF6; --raised-rgb:255,253,246;
-    --chalk:#2A2419; --chalk-rgb:42,36,25;
-    --sage:#6B6255; --sage-rgb:107,98,85;
-    --line:#DED2B8; --line-rgb:222,210,184;
-    --good:#356418; --good-rgb:53,100,24;
-    --good-dark:#0F7A52; --good-dark-rgb:15,122,82;
-    --bad:#A04A2A; --bad-rgb:160,74,42;
-    --amber:#8F5A17; --amber-rgb:143,90,23;
-    --live:#B23A3A; --live-rgb:178,58,58;
-    --opener:#6D4FC0; --opener-rgb:109,79,192;
-    --thin:#8A6408; --thin-rgb:138,100,8;
-    --rest:#8A3F91; --rest-rgb:138,63,145;
-    --rookie:#2E6FA8; --rookie-rgb:46,111,168;
-    --streak-hot:#A8480A; --streak-hot-rgb:168,72,10;
-    --streak-max:#C22B2B; --streak-max-rgb:194,43,43;
-    --grade-a:#3F7A22; --grade-a-rgb:63,122,34;
-    --grade-b:#5C7A2E; --grade-b-rgb:92,122,46;
+    --field:#D5C4A1; --field-rgb:213,196,161;
+    --surf:#EBDBB2; --surf-rgb:235,219,178;
+    --raised:#F9F5D7; --raised-rgb:249,245,215;
+    --chalk:#282828; --chalk-rgb:40,40,40;
+    --sage:#665C54; --sage-rgb:102,92,84;
+    --line:#BDAE93; --line-rgb:189,174,147;
+    --good:#79740E; --good-rgb:121,116,14;
+    --good-dark:#427B58; --good-dark-rgb:66,123,88;
+    --bad:#9D0006; --bad-rgb:157,0,6;
+    --amber:#B57614; --amber-rgb:181,118,20;
+    --live:#AF3A03; --live-rgb:175,58,3;
+    --opener:#8F3F71; --opener-rgb:143,63,113;
+    --thin:#B57614; --thin-rgb:181,118,20;
+    --rest:#8F3F71; --rest-rgb:143,63,113;
+    --rookie:#076678; --rookie-rgb:7,102,120;
+    --streak-hot:#AF3A03; --streak-hot-rgb:175,58,3;
+    --streak-max:#9D0006; --streak-max-rgb:157,0,6;
+    --grade-a:#79740E; --grade-a-rgb:121,116,14;
+    --grade-b:#427B58; --grade-b-rgb:66,123,88;
     --grade-c:var(--amber); --grade-c-rgb:var(--amber-rgb);
-    --grade-d:#A85A1F; --grade-d-rgb:168,90,31;
-    --grade-f:#9C4622; --grade-f-rgb:156,70,34;
-    --mismatch-strong:#12804F; --mismatch-strong-rgb:18,128,79;
-    --mismatch-lean:#0B7A5F; --mismatch-lean-rgb:11,122,95;
-    --mismatch-avoid:#B23838; --mismatch-avoid-rgb:178,56,56;
-    --amber-shine-1:#8F5A17; --amber-shine-2:#6E4610; --amber-shine-3:#7A5010;
-    --overlay-rgb:26,22,14;
-    --elite:#0E7490; --elite-rgb:14,116,144;
-    --opener-deep:#5B21B6; --opener-deep-rgb:91,33,182;
-    --neutral-rgb:150,145,130;
+    --grade-d:#AF3A03; --grade-d-rgb:175,58,3;
+    --grade-f:#9D0006; --grade-f-rgb:157,0,6;
+    --mismatch-strong:#427B58; --mismatch-strong-rgb:66,123,88;
+    --mismatch-lean:#427B58; --mismatch-lean-rgb:66,123,88;
+    --mismatch-avoid:#9D0006; --mismatch-avoid-rgb:157,0,6;
+    --amber-shine-1:#B57614; --amber-shine-2:#AF3A03; --amber-shine-3:#3C3836;
+    --overlay-rgb:40,40,40;
+    --elite:#076678; --elite-rgb:7,102,120;
+    --opener-deep:#8F3F71; --opener-deep-rgb:143,63,113;
+    --neutral-rgb:146,131,116;
   }
   :root[data-theme="dark"]{
-    --field:#0D0C0B; --field-rgb:13,12,11;
-    --surf:#121110; --surf-rgb:18,17,16;
-    --raised:#181614; --raised-rgb:24,22,20;
-    --chalk:#EFE1C4; --chalk-rgb:239,225,196;
-    --sage:#9C978D; --sage-rgb:156,151,141;
-    --line:#292620; --line-rgb:41,38,32;
-    --good:#B2D07E; --good-rgb:178,208,126;
-    --good-dark:#4ADE80; --good-dark-rgb:74,222,128;
-    --bad:#E7966E; --bad-rgb:231,150,110;
-    --amber:#EBB269; --amber-rgb:235,178,105;
-    --live:#E05C5C; --live-rgb:224,92,92;
-    --opener:#A78BFA; --opener-rgb:167,139,250;
-    --thin:#B8860B; --thin-rgb:184,134,11;
-    --rest:#B756BE; --rest-rgb:183,86,190;
-    --rookie:#5496D8; --rookie-rgb:84,150,216;
-    --streak-hot:#F97316; --streak-hot-rgb:249,115,22;
-    --streak-max:#EF4444; --streak-max-rgb:239,68,68;
-    --grade-a:#A5CE6E; --grade-a-rgb:165,206,110;
-    --grade-b:#C7D78E; --grade-b-rgb:199,215,142;
+    --field:#1D2021; --field-rgb:29,32,33;
+    --surf:#282828; --surf-rgb:40,40,40;
+    --raised:#3C3836; --raised-rgb:60,56,54;
+    --chalk:#EBDBB2; --chalk-rgb:235,219,178;
+    --sage:#A89984; --sage-rgb:168,153,132;
+    --line:#504945; --line-rgb:80,73,69;
+    --good:#B8BB26; --good-rgb:184,187,38;
+    --good-dark:#8EC07C; --good-dark-rgb:142,192,124;
+    --bad:#FB4934; --bad-rgb:251,73,52;
+    --amber:#FABD2F; --amber-rgb:250,189,47;
+    --live:#FE8019; --live-rgb:254,128,25;
+    --opener:#D3869B; --opener-rgb:211,134,155;
+    --thin:#D79921; --thin-rgb:215,153,33;
+    --rest:#B16286; --rest-rgb:177,98,134;
+    --rookie:#83A598; --rookie-rgb:131,165,152;
+    --streak-hot:#D65D0E; --streak-hot-rgb:214,93,14;
+    --streak-max:#FB4934; --streak-max-rgb:251,73,52;
+    --grade-a:#B8BB26; --grade-a-rgb:184,187,38;
+    --grade-b:#8EC07C; --grade-b-rgb:142,192,124;
     --grade-c:var(--amber); --grade-c-rgb:var(--amber-rgb);
-    --grade-d:#E99A4E; --grade-d-rgb:233,154,78;
-    --grade-f:#DA6E51; --grade-f-rgb:218,110,81;
+    --grade-d:#D65D0E; --grade-d-rgb:214,93,14;
+    --grade-f:#FB4934; --grade-f-rgb:251,73,52;
     --mismatch-strong:var(--good-dark); --mismatch-strong-rgb:var(--good-dark-rgb);
-    --mismatch-lean:#34D399; --mismatch-lean-rgb:52,211,153;
-    --mismatch-avoid:#F87171; --mismatch-avoid-rgb:248,113,113;
-    --amber-shine-1:var(--amber); --amber-shine-2:#DA9A48; --amber-shine-3:#F9D395;
+    --mismatch-lean:#689D6A; --mismatch-lean-rgb:104,157,106;
+    --mismatch-avoid:#FB4934; --mismatch-avoid-rgb:251,73,52;
+    --amber-shine-1:var(--amber); --amber-shine-2:#D79921; --amber-shine-3:#FBF1C7;
     --overlay-rgb:255,255,255;
-    --elite:#67E8F9; --elite-rgb:103,232,249;
-    --opener-deep:#7C3AED; --opener-deep-rgb:124,58,237;
-    --neutral-rgb:120,120,130;
+    --elite:#83A598; --elite-rgb:131,165,152;
+    --opener-deep:#B16286; --opener-deep-rgb:177,98,134;
+    --neutral-rgb:146,131,116;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--field);color:var(--chalk);font-family:var(--body)}
