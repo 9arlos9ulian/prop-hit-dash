@@ -673,6 +673,23 @@
   .theme-toggle-btn:not(:last-child){border-right:1px solid var(--line)}
   .theme-toggle-btn:hover{opacity:1;color:var(--chalk)}
   .theme-toggle-btn.active{opacity:1;color:var(--amber);background:rgba(var(--amber-rgb),.12)}
+  /* Mobile-only view-mode dropdowns — hidden by default, swapped in for
+     the desktop .theme-toggle/#power-saver-toggle controls at <=640px
+     (see that media query below). Same select styling already used for
+     #global-date-picker. */
+  .mobile-view-select{display:none;background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:10px;font-family:var(--mono);cursor:pointer;align-self:center}
+  /* Placed AFTER .theme-toggle's own unconditional display:flow rule
+     above (not inside the earlier @media(max-width:640px) block, which
+     sits before this in source order) — two rules of equal specificity
+     resolve by source order regardless of which is inside a media query,
+     so a media-query override declared earlier in the file loses to a
+     plain rule declared later. Caught in verification: at 375px width
+     .theme-toggle still computed display:flex despite an (incorrectly
+     positioned) earlier override. */
+  @media(max-width:640px){
+    .theme-toggle{display:none}
+    .mobile-view-select{display:inline-block}
+  }
   .header-title h1{
     font-family:var(--disp);font-weight:400;font-size:38px;letter-spacing:-1px;
     text-transform:uppercase;line-height:1;margin:0;
@@ -1080,6 +1097,24 @@
           <button class="theme-toggle-btn" data-theme-pref="auto" onclick="setTheme('auto')">Auto</button>
         </div>
         <button id="power-saver-toggle" class="header-about-link" onclick="togglePowerSaver()" title="Power Saver — true-black background (OLED) + stops continuous animations. Only changes background color while a dark palette is actually rendering.">⚡ Power Saver</button>
+        <!-- Mobile-only view-mode dropdowns (<=640px) — the desktop
+             .theme-toggle 3-button row + #power-saver-toggle both hide at
+             that breakpoint (same as README/Send Email/date picker,
+             .header-about-link's existing mobile rule), which left Power
+             Saver completely unreachable on a phone — arguably where OLED
+             power saving matters most. Two small native <select>s instead
+             of a custom popup — no custom-dropdown pattern exists
+             anywhere else in this file, this matches the established
+             convention (global-date-picker, Bets jump-to-date, etc). -->
+        <select id="theme-mobile-select" class="mobile-view-select" onchange="setTheme(this.value)" title="Theme">
+          <option value="light">☀ Light</option>
+          <option value="dark">● Dark</option>
+          <option value="auto">◐ Auto</option>
+        </select>
+        <select id="power-mobile-select" class="mobile-view-select" onchange="setPowerSaverFromSelect(this.value)" title="Power Saver — true-black OLED background + stops continuous animations">
+          <option value="off">⚡ Power Saver: Off</option>
+          <option value="on">⚡ Power Saver: On</option>
+        </select>
       </div>
     </div>
     <div class="header-sub">Hit probability · parlay builder · result tracking</div>
@@ -1502,6 +1537,8 @@ function applyTheme(pref){
   document.querySelectorAll('.theme-toggle-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.themePref === pref);
   });
+  const mSel = document.getElementById('theme-mobile-select');
+  if(mSel) mSel.value = pref;
 }
 function setTheme(pref){
   try { localStorage.setItem(THEME_KEY, pref); } catch(e) {}
@@ -1528,11 +1565,21 @@ function applyPowerSaver(on){
   else document.documentElement.removeAttribute('data-power-saver');
   const btn = document.getElementById('power-saver-toggle');
   if(btn) btn.classList.toggle('active', on);
+  const mSel = document.getElementById('power-mobile-select');
+  if(mSel) mSel.value = on ? 'on' : 'off';
 }
 function togglePowerSaver(){
   const next = !document.documentElement.hasAttribute('data-power-saver');
   try { localStorage.setItem(POWER_SAVER_KEY, next ? '1' : '0'); } catch(e) {}
   applyPowerSaver(next);
+}
+// mobile dropdown's onchange calls this directly with the select's own
+// value, rather than reusing togglePowerSaver()'s toggle-relative logic —
+// a <select> always has an explicit target state, no need to infer it
+function setPowerSaverFromSelect(val){
+  const on = val === 'on';
+  try { localStorage.setItem(POWER_SAVER_KEY, on ? '1' : '0'); } catch(e) {}
+  applyPowerSaver(on);
 }
 (function initPowerSaver(){
   let on = false;
