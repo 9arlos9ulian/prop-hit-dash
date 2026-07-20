@@ -792,24 +792,18 @@
      enough to trip its own mobile away/home tab fallback even on a huge
      monitor, the opposite of what a wide breakpoint should do. Two full
      side-by-side lineups beats three narrow tabbed ones.
-     Masonry via CSS multi-column (2026-07-17), not `grid-template-rows:
-     masonry` — that's Firefox-only behind a flag, not usable here. A real
-     `display:grid` 2-column layout row-aligns every card, so one tall
-     card in a row forces its shorter neighbor to leave a big empty gap
-     below it before the next row starts; `column-count` instead packs
-     each card immediately below whatever's already in its column,
-     top-to-bottom per column (first half of the sorted list fills column
-     1, second half fills column 2 — not shortest-column-first true
-     masonry, but a correct, JS-free approximation that reads fine for a
-     sorted feed). `break-inside:avoid` on each card is required — without
-     it a card can get visually sliced across the column boundary.
-     column-gap covers the horizontal gap; the vertical gap the old grid's
-     `gap` used to provide now has to come from each card's own
-     margin-bottom instead, since multi-column layout has no equivalent
-     of row-gap. */
+     Was CSS multi-column (column-count, added 2026-07-17) — packed
+     top-to-bottom per column (first half of the sorted list in column 1,
+     second half in column 2). Switched to real `display:grid` per explicit
+     follow-up feedback: the client wants left-to-right "Z" reading order
+     (card 1, 2 side by side, then 3, 4 below) matching the sorted list's
+     actual order, not a column-major split. Trade-off, flagged rather than
+     hidden: grid row-aligns each pair, so a tall card can leave a visible
+     gap under its shorter neighbor before the next row starts — accepted
+     in exchange for correct Z-order (this is exactly the drawback
+     column-count was chosen to avoid the same day; reverted on request). */
   @media(min-width:900px){
-    .wide-tab #scores-grid{display:block;column-count:2;column-gap:14px}
-    .wide-tab #scores-grid>.gamecard-collapsible{break-inside:avoid;margin-bottom:14px}
+    .wide-tab #scores-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   }
 
   /* History's secondary insight cards (Daily Scorecard/Team Performance/
