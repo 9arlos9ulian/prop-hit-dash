@@ -1044,7 +1044,8 @@
         <div class="poolbar-row" style="flex-wrap:wrap">
           <span class="fchip-lbl">Sort</span>
           <button id="scores-sort-time" class="ghost fchip amber" onclick="scoresSort='time';_setScoresSortBtn(this);renderScores()">Time</button>
-          <button id="scores-sort-level" class="ghost fchip" title="Most lopsided matchups first, either strongly favorable or strongly unfavorable" onclick="scoresSort='diff';_setScoresSortBtn(this);renderScores()">Matchup Level</button>
+          <button id="scores-sort-hitting" class="ghost fchip" title="Best hitting environment first (both sides' matchup quality + park factor) ↔ worst — reverse to flip" onclick="scoresSort='hitting';_setScoresSortBtn(this);renderScores()">Hitting</button>
+          <button id="scores-sort-matchup" class="ghost fchip" title="Biggest mismatch between the two sides first (one STRONG, one AVOID) ↔ most uniform — reverse to flip" onclick="scoresSort='matchup';_setScoresSortBtn(this);renderScores()">Matchup</button>
           <button id="scores-sort-dir" class="ghost fchip" title="Reverse the current sort order" onclick="scoresSortDir=-scoresSortDir;_setScoresSortDirBtn();renderScores()">▼</button>
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
           <button id="scores-live-btn" class="ghost fchip" onclick="scoresLiveOnly=!scoresLiveOnly;scoresUpcoming=false;this.classList.toggle('amber',scoresLiveOnly);document.getElementById('scores-upcoming-btn').classList.remove('amber');renderScores()">● Live</button>
@@ -5115,14 +5116,14 @@ let showOuBadge = true;
 // This picker was never actually the cause — re-enabled once that fix was
 // confirmed live.
 let PITCHER_PREVIEW_ENABLED = true;
-let scoresSort = 'time'; // 'time' | 'diff'
+let scoresSort = 'time'; // 'time' | 'hitting' | 'matchup'
 // two mutually-exclusive sort chips share one active-button toggle instead
 // of each hardcoding "add mine, remove the other one". 'rating' (Best Lean)
 // and 'diff' (Matchup Diff) used to be separate sort modes; merged into one
 // "Matchup Level" chip using the 'diff' (most-lopsided-either-direction)
 // ranking, since it's a superset of what Best Lean surfaced.
 function _setScoresSortBtn(el){
-  ['scores-sort-time','scores-sort-level'].forEach(id=>{
+  ['scores-sort-time','scores-sort-hitting','scores-sort-matchup'].forEach(id=>{
     document.getElementById(id)?.classList.toggle('amber', document.getElementById(id)===el);
   });
 }
@@ -5196,6 +5197,42 @@ function muLabel(offG, pitchG) {
   if(total >= 4) return {lbl:'LEAN',       col:'var(--mismatch-lean)', bg:'rgba(var(--mismatch-lean-rgb),.07)',  border:'rgba(var(--mismatch-lean-rgb),.2)',  score:total, delta};
   if(total <= 2) return {lbl:'AVOID',      col:'var(--mismatch-avoid)', bg:'rgba(var(--mismatch-avoid-rgb),.11)', border:'rgba(var(--mismatch-avoid-rgb),.3)', score:total, delta};
   return                {lbl:'NEUTRAL',    col:'var(--sage)', bg:'rgba(var(--overlay-rgb),.03)', border:'var(--line)', score:total, delta};
+}
+
+// Hitting grade — combined hit-friendliness of the WHOLE game: both
+// sides' own muLabel total (offense-vs-opposing-pitcher quality, 0-8
+// each) plus a park bonus/penalty. Both-AVOID sides bottom out near this
+// scale's floor regardless of park; both-STRONG in a hitter's park tops
+// out. Reuses awayMu.score/homeMu.score — already computed for the
+// footer chips, never duplicated here.
+function hittingScore(awayMu, homeMu, parkFactor) {
+  const base = (awayMu?.score ?? 4) + (homeMu?.score ?? 4); // 0-16, 8 neutral
+  const parkAdj = parkFactor >= 1.05 ? 2 : parkFactor <= 0.95 ? -2 : 0;
+  return base + parkAdj; // -2..18
+}
+function hittingGrade(score) {
+  if(score >= 14) return 'A';
+  if(score >= 10) return 'B';
+  if(score >= 6)  return 'C';
+  if(score >= 2)  return 'D';
+  return 'F';
+}
+
+// Matchup grade — how much the two sides DIVERGE from each other, not
+// how extreme either one is alone. |awayDelta - homeDelta| is 0 when
+// both sides read identically extreme (avoid-vs-avoid, strong-vs-strong
+// — no asymmetry between the teams) and maxes out at 8 when one side is
+// max-STRONG (+4) and the other max-AVOID (-4) — a genuine mismatch
+// between the two lineups' fortunes.
+function matchupDivergence(awayMu, homeMu) {
+  return Math.abs((awayMu?.delta ?? 0) - (homeMu?.delta ?? 0)); // 0-8
+}
+function matchupGrade(div) {
+  if(div >= 6) return 'A';
+  if(div >= 4) return 'B';
+  if(div >= 2) return 'C';
+  if(div >= 1) return 'D';
+  return 'F';
 }
 
 // Default depends on viewport width when there's no explicit user
@@ -5756,11 +5793,20 @@ function buildScoreCard(matchup, batters, betKeys) {
     // for a while (seemed pointless once the card got the full desktop
     // layout), restored per feedback
     const collapsed = _isCardCollapsed(cardId);
+    // Hitting/Matchup grade badges — reuse awayMu/homeMu (already computed
+    // above for the footer chips) + parkFactor, no new per-side math.
+    const hGrade = hittingGrade(hittingScore(awayMu, homeMu, parkFactor ?? 1.0));
+    const mGrade = matchupGrade(matchupDivergence(awayMu, homeMu));
+    const gradeBadges = `<div style="display:flex;justify-content:center;gap:10px;padding:3px 10px;border-bottom:1px solid var(--line);background:rgba(var(--overlay-rgb),.015)">
+      <span title="Hitting environment — both sides' matchup quality + park factor" style="font-family:var(--mono);font-size:9px;color:var(--sage)">HIT <b style="color:${gradeCol(hGrade)}">${hGrade}</b></span>
+      <span title="Matchup divergence — how lopsided the two sides are relative to EACH OTHER, not how extreme either is alone" style="font-family:var(--mono);font-size:9px;color:var(--sage)">MATCHUP <b style="color:${gradeCol(mGrade)}">${mGrade}</b></span>
+    </div>`;
     return `<div class="card gamecard-collapsible${collapsed?' collapsed':''}" id="${cardId}" style="padding:0;overflow:hidden${isAllStarGame?';border-top:2px solid #D4AF37':''}">
       <div class="gm-header" onclick="if(!event.target.closest('a'))toggleCard('${cardId}')">
         ${isAllStarGame
           ? `<div style="padding:5px 10px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(184,50,46,.16),rgba(212,175,55,.14),rgba(30,75,142,.16));text-align:center"><span title="MLB All-Star Game — exhibition rosters, not real franchise matchups; lean grades below still compare each side's lineup vs. the opposing pitcher, same math as any other game" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#D4AF37">⭐ MLB ALL-STAR GAME ⭐</span></div>`
           : storyline?`<div style="padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(var(--overlay-rgb),.02);text-align:center"><span title="${esc(storyline.title)}" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:${storyline.color}">✦ ${storyline.label}</span></div>`:''}
+        ${gradeBadges}
         ${isPregame ? scoreboardPregame : scoreboardLiveFinal}
       </div>
       <div class="scores-mobile-tabs" style="border-bottom:1px solid var(--line)">
@@ -5827,28 +5873,37 @@ function _renderScoresInner() {
     const pb = _isGamePinned(String(b[1][0]?.gamePk||'')) ? 0 : 1;
     if(pa !== pb) return pa - pb;
     // A card shows a lean per SIDE (awayMu/homeMu in buildScoreCard), each
-    // side graded against the pitcher that side actually faces. So the sort
-    // key has to be per-side too: how lopsided is the more lopsided half of
-    // this card. Pooling both lineups into one average (what this used to do)
-    // cancelled the two sides out — a card reading AVOID -3 on one side
-    // scored *more neutral* than a card reading -2/+2, so the most lopsided
-    // games sorted to the bottom. Reuses muLabel()/offGrade() so the sort key
-    // and the footer chips can't drift apart.
-    function gameLopsidedness(bat) {
+    // side graded against the pitcher that side actually faces — so both
+    // the Hitting and Matchup sorts need each side's muLabel recomputed
+    // here too, the comparator only has the raw `batters` array to work
+    // from, not the already-built card object. Reuses muLabel()/offGrade()
+    // (same math the footer chips and the card's HIT/MATCHUP badges use)
+    // so the sort key can't drift from what's actually displayed.
+    function gameGrades(bat) {
       const [away, home] = (bat[0]?.matchup || '').split(' @ ').map(s => s.trim());
-      const sideDelta = team => {
+      const sideMu = team => {
         const s = bat.filter(l => l.team === team);
         if(!s.length) return null;
         const avg = s.reduce((x,l) => x+(l.p||0), 0) / s.length;
-        return muLabel(offGrade(avg), s[0]?.pGrade || 'C').delta;
+        return muLabel(offGrade(avg), s[0]?.pGrade || 'C');
       };
-      const deltas = [sideDelta(away), sideDelta(home)]
-        .filter(d => d != null).map(Math.abs);
-      return deltas.length ? Math.max(...deltas) : 0;
+      const awayMu = sideMu(away), homeMu = sideMu(home);
+      const pf = bat[0]?.park_factor ?? 1.0;
+      return {
+        hitting: hittingScore(awayMu, homeMu, pf),
+        matchup: matchupDivergence(awayMu, homeMu),
+      };
     }
-    if(scoresSort === 'diff') {
-      // most lopsided matchups first, either direction (STRONG or AVOID)
-      return scoresSortDir * (gameLopsidedness(b[1]) - gameLopsidedness(a[1]));
+    if(scoresSort === 'hitting') {
+      // ▼ = best hitting environment first (both sides + park), ▲ = worst
+      return scoresSortDir * (gameGrades(b[1]).hitting - gameGrades(a[1]).hitting);
+    }
+    if(scoresSort === 'matchup') {
+      // ▼ = biggest mismatch between the two sides first (one STRONG, one
+      // AVOID), ▲ = most uniform — NOT "most extreme either way," a
+      // both-AVOID or both-STRONG game scores low here since there's no
+      // divergence between the two lineups' fortunes.
+      return scoresSortDir * (gameGrades(b[1]).matchup - gameGrades(a[1]).matchup);
     }
     function timeVal(t){
       if(!t) return 9999;
