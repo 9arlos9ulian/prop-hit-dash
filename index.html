@@ -182,6 +182,63 @@
     --opener-deep:#B16286; --opener-deep-rgb:177,98,134;
     --neutral-rgb:146,131,116;
   }
+  /* Power Saver — true black, only where dark is actually rendering.
+     #1D2021 (the normal dark --field) still lights every OLED pixel at
+     low brightness; only #000 turns them off.
+     Explicit dark theme: unambiguous, no media query needed.
+     Auto mode: gated by `not (prefers-color-scheme: light)` — matches
+     when the OS prefers dark OR reports no preference, mirroring the
+     asymmetry the base :root{} dark-default already relies on (dark is
+     the fallback unless the OS explicitly asks for light, applied via
+     the separate @media(prefers-color-scheme:light) block above). Auto
+     mode + OS actually preferring light + Power Saver on is left alone
+     on purpose — this query simply doesn't match then, so light stays
+     light rather than getting an incongruous forced-black background. */
+  :root[data-theme="dark"][data-power-saver="1"]{ --field:#000; --field-rgb:0,0,0; --surf:#0A0A0A; --surf-rgb:10,10,10; --raised:#141414; --raised-rgb:20,20,20; }
+  @media not (prefers-color-scheme: light) {
+    :root:not([data-theme])[data-power-saver="1"]{ --field:#000; --field-rgb:0,0,0; --surf:#0A0A0A; --surf-rgb:10,10,10; --raised:#141414; --raised-rgb:20,20,20; }
+  }
+  /* Power Saver animation kill-list — every `infinite` (continuous
+     repaint, not one-shot) animation in this file as of 2026-07-20.
+     Deliberately NOT touching slipBump/popupIn/fadeInOv — those play
+     once on a state change (0.12-0.35s), negligible cost, and disabling
+     them would just make the UI feel unresponsive for no power benefit.
+     Informational pulses (live at-bat, live tick-dot, pick-glow, cold/hot
+     row glow) keep their static box-shadow/color — only the `animation`
+     itself stops, so what's live/picked/streaking is still visible, just
+     not pulsing. Purely decorative ones (bgdrift, titleshine, circlepulse)
+     just stop outright, nothing lost. Also fires under the OS-level
+     prefers-reduced-motion signal, independent of the in-app toggle. */
+  [data-power-saver="1"] #charlieBtn.charlie-on::after,
+  [data-power-saver="1"] .streakbadge-2,
+  [data-power-saver="1"] .streakbadge-3,
+  [data-power-saver="1"] .streakbadge-4,
+  [data-power-saver="1"] .streakbadge-5plus,
+  [data-power-saver="1"] .coldwarn,
+  [data-power-saver="1"] [style*="animation:coldpulse"],
+  [data-power-saver="1"] .bg-gradient,
+  [data-power-saver="1"] .header-title h1,
+  [data-power-saver="1"] .row-cold-glow::after,
+  [data-power-saver="1"] .row-cold-glow-red::after,
+  [data-power-saver="1"] .row-cold-glow-blue::after,
+  [data-power-saver="1"] .row-hot-glow::after,
+  [data-power-saver="1"] .sc-at-bat::after,
+  [data-power-saver="1"] .pick-glow::before,
+  [data-power-saver="1"] .scorecircle:not(.scorecircle-done)::after,
+  [data-power-saver="1"] .tick-dot {
+    animation: none !important;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #charlieBtn.charlie-on::after,
+    .streakbadge-2, .streakbadge-3, .streakbadge-4, .streakbadge-5plus,
+    .coldwarn, [style*="animation:coldpulse"],
+    .bg-gradient, .header-title h1,
+    .row-cold-glow::after, .row-cold-glow-red::after, .row-cold-glow-blue::after, .row-hot-glow::after,
+    .sc-at-bat::after, .pick-glow::before,
+    .scorecircle:not(.scorecircle-done)::after, .tick-dot {
+      animation: none !important;
+    }
+  }
   *{box-sizing:border-box}
   body{margin:0;background:var(--field);color:var(--chalk);font-family:var(--body)}
   .wrap{max-width:1080px;margin:0 auto;padding:22px 16px 80px}
@@ -605,6 +662,7 @@
   .header-title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;justify-content:space-between}
   .header-about-link{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--sage);opacity:.5;cursor:pointer;border:none;background:none;padding:2px 0;align-self:flex-end;transition:opacity .2s}
   .header-about-link:hover{opacity:1;color:var(--chalk)}
+  .header-about-link.active{opacity:1;color:var(--amber)}
   /* own class, not .header-about-link — that one is force-hidden on mobile
      (see the max-width:640px rule above), and a theme preference is worth
      keeping reachable on a phone even though Auto covers most mobile use
@@ -1021,6 +1079,7 @@
           <button class="theme-toggle-btn" data-theme-pref="dark" onclick="setTheme('dark')">Dark</button>
           <button class="theme-toggle-btn" data-theme-pref="auto" onclick="setTheme('auto')">Auto</button>
         </div>
+        <button id="power-saver-toggle" class="header-about-link" onclick="togglePowerSaver()" title="Power Saver — true-black background (OLED) + stops continuous animations. Only changes background color while a dark palette is actually rendering.">⚡ Power Saver</button>
       </div>
     </div>
     <div class="header-sub">Hit probability · parlay builder · result tracking</div>
@@ -1452,6 +1511,33 @@ function setTheme(pref){
   let pref = 'auto';
   try { pref = localStorage.getItem(THEME_KEY) || 'auto'; } catch(e) {}
   applyTheme(pref);
+})();
+
+// Power Saver — independent of Light/Dark/Auto (this is about true-black
+// backgrounds + motion, not palette; someone could want Dark without it,
+// or Light with reduced motion). [data-power-saver="1"] on <html> drives
+// both the CSS true-black override (only visible while a dark palette is
+// actually rendering) and the animation kill-list.
+const POWER_SAVER_KEY = 'dugout_power_saver';
+function applyPowerSaver(on){
+  // setAttribute/removeAttribute, NOT toggleAttribute(name, force) — that
+  // sets an empty-string value ("") when forced true, not "1", so the
+  // [data-power-saver="1"] CSS selectors never matched (caught in
+  // verification: --field stayed #1D2021 with the toggle showing active).
+  if(on) document.documentElement.setAttribute('data-power-saver', '1');
+  else document.documentElement.removeAttribute('data-power-saver');
+  const btn = document.getElementById('power-saver-toggle');
+  if(btn) btn.classList.toggle('active', on);
+}
+function togglePowerSaver(){
+  const next = !document.documentElement.hasAttribute('data-power-saver');
+  try { localStorage.setItem(POWER_SAVER_KEY, next ? '1' : '0'); } catch(e) {}
+  applyPowerSaver(next);
+}
+(function initPowerSaver(){
+  let on = false;
+  try { on = localStorage.getItem(POWER_SAVER_KEY) === '1'; } catch(e) {}
+  applyPowerSaver(on);
 })();
 
 let legs = [];
