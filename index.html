@@ -1193,15 +1193,8 @@
             <option value="9">9</option>
           </select>
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
-          <button id="exp-minPBtn" class="fchip ghost" onclick="filterMinP=filterMinP?0:0.70;this.classList.toggle('amber',!!filterMinP);renderScoresAllBatters()" title="Only show batters with 70%+ model probability">70%+</button>
-          <button id="exp-hotBtn" class="ghost fchip" onclick="filterHotOnly=!filterHotOnly;this.classList.toggle('amber',filterHotOnly);renderScoresAllBatters()" title="Only show batters with 7+ hits in last 10 games">🔥 Hot</button>
-          <button id="exp-3abBtn" class="ghost fchip" onclick="filter3abPositive=!filter3abPositive;this.classList.toggle('amber',filter3abPositive);renderScoresAllBatters()" title="Only show batters with a positive 3AB value — display-only, park/pitcher-neutralized first-3-PA quality above league average">3AB +</button>
-          <button id="exp-favMatchupBtn" class="ghost fchip" onclick="filterFavMatchup=!filterFavMatchup;this.classList.toggle('amber',filterFavMatchup);renderScoresAllBatters()" title="Only show batters whose team is the favored side of tonight's matchup — LEAN or STRONG, same muLabel() grade shown on the Scores card">Fav Matchup</button>
-          <button id="exp-charlieBtn" class="fchip ghost" onclick="filterMinP=filterMinP?0:0.70;filterHotOnly=!filterHotOnly;setSlotFilter(1);document.getElementById('exp-minPBtn').classList.toggle('amber',!!filterMinP);document.getElementById('exp-hotBtn').classList.toggle('amber',filterHotOnly);renderScoresAllBatters()" title="Slot 1 · p≥70% · Hot streak">⚡ Charlie's Special</button>
-          <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
-          <button id="exp-worstHittersBtn" class="ghost fchip" onclick="filterMaxMultihit=filterMaxMultihit?0:0.15;this.classList.toggle('amber',!!filterMaxMultihit);renderScoresAllBatters()" title="Only show batters with 15%-or-lower probability of 2+ hits. Under 1.5 hits pays off whenever a batter does NOT get a 2nd hit, so pMultihit — not the ≥1-hit score — is the number that actually decides that bet">❄️ Worst Hitters</button>
-          <button id="exp-worstMatchupBtn" class="ghost fchip" onclick="filterWorstMatchup=!filterWorstMatchup;this.classList.toggle('amber',filterWorstMatchup);renderScoresAllBatters()" title="Only show batters whose team is the AVOID side of tonight's matchup — the worst-graded side, inverse of Fav Matchup">Worst Matchup</button>
-          <button id="exp-worstEverythingBtn" class="fchip ghost" onclick="filterMaxMultihit=filterMaxMultihit?0:0.15;filterColdOnly=!filterColdOnly;filterWorstMatchup=!filterWorstMatchup;setSlotFilter(9);document.getElementById('exp-worstHittersBtn').classList.toggle('amber',!!filterMaxMultihit);document.getElementById('exp-worstMatchupBtn').classList.toggle('amber',filterWorstMatchup);renderScoresAllBatters()" title="Slot 9 · pMultihit≤15% · Cold trailing streak (5+ straight games without a hit) · AVOID-side matchup — the inverse of Charlie's Special, for Under 1.5 hits targets">🧊 Worst Everything</button>
+          <button id="exp-bestBtn" class="ghost fchip" onclick="filterBestOfBest=!filterBestOfBest;this.classList.toggle('amber',filterBestOfBest);renderScoresAllBatters()" title="Composite edge score across every stat this table shows — model probability, multi-hit odds, AVG/xBA/HH%, hot streak, matchup grade, opposing starter grade, real playing time (AB/G), and 3AB — not just one or two thresholds. Surfaces every batter who scores 6+ tonight, however many that is.">💎 Best of Best</button>
+          <button id="exp-worstBtn" class="ghost fchip" onclick="filterWorstOfWorst=!filterWorstOfWorst;this.classList.toggle('amber',filterWorstOfWorst);renderScoresAllBatters()" title="Same composite score, inverted — for Under 1.5 hits targets. Surfaces every batter who scores -6 or worse tonight, however many that is.">🧊 Worst of Worst</button>
         </div>
       </div>
     </div>
@@ -2100,18 +2093,15 @@ let filterHotOnly     = false;
 let filter3abPositive = false;
 let filterConfirmed   = false;
 let filterHideSettled = false;
-let filterFavMatchup  = false; // team's side of tonight's matchup grades LEAN or STRONG (see isFavMatchup())
-// "worst" trio (added for Under 1.5 hits targeting) — the inverse of the
-// 70%+/Fav Matchup chips above. filterMaxMultihit gates on pMultihit, not
-// the primary p_hit score: an Under 1.5 hits bet pays off whenever a batter
-// does NOT get a 2nd hit, i.e. it resolves on P(2+ hits), not P(≥1 hit) — a
-// batter can have a great p_hit score and still be a fine U1.5 target if
-// their pMultihit is low. filterColdOnly has no standalone chip; it's only
-// ever set by the "Worst Everything" combo below (mirrors how Charlie's
-// Special's own slot-pin isn't independently toggleable either).
-let filterMaxMultihit  = 0;
-let filterWorstMatchup = false;
-let filterColdOnly     = false;
+// Best of Best / Worst of Worst — replaced the earlier 70%+/Hot/3AB+/Fav
+// Matchup/Charlie's Special/worst-trio chips with one composite score per
+// batter (see battingEdgeScore() near isFavMatchup's old spot / muLabel)
+// instead of stacking rigid single-stat AND-gates, so "does this batter fit
+// the scenario" can pull in every stat the table shows at once and surface
+// however many batters actually qualify, not just whichever narrow
+// intersection survived every gate.
+let filterBestOfBest   = false;
+let filterWorstOfWorst = false;
 let charlieMode       = false;
 
 function activateSpecial(on){
@@ -2866,15 +2856,43 @@ function _teamMuMap(){
   _teamMuCache = map; _teamMuCacheLegs = legs;
   return map;
 }
-function isFavMatchup(l){
-  const mu = _teamMuMap().get(l.gamePk+'|'+l.team);
-  return !!mu && (mu.lbl.includes('STRONG') || mu.lbl.includes('LEAN'));
-}
-// worst-graded side of tonight's matchup — the AVOID label from the same
-// muLabel() map isFavMatchup reads, just checking the opposite end.
-function isWorstMatchup(l){
-  const mu = _teamMuMap().get(l.gamePk+'|'+l.team);
-  return !!mu && mu.lbl.includes('AVOID');
+// composite "edge" score for Best of Best / Worst of Worst — every stat the
+// All Batters table itself shows gets a vote, not just one or two
+// thresholds: the calibrated model probability (weighted heaviest, since
+// it's already the trained combination of most of what follows — AVG/xBA/
+// HH%/vsL-vsR/rest/park factor/pitcher quality are literal FEATURES
+// inputs), the separate multi-hit model, trailing AVG/xBA/HH% directly,
+// recent hot/cold streak (recency the trailing window average smooths
+// over), the team-level matchup grade, the actual opposing starter's own
+// grade (a real matchup edge the team-average can dilute), real
+// playing-time opportunity (AB/G — a great matchup is moot without PAs),
+// and the display-only 3AB signal (deliberately NOT a trained feature, but
+// still a genuine additional data point this table already surfaces).
+// Thresholds mirror the exact green/red cutoffs the table's own columns
+// already color-code by (hiLoCol/babipCol/etc.) — a "point" here always
+// matches what's already flagged green or red elsewhere in the row.
+// Positive = better for ≥1-hit/multi-hit, negative = better as an Under 1.5
+// hits fade target. +6/-6 cutoffs are empirically picked from tonight's
+// real slate distribution (270 batters) to land a genuine "top slice" —
+// roughly the top and bottom ~10%, not a single needle-in-a-haystack row.
+function battingEdgeScore(l){
+  let s = 0;
+  if(l.p!=null){
+    if(l.p>=0.70) s+=3; else if(l.p>=0.60) s+=2; else if(l.p>=0.55) s+=1;
+    else if(l.p<=0.28) s-=3; else if(l.p<=0.38) s-=2; else if(l.p<=0.45) s-=1;
+  }
+  if(l.pMultihit!=null){ if(l.pMultihit>=0.28) s+=1; else if(l.pMultihit<=0.15) s-=1; }
+  if(l.bHitRate!=null){ if(l.bHitRate>=.300) s+=1; else if(l.bHitRate<=.230) s-=1; }
+  if(l.bXba!=null){ if(l.bXba>=.290) s+=1; else if(l.bXba<=.220) s-=1; }
+  if(l.bHH!=null){ if(l.bHH>=.50) s+=1; else if(l.bHH<=.30) s-=1; }
+  const sh = streakHits(l);
+  if(sh>=7) s+=1; else if(sh>=0 && sh<=2) s-=1;
+  const mu = (l.gamePk && l.team) ? _teamMuMap().get(l.gamePk+'|'+l.team) : null;
+  if(mu){ if(mu.lbl.includes('STRONG')) s+=1; else if(mu.lbl.includes('AVOID')) s-=1; }
+  if(l.pGrade==='F') s+=1; else if(l.pGrade==='A') s-=1;
+  if(l.bAvgAb!=null){ if(l.bAvgAb>=4.2) s+=1; else if(l.bAvgAb<=3.3) s-=1; }
+  if(l.bQuality3!=null){ if(l.bQuality3>=0.03) s+=1; else if(l.bQuality3<=-0.03) s-=1; }
+  return s;
 }
 function slotVisible(l){
   if(l.inSlip) return false;
@@ -2885,10 +2903,8 @@ function slotVisible(l){
   if(filter3abPositive && !(l.bQuality3!=null && l.bQuality3 > 0)) return false;
   if(filterConfirmed   && l.lineupEst)        return false;
   if(filterHideSettled && (isFinal(l.gameState)||isPostponed(l.gameState))) return false;
-  if(filterFavMatchup  && !isFavMatchup(l))    return false;
-  if(filterMaxMultihit  && (l.pMultihit==null || l.pMultihit > filterMaxMultihit)) return false;
-  if(filterWorstMatchup && !isWorstMatchup(l))  return false;
-  if(filterColdOnly     && trailMiss(l) < 5)    return false;
+  if(filterBestOfBest   && battingEdgeScore(l) < 6)   return false;
+  if(filterWorstOfWorst && battingEdgeScore(l) > -6)  return false;
   if(filterGame   && l.matchup !== filterGame)                return false;
   if(filterSearch && !l.name.toLowerCase().includes(filterSearch)) return false;
   if(filterTeam   && l.team !== filterTeam)                   return false;
