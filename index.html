@@ -1193,6 +1193,7 @@
           <button id="exp-minPBtn" class="fchip ghost" onclick="filterMinP=filterMinP?0:0.70;this.classList.toggle('amber',!!filterMinP);renderScoresAllBatters()" title="Only show batters with 70%+ model probability">70%+</button>
           <button id="exp-hotBtn" class="ghost fchip" onclick="filterHotOnly=!filterHotOnly;this.classList.toggle('amber',filterHotOnly);renderScoresAllBatters()" title="Only show batters with 7+ hits in last 10 games">🔥 Hot</button>
           <button id="exp-3abBtn" class="ghost fchip" onclick="filter3abPositive=!filter3abPositive;this.classList.toggle('amber',filter3abPositive);renderScoresAllBatters()" title="Only show batters with a positive 3AB value — display-only, park/pitcher-neutralized first-3-PA quality above league average">3AB +</button>
+          <button id="exp-favMatchupBtn" class="ghost fchip" onclick="filterFavMatchup=!filterFavMatchup;this.classList.toggle('amber',filterFavMatchup);renderScoresAllBatters()" title="Only show batters whose team is the favored side of tonight's matchup — LEAN or STRONG, same muLabel() grade shown on the Scores card">Fav Matchup</button>
           <button id="exp-charlieBtn" class="fchip ghost" onclick="filterMinP=filterMinP?0:0.70;filterHotOnly=!filterHotOnly;setSlotFilter(1);document.getElementById('exp-minPBtn').classList.toggle('amber',!!filterMinP);document.getElementById('exp-hotBtn').classList.toggle('amber',filterHotOnly);renderScoresAllBatters()" title="Slot 1 · p≥70% · Hot streak">⚡ Charlie's Special</button>
         </div>
       </div>
@@ -2092,6 +2093,7 @@ let filterHotOnly     = false;
 let filter3abPositive = false;
 let filterConfirmed   = false;
 let filterHideSettled = false;
+let filterFavMatchup  = false; // team's side of tonight's matchup grades LEAN or STRONG (see isFavMatchup())
 let charlieMode       = false;
 
 function activateSpecial(on){
@@ -2814,6 +2816,35 @@ function isBestMatchup(l){
   const weakPitcher  = l.pGrade==='F'||l.pGrade==='D'||(l.pHH!=null&&l.pHH>=0.44);
   return strongBatter && weakPitcher;
 }
+// team-level matchup favorability — the same STRONG/LEAN/NEUTRAL/AVOID
+// muLabel() the Scores card computes per side (offense-vs-opposing-pitcher,
+// grouped by gamePk+team), reused here so All Batters can filter to "my
+// team's side of tonight's matchup grades LEAN or better" without
+// duplicating muLabel's math. Cached per `legs` array identity — legs is
+// swapped wholesale (not mutated) on slate/date changes, so identity is a
+// safe invalidation key (see the viewingDate comment above).
+let _teamMuCache = null, _teamMuCacheLegs = null;
+function _teamMuMap(){
+  if(_teamMuCache && _teamMuCacheLegs === legs) return _teamMuCache;
+  const groups = new Map();
+  legs.forEach(l => {
+    if(!l.gamePk || !l.team) return;
+    const key = l.gamePk+'|'+l.team;
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(l);
+  });
+  const map = new Map();
+  groups.forEach((side, key) => {
+    const avg = side.reduce((x,l)=>x+(l.p||0),0)/side.length;
+    map.set(key, muLabel(offGrade(avg), side[0]?.pGrade || 'C'));
+  });
+  _teamMuCache = map; _teamMuCacheLegs = legs;
+  return map;
+}
+function isFavMatchup(l){
+  const mu = _teamMuMap().get(l.gamePk+'|'+l.team);
+  return !!mu && (mu.lbl.includes('STRONG') || mu.lbl.includes('LEAN'));
+}
 function slotVisible(l){
   if(l.inSlip) return false;
   if(filterMinP && (l.p||0) < filterMinP) return false;
@@ -2823,6 +2854,7 @@ function slotVisible(l){
   if(filter3abPositive && !(l.bQuality3!=null && l.bQuality3 > 0)) return false;
   if(filterConfirmed   && l.lineupEst)        return false;
   if(filterHideSettled && (isFinal(l.gameState)||isPostponed(l.gameState))) return false;
+  if(filterFavMatchup  && !isFavMatchup(l))    return false;
   if(filterGame   && l.matchup !== filterGame)                return false;
   if(filterSearch && !l.name.toLowerCase().includes(filterSearch)) return false;
   if(filterTeam   && l.team !== filterTeam)                   return false;
