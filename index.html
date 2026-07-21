@@ -1193,8 +1193,8 @@
             <option value="9">9</option>
           </select>
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
-          <button id="exp-bestBtn" class="ghost fchip" onclick="filterBestOfBest=!filterBestOfBest;this.classList.toggle('amber',filterBestOfBest);renderScoresAllBatters()" title="Composite edge score across every stat this table shows — model probability, multi-hit odds, AVG/xBA/HH%, hot streak, matchup grade, opposing starter grade, real playing time (AB/G), and 3AB — not just one or two thresholds. Surfaces every batter who scores 6+ tonight, however many that is.">💎 Best of Best</button>
-          <button id="exp-worstBtn" class="ghost fchip" onclick="filterWorstOfWorst=!filterWorstOfWorst;this.classList.toggle('amber',filterWorstOfWorst);renderScoresAllBatters()" title="Same composite score, inverted — for Under 1.5 hits targets. Surfaces every batter who scores -6 or worse tonight, however many that is.">🧊 Worst of Worst</button>
+          <button id="exp-bestBtn" class="ghost fchip" onclick="selectEdgeFilter('best')" title="Composite edge score across every stat this table shows — model probability, multi-hit odds, AVG/xBA/HH%, hot streak, matchup grade, opposing starter grade, real playing time (AB/G), and 3AB — not just one or two thresholds. Surfaces every batter who scores 6+ tonight, however many that is.">💎 Best of Best</button>
+          <button id="exp-worstBtn" class="ghost fchip" onclick="selectEdgeFilter('worst')" title="Same composite score, inverted — for Under 1.5 hits targets. Surfaces every batter who scores -6 or worse tonight, however many that is.">🧊 Worst of Worst</button>
         </div>
       </div>
     </div>
@@ -2102,6 +2102,21 @@ let filterHideSettled = false;
 // intersection survived every gate.
 let filterBestOfBest   = false;
 let filterWorstOfWorst = false;
+// mutually exclusive — a batter can't simultaneously be a Best-of-Best AND
+// a Worst-of-Worst target, so selecting one always clears the other rather
+// than letting both AND together into an empty result.
+function selectEdgeFilter(which){
+  if(which==='best'){
+    filterBestOfBest = !filterBestOfBest;
+    filterWorstOfWorst = false;
+  } else {
+    filterWorstOfWorst = !filterWorstOfWorst;
+    filterBestOfBest = false;
+  }
+  document.getElementById('exp-bestBtn').classList.toggle('amber', filterBestOfBest);
+  document.getElementById('exp-worstBtn').classList.toggle('amber', filterWorstOfWorst);
+  renderScoresAllBatters();
+}
 let charlieMode       = false;
 
 function activateSpecial(on){
