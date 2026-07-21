@@ -535,6 +535,9 @@
   .coldbadge{font-family:var(--mono);font-size:9px;color:var(--sage);background:rgba(var(--sage-rgb),.08);border:1px solid rgba(var(--sage-rgb),.22);border-radius:3px;padding:1px 5px;white-space:nowrap;flex:none}
   .coldwarn{font-family:var(--mono);font-size:9px;color:var(--grade-f);background:rgba(var(--grade-f-rgb),.08);border:1px solid rgba(var(--grade-f-rgb),.35);border-radius:4px;padding:1px 5px;white-space:nowrap;flex:none;line-height:1.5;text-transform:uppercase;letter-spacing:.4px;animation:coldpulse 2s ease-in-out infinite}
   .estbadge{font-family:var(--mono);font-size:9px;color:var(--thin);background:rgba(var(--thin-rgb),.1);border:1px solid rgba(var(--thin-rgb),.3);border-radius:4px;padding:1px 5px;white-space:nowrap;line-height:1.5;text-transform:uppercase;letter-spacing:.4px}
+  /* delayed/suspended — amber (not final like PPD, not live either) so a rain
+     delay/suspension reads distinctly from both the LIVE and Final states */
+  .delaybadge{font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(var(--amber-rgb),.1);border:1px solid rgba(var(--amber-rgb),.35);border-radius:4px;padding:1px 5px;white-space:nowrap;flex:none;line-height:1.5;text-transform:uppercase;letter-spacing:.4px}
   @keyframes coldpulse{0%,100%{opacity:1}50%{opacity:.55}}
   /* pitcher grade */
   .pgrade{display:inline-flex;align-items:center;justify-content:center;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;flex:none;padding:1px 5px;white-space:nowrap;margin-left:5px;line-height:1.5;text-transform:uppercase;letter-spacing:.4px}
@@ -2798,6 +2801,13 @@ function selectSlotFilter(val){
 const FINAL_STATES=new Set(['final','game over','completed early','cancelled','postponed']);
 function isLive(gameState){ return (gameState||'').toLowerCase().includes('progress'); }
 function isPostponed(gameState){ const s=(gameState||'').toLowerCase(); return s==='postponed'||s.includes('postponed'); }
+// delayed (pregame "Delayed Start" or a mid-game "Delayed: Rain") and
+// suspended (mid-game "Suspended: Rain"/"Suspended: Darkness" — play
+// stopped but the game isn't over, unlike postponed) — checked against the
+// raw MLB detailedState text, same approach isPostponed already uses,
+// rather than guessing at statusCode values.
+function isDelayed(gameState){ const s=(gameState||'').toLowerCase(); return s.includes('delay'); }
+function isSuspended(gameState){ const s=(gameState||'').toLowerCase(); return s.includes('suspend'); }
 function isFinal(gameState){ const s=(gameState||'').toLowerCase(); return FINAL_STATES.has(s)||s.includes('final'); }
 // shared "did this batter get a hit" state, used by every render path that
 // shows a HIT/MISS/SUBBED tag (render(), batterPopupHtml(), renderSlip(),
@@ -5176,8 +5186,9 @@ function batterPopupHtml(l){
   const scoreVal = Math.floor((l.p||0)*100);
   const scoreColor = l.p>=0.70?'var(--good)':l.p>=0.55?'var(--amber)':'var(--sage)';
   const ppd = isPostponed(l.gameState);
+  const delayed = isDelayed(l.gameState) || isSuspended(l.gameState);
   const missed = (isFinal(l.gameState)||l.subbedOut) && !l.hasHit && !ppd;
-  const hitBadge = l.hasHit?'<span class="hitbadge">HIT</span>':ppd?'<span class="hist-pending">PPD</span>':battingStatus(l)==='subbed'?'<span class="subbedbadge" title="Subbed out of the game — no more plate appearances">SUBBED</span>':missed?'<span class="missbadge">NO HIT</span>':'';
+  const hitBadge = l.hasHit?'<span class="hitbadge">HIT</span>':ppd?'<span class="hist-pending">PPD</span>':delayed?`<span class="delaybadge" title="${esc(l.gameState)}">${isSuspended(l.gameState)?'Suspended':'Delayed'}</span>`:battingStatus(l)==='subbed'?'<span class="subbedbadge" title="Subbed out of the game — no more plate appearances">SUBBED</span>':missed?'<span class="missbadge">NO HIT</span>':'';
   const live = isLive(l.gameState);
   const handSpan = l.batterHand ? `<span style="font-size:12px;font-weight:400;opacity:.55;margin-left:3px">${l.batterHand}</span>` : '';
   const nameNode = l.batterId
@@ -5506,6 +5517,12 @@ function buildScoreCard(matchup, batters, betKeys) {
     const score = _findLiveScore(gameDate, canonMatchup(matchup), gamePk);
     const isLiveGame  = ls ? (ls.isLive && !ls.isWarmup) : isLive(gameState);
     const isFinalGame = ls ? ls.isFinal : isFinal(gameState);
+    // delayed/suspended — MLB's abstractGameState (and so ls.isLive) stays
+    // true through an in-game rain delay/suspension, only flipping once the
+    // game truly ends, so this needs its own check against the actual
+    // detailedState text (now correctly preserved by the live-poll fix)
+    // rather than falling out of isLiveGame/isFinalGame on its own.
+    const isDelayedGame = isDelayed(gameState) || isSuspended(gameState);
     // Mobile lineup tab: when the user hasn't manually picked a side yet
     // (scoresMobileSide[gamePk] is still undefined), default to whichever
     // team is actually batting right now instead of always "away" — since
@@ -5543,7 +5560,9 @@ function buildScoreCard(matchup, batters, betKeys) {
     // independent of the inning box (which used to share this slot and only
     // appear at wide breakpoints, swapping the diamond out entirely)
     let diamondInner;
-    if(isLiveGame && ls) {
+    if(isDelayedGame) {
+      diamondInner = `<span class="delaybadge" title="${esc(gameState)}">${isSuspended(gameState)?'Suspended':'Delayed'}</span>`;
+    } else if(isLiveGame && ls) {
       const half = ls.half==='Top' ? '▲' : '▼';
       diamondInner = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
         <span style="font-family:var(--mono);font-size:12px;color:var(--amber)">${half}${esc(ls.ordinal||'')}${_inningMidSuffix(ls.inningState)}</span>
@@ -5659,7 +5678,7 @@ function buildScoreCard(matchup, batters, betKeys) {
     const isPinned = _isGamePinned(gamePk);
     const pinBtn = `<span onclick="event.stopPropagation();toggleGamePin('${gamePk}')" title="${isPinned?'Unpin':'Pin to top'}" style="cursor:pointer;font-size:12px;display:block;margin:2px 0;color:${isPinned?'var(--amber)':'var(--sage)'};opacity:${isPinned?'1':'.4'}">${isPinned?'★':'☆'}</span>`;
     const pregameCenter = `<div class="gm-pregame-center">
-      ${isWarmup?`<span style="font-family:var(--mono);font-size:10px;color:var(--amber)">Warm</span>`:startTime?`<span style="font-family:var(--mono);font-size:10px;color:var(--sage);white-space:nowrap">${esc(startTime)}</span>`:''}
+      ${isDelayedGame?`<span class="delaybadge" title="${esc(gameState)}">${isSuspended(gameState)?'Suspended':'Delayed'}</span>`:isWarmup?`<span style="font-family:var(--mono);font-size:10px;color:var(--amber)">Warm</span>`:startTime?`<span style="font-family:var(--mono);font-size:10px;color:var(--sage);white-space:nowrap">${esc(startTime)}</span>`:''}
       ${pinBtn}
       ${kou?`<span class="gm-pregame-ou">${ouBtn('over', true)}</span>`:''}
     </div>`;
@@ -5790,7 +5809,7 @@ function buildScoreCard(matchup, batters, betKeys) {
         // slip" highlighting — only when it's actually this picked batter's
         // turn right now, reusing the same _isPickAtBat() check the slip
         // and saved-bet cards use.
-        const atBat = isBet && isLiveGame && _isPickAtBat(l.batterId, gamePk);
+        const atBat = isBet && isLiveGame && !isDelayedGame && _isPickAtBat(l.batterId, gamePk);
         // .pick-glow (gold, "you have a pick here") and .sc-at-bat (sharper
         // pulse, "it's their turn right now") can both apply at once — the
         // former uses ::before and the latter ::after so neither overrides
@@ -6302,6 +6321,7 @@ function _renderScoresAllBattersInner() {
   const tbody = rows.map(l => {
     const noHit = isFinal(l.gameState) && !l.hasHit;
     const subbedTag = battingStatus(l)==='subbed';
+    const delayTag = isDelayed(l.gameState) || isSuspended(l.gameState);
     const pickCell = `<td style="text-align:center">${(!l.hasHit&&!isFinal(l.gameState)&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}</td>`;
     const ouBadge = (showOuBadge && window._teamBadge && l.team && window._teamBadge[l.team]) || '';
     const teamCell = `<td style="text-align:center;white-space:nowrap">${l.team?`${ouBadge}<span class="teamtag" style="font-size:9px;padding:1px 5px;${teamTagStyle(l.team)}">${esc(l.team)}</span>`:''}</td>`;
@@ -6323,7 +6343,7 @@ function _renderScoresAllBattersInner() {
     const nameCell = `<td class="col-name${atBat?' sc-at-bat':''}" style="text-align:left;cursor:${l.batterId?'pointer':'default'}" ${l.batterId?`onclick="goToBatter('${l.batterId}','${l.gamePk||''}')"`:''}>
       <span style="color:${dotCol(l.p||0)};${l.hasHit?'text-decoration:line-through;opacity:.45':''}">${esc(l.name)}</span>
       ${atBat?'<span style="font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--amber);margin-left:5px">AT BAT</span>':''}
-      ${subbedTag?'<span title="Subbed out of the game — no more plate appearances" style="color:var(--sage);opacity:.85;font-size:8px;margin-left:5px">SUBBED</span>':noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
+      ${delayTag?`<span title="${esc(l.gameState)}" style="color:var(--amber);opacity:.85;font-size:8px;margin-left:5px">${isSuspended(l.gameState)?'SUSPENDED':'DELAYED'}</span>`:subbedTag?'<span title="Subbed out of the game — no more plate appearances" style="color:var(--sage);opacity:.85;font-size:8px;margin-left:5px">SUBBED</span>':noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
     </td>`;
     // Scr sticks alongside Name (per explicit request) — Scr comes before
     // Name in `cols`, so it's the left:0 anchor and Name's own `left`
@@ -7793,6 +7813,24 @@ function canonMatchup(matchup){
         </div></div>`;
     }
 
+    // delayed/suspended — checked ahead of the Live branch below since MLB's
+    // abstractGameState stays 'Live' through an in-game rain delay/suspension
+    // (it only flips to Final once the game actually ends), so without this
+    // the chip would keep showing a normal inning/live tile with a frozen
+    // score during a stoppage. Not final (unlike PPD) — the game can still
+    // resume, so this stays fully opaque and clickable, just labeled amber
+    // instead of showing a live inning that isn't really progressing.
+    const detailedState = g.status.detailedState || '';
+    if(isDelayed(detailedState) || isSuspended(detailedState)){
+      const label = isSuspended(detailedState) ? 'SUSP' : 'DELAY';
+      return `<div class="sc-card${trackedClass.replace(' sc-at-bat','')}" title="${esc(detailedState)}"${goClick}>
+        <div class="sc-inn sc-inn-live" style="color:var(--amber);font-family:var(--mono);font-size:8.5px;font-weight:700">${label}</div>
+        <div class="sc-teams">
+          <div class="sc-row"><span class="sc-abbr">${away}</span><span class="sc-score">${as??''}</span></div>
+          <div class="sc-row"><span class="sc-abbr">${home}</span><span class="sc-score">${hs??''}</span></div>
+        </div></div>`;
+    }
+
     if(state==='Live'){
       const ls = g.linescore || {};
       const inn = ls.currentInningOrdinal || '';
@@ -7996,14 +8034,33 @@ function canonMatchup(matchup){
             // this ticker already fetches, used for the wide-breakpoint boxscore grid
             innings: (ld.innings||[]).map(i => ({ num: i.num, away: i.away?.runs ?? null, home: i.home?.runs ?? null })),
           });
-          const newState = absState === 'final' ? (g.status?.detailedState || 'Final') : absState === 'live' ? 'In Progress' : '';
+          // preserve the real "Delayed"/"Suspended" detailedState text
+          // instead of collapsing every live-abstractState game to a bare
+          // "In Progress" (which wrongly implied play was still moving
+          // during a rain delay/suspension — isLive()'s 'progress' check
+          // then correctly stops matching once the real text comes
+          // through, turning off the LIVE pulse/AT BAT badge on its own),
+          // and surface a pregame delay that develops after the slate was
+          // built (previously silently dropped — a Preview-state game only
+          // ever wrote newState once it went Final).
+          const rawDetailed = g.status?.detailedState || '';
+          const delayedOrSuspended = /delay|suspend/i.test(rawDetailed);
+          const newState = absState === 'final' ? (rawDetailed || 'Final')
+            : absState === 'live' ? (delayedOrSuspended ? rawDetailed : 'In Progress')
+            : (delayedOrSuspended ? rawDetailed : '');
           if(newState) legs.forEach(l => { if(String(l.gamePk)===gpk) l.gameState=newState; });
         });
         // also sync by matchup string for legs that may lack gamePk
         legs.forEach(l => {
           const score = _findLiveScore(shortDateToISO(l.gameDate), canonMatchup(l.matchup), l.gamePk);
           if(!score) return;
-          if(score.state === 'Live' && !l.gameState.toLowerCase().includes('progress')) l.gameState = 'In Progress';
+          // same delay/suspend preservation as the gpk-keyed loop above —
+          // without this check here too, this fallback pass (which runs
+          // over every leg, not just the ones missing a gamePk) would
+          // immediately clobber a just-set "Suspended: Rain"/"Delayed:
+          // Rain" back to a bare "In Progress" on the same tick.
+          if(isDelayed(score.detailedState) || isSuspended(score.detailedState)) l.gameState = score.detailedState;
+          else if(score.state === 'Live' && !l.gameState.toLowerCase().includes('progress')) l.gameState = 'In Progress';
           else if(score.state === 'Final' && !isFinal(l.gameState)) l.gameState = score.detailedState || 'Final';
         });
       }
@@ -8061,7 +8118,12 @@ function canonMatchup(matchup){
                 isLive: absState==='live', isFinal: absState==='final',
                 detailedState: g.status?.detailedState || '',
               });
-              const newState = absState==='final' ? (g.status?.detailedState||'Final') : absState==='live' ? 'In Progress' : '';
+              // same delay/suspend preservation as the main sync loop above
+              const rawDetailed = g.status?.detailedState || '';
+              const delayedOrSuspended = /delay|suspend/i.test(rawDetailed);
+              const newState = absState==='final' ? (rawDetailed||'Final')
+                : absState==='live' ? (delayedOrSuspended ? rawDetailed : 'In Progress')
+                : (delayedOrSuspended ? rawDetailed : '');
               if(newState) legs.forEach(l => { if(String(l.gamePk)===gpk) l.gameState=newState; });
               // this staleDate fetch runs whenever the CSV's real game date
               // differs from the ticker's displayed date (e.g. before 8am,
