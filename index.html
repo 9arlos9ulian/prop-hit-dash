@@ -3316,7 +3316,7 @@ function render(){
             const mobileBar = (()=>{
               const gradeChip = l.pGrade ? `<span class="pgrade pgrade-${l.pGrade}" style="font-size:9px;padding:1px 4px">${l.pGrade}</span>` : '';
               const pitPart = l.pitcher ? `<a href="${pitcherUrl(l.pitcher)}" target="_blank" rel="noopener" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(l.pitcher.split(' ').pop())}</a>${l.pitcherHand?`<span> ${l.pitcherHand}</span>`:''}${gradeChip}` : '';
-              const gameState = isLive(l.gameState) ? `<span style="color:var(--live)">● LIVE</span>` : isFinal(l.gameState) ? `<span style="color:var(--sage);opacity:.7;font-family:var(--mono);font-size:9px;letter-spacing:.04em">FINAL</span>` : l.startTime ? `<span style="color:var(--amber)">${esc(l.startTime)}</span>` : '';
+              const gameState = isLive(l.gameState) ? `<span style="color:var(--live)">● LIVE</span>` : ppd ? `<span style="color:var(--sage);opacity:.7;font-family:var(--mono);font-size:9px;letter-spacing:.04em">PPD</span>` : isFinal(l.gameState) ? `<span style="color:var(--sage);opacity:.7;font-family:var(--mono);font-size:9px;letter-spacing:.04em">FINAL</span>` : l.startTime ? `<span style="color:var(--amber)">${esc(l.startTime)}</span>` : '';
               const matchPart = l.matchup ? `<span style="color:var(--chalk);opacity:.7">${esc(l.matchup)}</span>` : '';
               if(!pitPart && !matchPart) return '';
               return `<div class="mobile-info-bar">${pitPart}${pitPart&&matchPart?'<span style="opacity:.3">·</span>':''}${matchPart}${gameState?'<span style="opacity:.3">·</span>':''}${gameState}</div>`;
@@ -3374,7 +3374,9 @@ function render(){
               ? (_mlbTvUrl
                   ? `<div style="margin-top:4px"><a href="${_mlbTvUrl}" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:9px;color:var(--live);text-decoration:none;letter-spacing:.2px" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--live);vertical-align:middle;margin-right:3px"></span>MLB.TV ↗</a></div>`
                   : `<div style="font-family:var(--mono);font-size:9px;color:var(--live);margin-top:4px">● LIVE</div>`)
-              : isFinal(l.gameState)
+              : ppd
+                ? `<div style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-top:4px;opacity:.5">PPD</div>`
+                : isFinal(l.gameState)
                 ? `<div style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-top:4px;opacity:.5">✓ Final</div>`
                 : l.startTime ? `<div style="font-family:var(--mono);font-size:9px;color:var(--amber);margin-top:4px">${esc(l.startTime)}</div>` : '';
             return `<div class="game-col" style="width:140px;border-left:1px solid var(--line);padding-left:12px;flex:none">
@@ -5314,6 +5316,7 @@ function batterPopupHtml(l){
 
   const gameStatusLine = live
     ? `<span style="color:var(--live);font-weight:700">● LIVE</span>${l.gamePk?` <a href="https://www.mlb.com/tv/g${l.gamePk}" target="_blank" rel="noopener" style="color:var(--live);text-decoration:none;margin-left:6px">MLB.TV ↗</a>`:''}`
+    : ppd ? `<span style="color:var(--sage);opacity:.7">PPD</span>`
     : isFinal(l.gameState) ? `<span style="color:var(--sage);opacity:.7">Final</span>`
     : l.startTime ? `<span style="color:var(--amber)">${esc(l.startTime)}</span>` : '';
 
@@ -5578,6 +5581,12 @@ function buildScoreCard(matchup, batters, betKeys) {
     // detailedState text (now correctly preserved by the live-poll fix)
     // rather than falling out of isLiveGame/isFinalGame on its own.
     const isDelayedGame = isDelayed(gameState) || isSuspended(gameState);
+    // MLB's abstractGameState reports "Final" for a fully postponed game too
+    // (no more action expected that day) — ls.isFinal/isFinal(gameState) alone
+    // can't tell "played to completion" apart from "rained out before it
+    // started", so this needs its own check against the real detailedState
+    // text, same pattern isPostponed() is already used for elsewhere.
+    const isPostponedGame = isPostponed(ls?.detailedState || gameState);
     // Mobile lineup tab: when the user hasn't manually picked a side yet
     // (scoresMobileSide[gamePk] is still undefined), default to whichever
     // team is actually batting right now instead of always "away" — since
@@ -5615,7 +5624,9 @@ function buildScoreCard(matchup, batters, betKeys) {
     // independent of the inning box (which used to share this slot and only
     // appear at wide breakpoints, swapping the diamond out entirely)
     let diamondInner;
-    if(isDelayedGame) {
+    if(isPostponedGame) {
+      diamondInner = `<span style="font-family:var(--disp);font-size:12px;letter-spacing:.5px;color:var(--sage);opacity:.7">PPD</span>`;
+    } else if(isDelayedGame) {
       diamondInner = `<span class="delaybadge" title="${esc(gameState)}">${isSuspended(gameState)?'Suspended':'Delayed'}</span>`;
     } else if(isLiveGame && ls) {
       const half = ls.half==='Top' ? '▲' : '▼';
@@ -5858,7 +5869,7 @@ function buildScoreCard(matchup, batters, betKeys) {
         }
         const zebraBg = idx%2===1 ? 'rgba(var(--overlay-rgb),.015)' : 'transparent';
         const restBg = isBet ? 'rgba(var(--amber-rgb),.09)' : zebraBg;
-        const noHit = isFinalGame && !hit;
+        const noHit = isFinalGame && !hit && !isPostponedGame;
         const subbedTag = battingStatus(l)==='subbed';
         // live-at-bat pulse layered on top of the existing "in your bet
         // slip" highlighting — only when it's actually this picked batter's
@@ -5877,7 +5888,7 @@ function buildScoreCard(matchup, batters, betKeys) {
           <span style="font-family:var(--mono);font-size:10px;color:${nameCol};flex:none;width:28px;text-align:right">${Math.round(effP*100)}</span>
           ${quality3Badge(l)}
           <span style="font-family:var(--mono);font-size:11px;color:${nameCol};${hit?'text-decoration:line-through;opacity:.45':''};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
-          ${subbedTag?`<span class="scores-hit-col" title="Subbed out of the game — no more plate appearances" style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.85;flex:none">SUBBED</span>`:noHit?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:8px;color:var(--bad);opacity:.75;flex:none">NO HIT</span>`:''}
+          ${subbedTag?`<span class="scores-hit-col" title="Subbed out of the game — no more plate appearances" style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.85;flex:none">SUBBED</span>`:isPostponedGame?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.75;flex:none">PPD</span>`:noHit?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:8px;color:var(--bad);opacity:.75;flex:none">NO HIT</span>`:''}
           ${atBat?`<span style="font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--amber);flex:none">AT BAT</span>`:''}
           ${isBet?`<span class="scores-bet-col" title="In your bet slip" style="font-size:10px;flex:none">🎫</span>`:''}
           <span class="scores-hab-col" style="font-family:var(--mono);font-size:10px;color:${boxCol};flex:none;width:34px;text-align:right">${(isLiveGame||isFinalGame)?boxTxt:''}</span>
@@ -5988,7 +5999,7 @@ function buildScoreCard(matchup, batters, betKeys) {
     // post-game correct/incorrect indicator
     function evalSide(side, mu) {
       if(!mu) return '';
-      const settled = side.filter(l => isFinal(l.gameState));
+      const settled = side.filter(l => isFinal(l.gameState) && !isPostponed(l.gameState));
       if(!settled.length) return '';
       const hits = settled.filter(l => l.hasHit).length;
       const hr = hits / settled.length;
@@ -6374,7 +6385,8 @@ function _renderScoresAllBattersInner() {
     return `<th class="${lbl==='Name'?'col-name':lbl==='Scr'?'col-score':''}" style="text-align:${align};cursor:${sortable?'pointer':'help'}" title="${tipFull}"${sortable?` onclick="toggleAllBattersSort('${lbl}', event.shiftKey)"`:''}>${lbl}${arrow}</th>`;
   }).join('')}</tr>`;
   const tbody = rows.map(l => {
-    const noHit = isFinal(l.gameState) && !l.hasHit;
+    const ppdTag = isPostponed(l.gameState);
+    const noHit = isFinal(l.gameState) && !l.hasHit && !ppdTag;
     const subbedTag = battingStatus(l)==='subbed';
     const delayTag = isDelayed(l.gameState) || isSuspended(l.gameState);
     const pickCell = `<td style="text-align:center">${(!l.hasHit&&!isFinal(l.gameState)&&l.id!=null)?`<button class="row-icon-btn${l.inSlip?' active':''}" title="${l.inSlip?'In slip — click to remove':'Add to slip'}" onclick="event.stopPropagation();toggle(${l.id})">${l.inSlip?'✓':'+'}</button>`:''}</td>`;
@@ -6398,7 +6410,7 @@ function _renderScoresAllBattersInner() {
     const nameCell = `<td class="col-name${atBat?' sc-at-bat':''}" style="text-align:left;cursor:${l.batterId?'pointer':'default'}" ${l.batterId?`onclick="goToBatter('${l.batterId}','${l.gamePk||''}')"`:''}>
       <span style="color:${dotCol(l.p||0)};${l.hasHit?'text-decoration:line-through;opacity:.45':''}">${esc(l.name)}</span>
       ${atBat?'<span style="font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--amber);margin-left:5px">AT BAT</span>':''}
-      ${delayTag?`<span title="${esc(l.gameState)}" style="color:var(--amber);opacity:.85;font-size:8px;margin-left:5px">${isSuspended(l.gameState)?'SUSPENDED':'DELAYED'}</span>`:subbedTag?'<span title="Subbed out of the game — no more plate appearances" style="color:var(--sage);opacity:.85;font-size:8px;margin-left:5px">SUBBED</span>':noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
+      ${delayTag?`<span title="${esc(l.gameState)}" style="color:var(--amber);opacity:.85;font-size:8px;margin-left:5px">${isSuspended(l.gameState)?'SUSPENDED':'DELAYED'}</span>`:subbedTag?'<span title="Subbed out of the game — no more plate appearances" style="color:var(--sage);opacity:.85;font-size:8px;margin-left:5px">SUBBED</span>':ppdTag?'<span style="color:var(--sage);opacity:.75;font-size:8px;margin-left:5px">PPD</span>':noHit?'<span style="color:var(--bad);opacity:.75;font-size:8px;margin-left:5px">NO HIT</span>':''}
     </td>`;
     // Scr sticks alongside Name (per explicit request) — Scr comes before
     // Name in `cols`, so it's the left:0 anchor and Name's own `left`
