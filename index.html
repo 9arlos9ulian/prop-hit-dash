@@ -493,13 +493,6 @@
   .fchip{font-size:11px;padding:4px 10px;border-radius:5px;white-space:nowrap}
   .fchip-lbl{font-family:var(--disp);font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);align-self:center;white-space:nowrap;margin-right:2px}
   .slot-select{background:var(--field);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:11px;font-family:var(--mono);cursor:pointer;align-self:center}
-  /* size="5" (multi-select) renders as a small scrollable listbox rather
-     than a single-line closed dropdown — narrower row padding than the
-     default so 5 rows of "9 — batting order slot 9" text stays compact,
-     not a full-height form control. */
-  .slot-select-multi{padding:0;min-width:110px;align-self:flex-start}
-  .slot-select-multi option{padding:2px 8px}
-  .slot-select-multi option:checked{background:rgba(var(--amber-rgb),.25);color:var(--amber)}
   .gmtag{font-family:var(--mono);font-size:10px;color:var(--sage);background:var(--raised);border:1px solid var(--line);border-radius:4px;padding:2px 6px;white-space:nowrap;flex:none}
   .gmtag-live{color:var(--live);border-color:rgba(var(--live-rgb),.4);background:rgba(var(--live-rgb),.08)}
   .gmtag-final{color:var(--sage);border-color:var(--line);opacity:.55}
@@ -1184,7 +1177,7 @@
         </div>
         <div class="poolbar-row" style="flex-wrap:wrap">
           <span class="fchip-lbl">Slot</span>
-          <select id="exp-slot-select" class="slot-select slot-select-multi" multiple size="5" onchange="selectSlotFilterMulti(this)" title="Filter to one or more batting order slots — cmd/ctrl-click (or tap, on mobile) to select more than one. Click 'All Slots' to clear back to everyone.">
+          <select id="exp-slot-select" class="slot-select" onchange="selectSlotFilter(this.value)" title="Filter to one batting order slot">
             <option value="0">All Slots</option>
             <option value="1">1 — Leadoff</option>
             <option value="2">2</option>
@@ -1510,7 +1503,7 @@
           </div>
           <div class="poolbar-row" id="lineup-filter-row" style="flex-wrap:wrap">
             <span class="fchip-lbl">Lineup</span>
-            <select id="slot-select" class="slot-select slot-select-multi" multiple size="5" onchange="selectSlotFilterMulti(this)" title="Filter to one or more batting order slots — cmd/ctrl-click (or tap, on mobile) to select more than one. Click 'All Slots' to clear back to everyone.">
+            <select id="slot-select" class="slot-select" onchange="selectSlotFilter(this.value)" title="Filter to one batting order slot">
               <option value="0">All Slots</option>
               <option value="1">1 — Leadoff</option>
               <option value="2">2</option>
@@ -2762,20 +2755,22 @@ function setP(id,v){ const l=legs.find(x=>x.id===id); if(l){ let p=parseFloat(v)
 
 
 // slot-btn-*/exp-slot-btn-* (10 individual buttons each) replaced by a
-// <select multiple> per instance (#slot-select / #exp-slot-select) —
-// genuine multi-slot selection restored (cmd/ctrl-click, or tap on
-// mobile) after an earlier single-select pass lost it. This syncs
-// whichever the user didn't just touch, since both dropdowns must
+// single <select> per instance (#slot-select / #exp-slot-select) — this
+// syncs whichever the user didn't just touch, since both dropdowns must
 // always agree (Scores' Lineup filter and All Batters' Slot filter are
 // the same underlying slotFilter state).
 function syncSlotFilterUI(){
-  const allActive = slotFilter.size===0;
-  [document.getElementById('slot-select'), document.getElementById('exp-slot-select')].forEach(sel => {
-    if(!sel) return;
-    [...sel.options].forEach(o => {
-      o.selected = o.value==='0' ? allActive : slotFilter.has(Number(o.value));
-    });
-  });
+  // a Set can hold >1 slot (setSlotFilter's toggle path, still used by
+  // Charlie's Special / other programmatic callers below) — a single
+  // <select> can't represent that, so multi-slot state just shows "All"
+  // rather than picking one arbitrarily; picking a specific value from
+  // the dropdown itself always collapses back to a single slot (see
+  // selectSlotFilter).
+  const val = slotFilter.size===1 ? String([...slotFilter][0]) : '0';
+  const sel = document.getElementById('slot-select');
+  if(sel) sel.value = val;
+  const esel = document.getElementById('exp-slot-select');
+  if(esel) esel.value = val;
 }
 function setSlotFilter(val){
   if(val===0){
@@ -2787,17 +2782,13 @@ function setSlotFilter(val){
   syncSlotFilterUI();
   renderActiveTab();
 }
-// <select multiple> onchange — reads every option the user has selected
-// (cmd/ctrl-click for more than one). "All Slots" wins if selected
-// alongside specific slots (simplest, least-surprising rule — clicking
-// "All Slots" always means "start over," even mid-multi-select) rather
-// than silently ignoring it or requiring a separate deselect step.
-function selectSlotFilterMulti(sel){
-  const chosen = [...sel.selectedOptions].map(o => Number(o.value));
+// dropdown onchange — always an explicit single target value, not a
+// toggle (selecting "3" while "1" was active must SHOW slot 3, not add
+// it to a multi-slot set), unlike setSlotFilter's toggle semantics above.
+function selectSlotFilter(val){
+  val = Number(val);
   slotFilter.clear();
-  if(!chosen.includes(0)){
-    chosen.forEach(n => slotFilter.add(n));
-  }
+  if(val !== 0) slotFilter.add(val);
   syncSlotFilterUI();
   renderActiveTab();
 }
