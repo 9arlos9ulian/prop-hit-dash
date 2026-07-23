@@ -723,6 +723,8 @@
   .gm-header{box-shadow:0 4px 10px -4px rgba(0,0,0,.6);position:relative;z-index:1;transition:box-shadow .2s}
   .gamecard-collapsible>.gm-header{cursor:pointer;user-select:none}
   .gamecard-collapsible.collapsed>.gm-header{box-shadow:0 2px 6px -2px rgba(0,0,0,.5)}
+  .gamecard-collapsible.dragging{box-shadow:0 12px 28px -6px rgba(0,0,0,.5),0 0 0 1px rgba(var(--amber-rgb),.35);opacity:.92;transition:none}
+  .scores-drag-handle:active{cursor:grabbing}
   /* footer (lean chip/eval result + O/U row) stays visible collapsed too,
      same as .gm-header — a collapsed card used to hide the one row that
      summarizes the game at a glance, the exact thing you'd want left
@@ -1155,6 +1157,7 @@
           <button id="scores-sort-hitting" class="ghost fchip" title="Best hitting environment first (both sides' matchup quality + park factor) ↔ worst — reverse to flip" onclick="scoresSort='hitting';_setScoresSortBtn(this);renderScores()">Hitting</button>
           <button id="scores-sort-matchup" class="ghost fchip" title="Biggest mismatch between the two sides first (one STRONG, one AVOID) ↔ most uniform — reverse to flip" onclick="scoresSort='matchup';_setScoresSortBtn(this);renderScores()">Matchup</button>
           <button id="scores-sort-dir" class="ghost fchip" title="Reverse the current sort order" onclick="scoresSortDir=-scoresSortDir;_setScoresSortDirBtn();renderScores()">▼</button>
+          <span id="scores-sort-custom-badge" class="ghost fchip amber" style="display:none;cursor:pointer" title="Custom drag order active — click to clear and return to Time sort" onclick="_setScoresCustomOrder([]);scoresSort='time';_setScoresSortBtn(document.getElementById('scores-sort-time'));renderScores()">⠿ Custom</span>
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
           <button id="scores-live-btn" class="ghost fchip" onclick="scoresLiveOnly=!scoresLiveOnly;scoresUpcoming=false;this.classList.toggle('amber',scoresLiveOnly);document.getElementById('scores-upcoming-btn').classList.remove('amber');renderScores()">● Live</button>
           <button id="scores-upcoming-btn" class="ghost fchip" onclick="scoresUpcoming=!scoresUpcoming;scoresLiveOnly=false;this.classList.toggle('amber',scoresUpcoming);document.getElementById('scores-live-btn').classList.remove('amber');renderScores()">Upcoming</button>
@@ -4505,8 +4508,24 @@ function _betCardHtml(b, opts){
     if(lsGroup?.isLive){
       const h=lsGroup.half==='Top'?'▲':'▼';
       hdrRight += `<span style="font-family:var(--mono);font-size:9px;color:var(--amber);margin-left:5px">${h}${lsGroup.ordinal}${_inningMidSuffix(lsGroup.inningState)}</span>`;
+      // outs + baserunner diamond — same building blocks teamLegLiveHtml
+      // already uses for moneyline legs and the Scores tab card header;
+      // hit-prop leg groups never got them wired in until now.
+      hdrRight += `<span style="display:inline-flex;align-items:center;gap:4px;margin-left:5px;vertical-align:middle">${_baseDiamond(lsGroup,12)}${_outDots(lsGroup.outs||0)}</span>`;
     } else if(lsGroup?.isFinal){
       hdrRight += `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.4;margin-left:5px">Final</span>`;
+    } else {
+      // pregame — no live/final data yet, show the scheduled start time
+      // instead. Saved bet legs don't carry their own startTime (see the
+      // slip<->bet leg shape in saveBet()), so fall back to a batter leg in
+      // today's loaded slate (`legs`) sharing the same gamePk, mirroring
+      // renderSlip()'s identical fallback for the (still-open) slip drawer.
+      let gTime = sampleBl.startTime;
+      if(!gTime && gpkGroup){
+        const src = legs.find(x=>String(x.gamePk)===gpkGroup && x.startTime);
+        if(src) gTime = src.startTime;
+      }
+      if(gTime) hdrRight += `<span style="font-family:var(--mono);font-size:9px;color:var(--amber);margin-left:5px">${esc(gTime)}</span>`;
     }
 
     const _mlbUrl = gpkGroup ? (lsGroup?.isLive ? `https://www.mlb.com/tv/g${gpkGroup}` : `https://www.mlb.com/gameday/${gpkGroup}`) : null;
@@ -4579,10 +4598,13 @@ function _betCardHtml(b, opts){
       const done = isHit || alreadyHit;
       const faded = isMiss;
 
-      // batter link to MLB player page if id known
-      const batterHref = bid ? `https://www.mlb.com/player/${bid}` : null;
-      const nameEl = batterHref
-        ? `<a href="${batterHref}" target="_blank" style="font-family:var(--mono);font-size:11px;color:${done?'var(--sage)':faded?'var(--sage)':'var(--chalk)'};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${done?'text-decoration:line-through;':''}text-decoration-color:var(--sage)" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${esc(bl.name)}</a>`
+      // batter name opens the same in-app batter popup card used elsewhere
+      // (Scores/All Batters) — shows the scheduled start time when the game
+      // hasn't started yet (see batterPopupHtml's gameStatusLine), which a
+      // plain external mlb.com link couldn't surface. Falls back to that
+      // external link only when there's no batterId to look up.
+      const nameEl = bid
+        ? `<a href="#" onclick="event.preventDefault();goToBatter('${bid}','${gpk||''}')" style="font-family:var(--mono);font-size:11px;color:${done?'var(--sage)':faded?'var(--sage)':'var(--chalk)'};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${done?'text-decoration:line-through;':''}text-decoration-color:var(--sage)" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${esc(bl.name)}</a>`
         : `<span style="font-family:var(--mono);font-size:11px;color:${done?'var(--sage)':faded?'var(--sage)':'var(--chalk)'};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${done?'text-decoration:line-through;':''}">${esc(bl.name)}</span>`;
 
       const notLast=idx<gLegs.length-1;
@@ -5396,7 +5418,7 @@ let showOuBadge = true;
 // This picker was never actually the cause — re-enabled once that fix was
 // confirmed live.
 let PITCHER_PREVIEW_ENABLED = true;
-let scoresSort = 'time'; // 'time' | 'hitting' | 'matchup'
+let scoresSort = 'time'; // 'time' | 'hitting' | 'matchup' | 'custom'
 // two mutually-exclusive sort chips share one active-button toggle instead
 // of each hardcoding "add mine, remove the other one". 'rating' (Best Lean)
 // and 'diff' (Matchup Diff) used to be separate sort modes; merged into one
@@ -5420,6 +5442,12 @@ function _setScoresSortDirBtn(){
 }
 let scoresLiveOnly = false;
 let scoresUpcoming = false;
+// drag-to-reorder — see toggleGamePin/_getScoresCustomOrder below for the
+// persisted order itself. These two are transient (not persisted): a guard
+// so the 30s live poller (and any other renderScores() trigger) can't blow
+// away a card mid-drag, and the active drag-session state.
+let _scoresDragActive = false;
+let _scoresDrag = null;
 // mobile only: which side (away/home) is shown per game, keyed by gamePk
 const scoresMobileSide = {};
 function setScoresMobileSide(gamePk, side){
@@ -5541,6 +5569,116 @@ function toggleGamePin(gamePk){
   const next = !_isGamePinned(gamePk);
   try{ localStorage.setItem('scores_pinned_'+gamePk, next?'1':'0'); }catch(e){}
   renderScores();
+}
+
+// manual drag order — array of gamePk strings, index = rank. Same per-day
+// freshness property as scores_pinned_* above (gamePks are new every day);
+// stale entries are pruned in _renderScoresInner once today's game set is
+// known, so this never grows unbounded across days.
+function _getScoresCustomOrder(){
+  try{
+    const raw = localStorage.getItem('scores_custom_order');
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.map(String) : [];
+  }catch(e){ return []; }
+}
+function _setScoresCustomOrder(arr){
+  try{ localStorage.setItem('scores_custom_order', JSON.stringify(arr.map(String))); }catch(e){}
+}
+
+// pointer-events-based drag-to-reorder (mouse + touch) for Scores game
+// cards. Always active (no separate "manual mode" toggle) — dropping a card
+// sets scoresSort='custom' automatically. See the ⠿ handle in buildScoreCard.
+function _scoresDragStart(event, gamePk){
+  event.preventDefault();
+  const handle = event.currentTarget;
+  const card = document.getElementById('scoregame-' + gamePk);
+  const grid = document.getElementById('scores-grid');
+  if(!card || !grid) return;
+
+  // setPointerCapture keeps pointermove/up routed to `handle` even once the
+  // pointer physically leaves its bounds mid-drag. Wrapped defensively — it
+  // throws if the browser doesn't consider this pointerId "active" (seen in
+  // synthetic/automated event dispatch); a real user drag always has one,
+  // but don't let an edge case here abort the whole drag.
+  try{ handle.setPointerCapture(event.pointerId); }catch(e){}
+
+  _scoresDragActive = true;
+  card.classList.add('dragging');
+  handle.style.cursor = 'grabbing';
+  card.style.zIndex = '50';
+
+  _scoresDrag = {
+    pointerId: event.pointerId,
+    handle, card, grid,
+    startX: event.clientX, startY: event.clientY,
+    lastTarget: null,
+  };
+
+  handle.onpointermove = _scoresDragMove;
+  handle.onpointerup = _scoresDragEnd;
+  handle.onpointercancel = _scoresDragEnd; // e.g. an OS gesture interrupts the drag
+}
+function _scoresDragMove(event){
+  const d = _scoresDrag;
+  if(!d || event.pointerId !== d.pointerId) return;
+
+  const dx = event.clientX - d.startX, dy = event.clientY - d.startY;
+  d.card.style.transform = `translate(${dx}px, ${dy}px)`;
+
+  // 2D nearest-center hit test against every other card — full distance,
+  // not an above/below check, since #scores-grid is a 2-column grid at
+  // 900px+ (a 1D check would break left/right column drops). Degenerates
+  // correctly to a plain vertical-list reorder in the single-column layout.
+  const siblings = [...d.grid.querySelectorAll('.gamecard-collapsible')].filter(c => c !== d.card);
+  let target = null, bestDist = Infinity;
+  for(const sib of siblings){
+    const r = sib.getBoundingClientRect();
+    const cx = r.left + r.width/2, cy = r.top + r.height/2;
+    const dist = Math.hypot(event.clientX - cx, event.clientY - cy);
+    if(dist < bestDist){ bestDist = dist; target = sib; }
+  }
+  if(!target || target === d.lastTarget) return;
+
+  // FLIP-style rebase: neutralize the transform, measure, move the node in
+  // the real DOM next to `target`, re-measure, then shift the tracked start
+  // position by the delta so the next translate() continues seamlessly
+  // (no visual snap) from wherever the card actually landed.
+  d.card.style.transform = 'none';
+  const before = d.card.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const draggedCenterY = before.top + before.height/2;
+  const insertAfter = draggedCenterY > targetRect.top + targetRect.height/2;
+  if(insertAfter) target.after(d.card); else target.before(d.card);
+  const after = d.card.getBoundingClientRect();
+
+  d.startX += (after.left - before.left);
+  d.startY += (after.top  - before.top);
+  d.card.style.transform = `translate(${event.clientX - d.startX}px, ${event.clientY - d.startY}px)`;
+  d.lastTarget = target;
+}
+function _scoresDragEnd(event){
+  const d = _scoresDrag;
+  if(!d || event.pointerId !== d.pointerId) return;
+
+  try{ d.handle.releasePointerCapture(event.pointerId); }catch(e){}
+  d.handle.onpointermove = null;
+  d.handle.onpointerup = null;
+  d.handle.onpointercancel = null;
+  d.card.style.transform = '';
+  d.card.style.zIndex = '';
+  d.card.classList.remove('dragging');
+  d.handle.style.cursor = 'grab';
+
+  const order = [...d.grid.querySelectorAll('.gamecard-collapsible')]
+    .map(c => c.id.replace('scoregame-', ''));
+  _setScoresCustomOrder(order);
+  scoresSort = 'custom';
+  _setScoresSortBtn(null); // un-highlights Time/Hitting/Matchup — null matches none of them
+
+  _scoresDragActive = false;
+  _scoresDrag = null;
+  renderScores(); // commit the canonical re-render (badges, collapsed state, etc.)
 }
 
 // _liveScores keys are `${date}|${matchup}|${gamePk}` (gamePk included so a
@@ -6099,6 +6237,9 @@ function buildScoreCard(matchup, batters, betKeys) {
     </div>`;
     return `<div class="card gamecard-collapsible${collapsed?' collapsed':''}" id="${cardId}" style="padding:0;overflow:hidden${isAllStarGame?';border-top:2px solid #D4AF37':''}">
       <div class="gm-header" onclick="if(!event.target.closest('a'))toggleCard('${cardId}')">
+        <span class="scores-drag-handle" data-gamepk="${gamePk}" title="Drag to reorder"
+          onpointerdown="event.stopPropagation();_scoresDragStart(event,'${gamePk}')"
+          style="position:absolute;top:3px;left:5px;z-index:2;cursor:grab;font-size:13px;line-height:1;color:var(--sage);opacity:.5;padding:5px;touch-action:none;user-select:none">⠿</span>
         ${isAllStarGame
           ? `<div style="padding:5px 10px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(184,50,46,.16),rgba(212,175,55,.14),rgba(30,75,142,.16));text-align:center"><span title="MLB All-Star Game — exhibition rosters, not real franchise matchups; lean grades below still compare each side's lineup vs. the opposing pitcher, same math as any other game" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#D4AF37">⭐ MLB ALL-STAR GAME ⭐</span></div>`
           : storyline?`<div style="padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(var(--overlay-rgb),.02);text-align:center"><span title="${esc(storyline.title)}" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:${storyline.color}">✦ ${storyline.label}</span></div>`:''}
@@ -6119,7 +6260,14 @@ function buildScoreCard(matchup, batters, betKeys) {
   }
 
 
-function renderScores(){ _scrollPreserved(_renderScoresInner); }
+function renderScores(){
+  // mid-drag: a full innerHTML rebuild (from the 30s live poller, a bet-slip
+  // change, etc.) would destroy the dragged node and drop pointer capture.
+  // Safe to no-op — _scoresDragEnd calls renderScores() itself right after
+  // committing the drop, so nothing is permanently lost, just deferred.
+  if(_scoresDragActive) return;
+  _scrollPreserved(_renderScoresInner);
+}
 function _renderScoresInner() {
   const el = document.getElementById('scores-grid');
   if(!el) return;
@@ -6154,6 +6302,16 @@ function _renderScoresInner() {
     if(!gameMap.has(key)) gameMap.set(key, []);
     gameMap.get(key).push(l);
   });
+
+  // prune stored custom-order gamePks that aren't in today's game set, so
+  // localStorage doesn't accumulate stale entries across days (gamePks are
+  // fresh every day, same property scores_pinned_* already relies on).
+  {
+    const todayGamePks = new Set([...gameMap.values()].map(b => String(b[0]?.gamePk || '')).filter(Boolean));
+    const stored = _getScoresCustomOrder();
+    const pruned = stored.filter(gpk => todayGamePks.has(gpk));
+    if(pruned.length !== stored.length) _setScoresCustomOrder(pruned);
+  }
 
   const games = [...gameMap.entries()].filter(([,batters]) => {
     const gs = batters[0]?.gameState || '';
@@ -6201,6 +6359,24 @@ function _renderScoresInner() {
       // divergence between the two lineups' fortunes.
       return scoresSortDir * (gameGrades(b[1]).matchup - gameGrades(a[1]).matchup);
     }
+    if(scoresSort === 'custom') {
+      const order = _getScoresCustomOrder();
+      const gpkA = String(a[1][0]?.gamePk || ''), gpkB = String(b[1][0]?.gamePk || '');
+      const ia = order.indexOf(gpkA), ib = order.indexOf(gpkB);
+      // note: pin-first already ran above this branch, so a dragged card
+      // placed above a still-pinned game will visually work during the drag
+      // but snap back to the pinned group on the next render — accepted,
+      // same "pin always wins" shape the other sort modes already have.
+      if(ia !== -1 && ib !== -1) return ia - ib;
+      if(ia !== -1) return -1;
+      if(ib !== -1) return 1;
+      // neither game has been manually placed yet (e.g. a doubleheader G2
+      // that appeared mid-slate after the last drag) — fall back to the
+      // same time ordering 'time' mode uses, reusing timeVal() below rather
+      // than duplicating its AM/PM parsing (legal: function declarations
+      // hoist within their enclosing scope).
+      return timeVal(a[1][0]?.startTime) - timeVal(b[1][0]?.startTime);
+    }
     function timeVal(t){
       if(!t) return 9999;
       const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
@@ -6217,6 +6393,9 @@ function _renderScoresInner() {
     el.innerHTML = '<div class="card"><div class="empty">No games match this filter.</div></div>';
     return;
   }
+
+  const customBadge = document.getElementById('scores-sort-custom-badge');
+  if(customBadge) customBadge.style.display = scoresSort === 'custom' ? '' : 'none';
 
   el.innerHTML = games.map(([, batters]) => buildScoreCard(batters[0]?.matchup || 'Unknown', batters, betKeys)).join('');
   updateCollapseAllLabel();
