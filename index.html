@@ -4508,7 +4508,7 @@ function _betCardHtml(b, opts){
     // runners below pull from), so read from there instead.
     if(lsGroup?.awayR!=null && lsGroup?.homeR!=null){
       const [away,home] = matchup.split('@').map(s=>s.trim());
-      hdrRight = `<span style="font-family:var(--mono);font-size:10px;color:var(--chalk)">${away} ${lsGroup.awayR} · ${home} ${lsGroup.homeR}</span>`;
+      hdrRight = `<span style="font-family:var(--mono);font-size:9px;color:var(--chalk)">${away} ${lsGroup.awayR} · ${home} ${lsGroup.homeR}</span>`;
     }
     if(lsGroup?.isLive){
       const h=lsGroup.half==='Top'?'▲':'▼';
