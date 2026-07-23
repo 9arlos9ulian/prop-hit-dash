@@ -4498,12 +4498,17 @@ function _betCardHtml(b, opts){
     const sampleCsvLeg = _legLookup.get(_normName(sampleBl.name)+'|'+(sampleBl.gameDate||''));
     const gpkGroup = String(sampleBl.gamePk||sampleCsvLeg?.gamePk||'') || null;
     const lsGroup = gpkGroup ? _liveLinescore.get(gpkGroup) : null;
-    const scoreData = (window._liveScores||new Map()).get(matchup);
 
     let hdrRight = '';
-    if(scoreData?.as!=null && scoreData?.hs!=null){
+    // score, straight from lsGroup — was previously looked up via
+    // window._liveScores.get(matchup), but that map is keyed by the
+    // composite `${date}|${matchup}|${gamePk}` string (see _findLiveScore
+    // above), so a bare-matchup lookup never matched and this never showed.
+    // lsGroup already carries awayR/homeR (same object the inning/outs/
+    // runners below pull from), so read from there instead.
+    if(lsGroup?.awayR!=null && lsGroup?.homeR!=null){
       const [away,home] = matchup.split('@').map(s=>s.trim());
-      hdrRight = `<span style="font-family:var(--mono);font-size:10px;color:var(--chalk)">${away} ${scoreData.as} · ${home} ${scoreData.hs}</span>`;
+      hdrRight = `<span style="font-family:var(--mono);font-size:10px;color:var(--chalk)">${away} ${lsGroup.awayR} · ${home} ${lsGroup.homeR}</span>`;
     }
     if(lsGroup?.isLive){
       const h=lsGroup.half==='Top'?'▲':'▼';
