@@ -60,7 +60,6 @@
     /* matchup-mismatch label colors (muLabel()) — mismatch-strong
        intentionally equals --good-dark (same literal today) */
     --mismatch-strong:var(--good-dark); --mismatch-strong-rgb:var(--good-dark-rgb);
-    --mismatch-lean:#689D6A; --mismatch-lean-rgb:104,157,106;
     --mismatch-avoid:#FB4934; --mismatch-avoid-rgb:251,73,52;
     /* header-title gradient shine (dark: glint = lightest stop; light
        mode inverts this — see the light block below) */
@@ -107,7 +106,6 @@
       --grade-d:#AF3A03; --grade-d-rgb:175,58,3;
       --grade-f:#9D0006; --grade-f-rgb:157,0,6;
       --mismatch-strong:#427B58; --mismatch-strong-rgb:66,123,88;
-      --mismatch-lean:#427B58; --mismatch-lean-rgb:66,123,88;
       --mismatch-avoid:#9D0006; --mismatch-avoid-rgb:157,0,6;
       /* glint inverts to the richest/darkest stop — a light stop sweeping
          across cream (rather than near-black) would barely read at all */
@@ -142,7 +140,6 @@
     --grade-d:#AF3A03; --grade-d-rgb:175,58,3;
     --grade-f:#9D0006; --grade-f-rgb:157,0,6;
     --mismatch-strong:#427B58; --mismatch-strong-rgb:66,123,88;
-    --mismatch-lean:#427B58; --mismatch-lean-rgb:66,123,88;
     --mismatch-avoid:#9D0006; --mismatch-avoid-rgb:157,0,6;
     --amber-shine-1:#B57614; --amber-shine-2:#AF3A03; --amber-shine-3:#3C3836;
     --overlay-rgb:40,40,40;
@@ -174,7 +171,6 @@
     --grade-d:#D65D0E; --grade-d-rgb:214,93,14;
     --grade-f:#FB4934; --grade-f-rgb:251,73,52;
     --mismatch-strong:var(--good-dark); --mismatch-strong-rgb:var(--good-dark-rgb);
-    --mismatch-lean:#689D6A; --mismatch-lean-rgb:104,157,106;
     --mismatch-avoid:#FB4934; --mismatch-avoid-rgb:251,73,52;
     --amber-shine-1:var(--amber); --amber-shine-2:#D79921; --amber-shine-3:#FBF1C7;
     --overlay-rgb:255,255,255;
@@ -723,8 +719,6 @@
   .gm-header{box-shadow:0 4px 10px -4px rgba(0,0,0,.6);position:relative;z-index:1;transition:box-shadow .2s}
   .gamecard-collapsible>.gm-header{cursor:pointer;user-select:none}
   .gamecard-collapsible.collapsed>.gm-header{box-shadow:0 2px 6px -2px rgba(0,0,0,.5)}
-  .gamecard-collapsible.dragging{box-shadow:0 12px 28px -6px rgba(0,0,0,.5),0 0 0 1px rgba(var(--amber-rgb),.35);opacity:.92;transition:none}
-  .scores-drag-handle:active{cursor:grabbing}
   /* footer (lean chip/eval result + O/U row) stays visible collapsed too,
      same as .gm-header — a collapsed card used to hide the one row that
      summarizes the game at a glance, the exact thing you'd want left
@@ -850,7 +844,7 @@
      on the same side/size across the TEAM and RECORD rows. */
   .th-sqbtn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex:none}
   /* lean badge — the whole grade+label+%+delta lean reading as one pill,
-     colored by muLabel()'s STRONG/LEAN/NEUTRAL/AVOID bg+border+col so the
+     colored by muLabel()'s STRONG/NEUTRAL/AVOID bg+border+col so the
      lean reads as a single at-a-glance chip instead of two lines of plain
      colored text. */
   .th-lean-badge{display:flex;flex-direction:column;gap:1px;padding:3px 8px;border-radius:6px;line-height:1.3;min-width:0}
@@ -1157,7 +1151,6 @@
           <button id="scores-sort-hitting" class="ghost fchip" title="Best hitting environment first (both sides' matchup quality + park factor) ↔ worst — reverse to flip" onclick="scoresSort='hitting';_setScoresSortBtn(this);renderScores()">Hitting</button>
           <button id="scores-sort-matchup" class="ghost fchip" title="Biggest mismatch between the two sides first (one STRONG, one AVOID) ↔ most uniform — reverse to flip" onclick="scoresSort='matchup';_setScoresSortBtn(this);renderScores()">Matchup</button>
           <button id="scores-sort-dir" class="ghost fchip" title="Reverse the current sort order" onclick="scoresSortDir=-scoresSortDir;_setScoresSortDirBtn();renderScores()">▼</button>
-          <span id="scores-sort-custom-badge" class="ghost fchip amber" style="display:none;cursor:pointer" title="Custom drag order active — click to clear and return to Time sort" onclick="_setScoresCustomOrder([]);scoresSort='time';_setScoresSortBtn(document.getElementById('scores-sort-time'));renderScores()">⠿ Custom</span>
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
           <button id="scores-live-btn" class="ghost fchip" onclick="scoresLiveOnly=!scoresLiveOnly;scoresUpcoming=false;this.classList.toggle('amber',scoresLiveOnly);document.getElementById('scores-upcoming-btn').classList.remove('amber');renderScores()">● Live</button>
           <button id="scores-upcoming-btn" class="ghost fchip" onclick="scoresUpcoming=!scoresUpcoming;scoresLiveOnly=false;this.classList.toggle('amber',scoresUpcoming);document.getElementById('scores-live-btn').classList.remove('amber');renderScores()">Upcoming</button>
@@ -2849,10 +2842,10 @@ function isBestMatchup(l){
   const weakPitcher  = l.pGrade==='F'||l.pGrade==='D'||(l.pHH!=null&&l.pHH>=0.44);
   return strongBatter && weakPitcher;
 }
-// team-level matchup favorability — the same STRONG/LEAN/NEUTRAL/AVOID
+// team-level matchup favorability — the same STRONG/NEUTRAL/AVOID
 // muLabel() the Scores card computes per side (offense-vs-opposing-pitcher,
-// grouped by gamePk+team), reused here so All Batters can filter to "my
-// team's side of tonight's matchup grades LEAN or better" without
+// grouped by gamePk+team), reused here so All Batters can factor in "my
+// team's side of tonight's matchup" without
 // duplicating muLabel's math. Cached per `legs` array identity — legs is
 // swapped wholesale (not mutated) on slate/date changes, so identity is a
 // safe invalidation key (see the viewingDate comment above).
@@ -5423,7 +5416,7 @@ let showOuBadge = true;
 // This picker was never actually the cause — re-enabled once that fix was
 // confirmed live.
 let PITCHER_PREVIEW_ENABLED = true;
-let scoresSort = 'time'; // 'time' | 'hitting' | 'matchup' | 'custom'
+let scoresSort = 'time'; // 'time' | 'hitting' | 'matchup'
 // two mutually-exclusive sort chips share one active-button toggle instead
 // of each hardcoding "add mine, remove the other one". 'rating' (Best Lean)
 // and 'diff' (Matchup Diff) used to be separate sort modes; merged into one
@@ -5447,12 +5440,6 @@ function _setScoresSortDirBtn(){
 }
 let scoresLiveOnly = false;
 let scoresUpcoming = false;
-// drag-to-reorder — see toggleGamePin/_getScoresCustomOrder below for the
-// persisted order itself. These two are transient (not persisted): a guard
-// so the 30s live poller (and any other renderScores() trigger) can't blow
-// away a card mid-drag, and the active drag-session state.
-let _scoresDragActive = false;
-let _scoresDrag = null;
 // mobile only: which side (away/home) is shown per game, keyed by gamePk
 const scoresMobileSide = {};
 function setScoresMobileSide(gamePk, side){
@@ -5500,15 +5487,21 @@ function dotCol(p) {
   if(p >= 0.55) return 'var(--amber)';
   return 'var(--bad)';
 }
+// LEAN merged into NEUTRAL 2026-07-23 — real outcomes showed no
+// distinguishable separation between the two (see live_slate.py's
+// _mu_label comment); only STRONG/AVOID carry a real signal.
 function muLabel(offG, pitchG) {
   const offScore = {A:4,B:3,C:2,D:1,F:0}[offG]   ?? 2;
   const pitScore = {A:0,B:1,C:2,D:3,F:4}[pitchG] ?? 2;
   const total = offScore + pitScore;
   // mismatch delta: how far from neutral (4 = perfectly neutral midpoint of 0–8)
   const delta = total - 4;
-  if(total >= 6) return {lbl:'🔥 STRONG',  col:'var(--good-dark)', bg:'rgba(var(--good-dark-rgb),.11)',  border:'rgba(var(--good-dark-rgb),.3)',  score:total, delta};
-  if(total >= 4) return {lbl:'LEAN',       col:'var(--mismatch-lean)', bg:'rgba(var(--mismatch-lean-rgb),.07)',  border:'rgba(var(--mismatch-lean-rgb),.2)',  score:total, delta};
-  if(total <= 2) return {lbl:'AVOID',      col:'var(--mismatch-avoid)', bg:'rgba(var(--mismatch-avoid-rgb),.11)', border:'rgba(var(--mismatch-avoid-rgb),.3)', score:total, delta};
+  // bg/border alpha halved and the 🔥 dropped 2026-07-23 — real
+  // STRONG-vs-AVOID separation is a ~4-8pt gap (see LEAN_TAG_AUDIT_
+  // 2026-07-17.md + the lean-tag collapse commit), not the stoplight
+  // blowout the old full-strength styling implied.
+  if(total >= 6) return {lbl:'STRONG',  col:'var(--good-dark)', bg:'rgba(var(--good-dark-rgb),.05)',  border:'rgba(var(--good-dark-rgb),.14)',  score:total, delta};
+  if(total <= 2) return {lbl:'AVOID',      col:'var(--mismatch-avoid)', bg:'rgba(var(--mismatch-avoid-rgb),.05)', border:'rgba(var(--mismatch-avoid-rgb),.14)', score:total, delta};
   return                {lbl:'NEUTRAL',    col:'var(--sage)', bg:'rgba(var(--overlay-rgb),.03)', border:'var(--line)', score:total, delta};
 }
 
@@ -5574,116 +5567,6 @@ function toggleGamePin(gamePk){
   const next = !_isGamePinned(gamePk);
   try{ localStorage.setItem('scores_pinned_'+gamePk, next?'1':'0'); }catch(e){}
   renderScores();
-}
-
-// manual drag order — array of gamePk strings, index = rank. Same per-day
-// freshness property as scores_pinned_* above (gamePks are new every day);
-// stale entries are pruned in _renderScoresInner once today's game set is
-// known, so this never grows unbounded across days.
-function _getScoresCustomOrder(){
-  try{
-    const raw = localStorage.getItem('scores_custom_order');
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr.map(String) : [];
-  }catch(e){ return []; }
-}
-function _setScoresCustomOrder(arr){
-  try{ localStorage.setItem('scores_custom_order', JSON.stringify(arr.map(String))); }catch(e){}
-}
-
-// pointer-events-based drag-to-reorder (mouse + touch) for Scores game
-// cards. Always active (no separate "manual mode" toggle) — dropping a card
-// sets scoresSort='custom' automatically. See the ⠿ handle in buildScoreCard.
-function _scoresDragStart(event, gamePk){
-  event.preventDefault();
-  const handle = event.currentTarget;
-  const card = document.getElementById('scoregame-' + gamePk);
-  const grid = document.getElementById('scores-grid');
-  if(!card || !grid) return;
-
-  // setPointerCapture keeps pointermove/up routed to `handle` even once the
-  // pointer physically leaves its bounds mid-drag. Wrapped defensively — it
-  // throws if the browser doesn't consider this pointerId "active" (seen in
-  // synthetic/automated event dispatch); a real user drag always has one,
-  // but don't let an edge case here abort the whole drag.
-  try{ handle.setPointerCapture(event.pointerId); }catch(e){}
-
-  _scoresDragActive = true;
-  card.classList.add('dragging');
-  handle.style.cursor = 'grabbing';
-  card.style.zIndex = '50';
-
-  _scoresDrag = {
-    pointerId: event.pointerId,
-    handle, card, grid,
-    startX: event.clientX, startY: event.clientY,
-    lastTarget: null,
-  };
-
-  handle.onpointermove = _scoresDragMove;
-  handle.onpointerup = _scoresDragEnd;
-  handle.onpointercancel = _scoresDragEnd; // e.g. an OS gesture interrupts the drag
-}
-function _scoresDragMove(event){
-  const d = _scoresDrag;
-  if(!d || event.pointerId !== d.pointerId) return;
-
-  const dx = event.clientX - d.startX, dy = event.clientY - d.startY;
-  d.card.style.transform = `translate(${dx}px, ${dy}px)`;
-
-  // 2D nearest-center hit test against every other card — full distance,
-  // not an above/below check, since #scores-grid is a 2-column grid at
-  // 900px+ (a 1D check would break left/right column drops). Degenerates
-  // correctly to a plain vertical-list reorder in the single-column layout.
-  const siblings = [...d.grid.querySelectorAll('.gamecard-collapsible')].filter(c => c !== d.card);
-  let target = null, bestDist = Infinity;
-  for(const sib of siblings){
-    const r = sib.getBoundingClientRect();
-    const cx = r.left + r.width/2, cy = r.top + r.height/2;
-    const dist = Math.hypot(event.clientX - cx, event.clientY - cy);
-    if(dist < bestDist){ bestDist = dist; target = sib; }
-  }
-  if(!target || target === d.lastTarget) return;
-
-  // FLIP-style rebase: neutralize the transform, measure, move the node in
-  // the real DOM next to `target`, re-measure, then shift the tracked start
-  // position by the delta so the next translate() continues seamlessly
-  // (no visual snap) from wherever the card actually landed.
-  d.card.style.transform = 'none';
-  const before = d.card.getBoundingClientRect();
-  const targetRect = target.getBoundingClientRect();
-  const draggedCenterY = before.top + before.height/2;
-  const insertAfter = draggedCenterY > targetRect.top + targetRect.height/2;
-  if(insertAfter) target.after(d.card); else target.before(d.card);
-  const after = d.card.getBoundingClientRect();
-
-  d.startX += (after.left - before.left);
-  d.startY += (after.top  - before.top);
-  d.card.style.transform = `translate(${event.clientX - d.startX}px, ${event.clientY - d.startY}px)`;
-  d.lastTarget = target;
-}
-function _scoresDragEnd(event){
-  const d = _scoresDrag;
-  if(!d || event.pointerId !== d.pointerId) return;
-
-  try{ d.handle.releasePointerCapture(event.pointerId); }catch(e){}
-  d.handle.onpointermove = null;
-  d.handle.onpointerup = null;
-  d.handle.onpointercancel = null;
-  d.card.style.transform = '';
-  d.card.style.zIndex = '';
-  d.card.classList.remove('dragging');
-  d.handle.style.cursor = 'grab';
-
-  const order = [...d.grid.querySelectorAll('.gamecard-collapsible')]
-    .map(c => c.id.replace('scoregame-', ''));
-  _setScoresCustomOrder(order);
-  scoresSort = 'custom';
-  _setScoresSortBtn(null); // un-highlights Time/Hitting/Matchup — null matches none of them
-
-  _scoresDragActive = false;
-  _scoresDrag = null;
-  renderScores(); // commit the canonical re-render (badges, collapsed state, etc.)
 }
 
 // _liveScores keys are `${date}|${matchup}|${gamePk}` (gamePk included so a
@@ -5979,10 +5862,9 @@ function buildScoreCard(matchup, batters, betKeys) {
         ${previewOptions}
       </select>` : '';
 
-      // same background color coding used for STRONG/LEAN/AVOID/NEUTRAL
+      // same background color coding used for STRONG/NEUTRAL/AVOID
       const colBg = !mu ? 'rgba(var(--neutral-rgb),.04)'
                   : mu.lbl.includes('STRONG') ? 'rgba(var(--good-rgb),.09)'
-                  : mu.lbl.includes('LEAN')   ? 'linear-gradient(180deg,rgba(var(--good-rgb),.07) 0%,transparent 100%)'
                   : mu.lbl.includes('AVOID')  ? 'rgba(var(--grade-f-rgb),.12)'
                   : 'rgba(var(--neutral-rgb),.04)';
 
@@ -6147,9 +6029,12 @@ function buildScoreCard(matchup, batters, betKeys) {
       const hits = settled.filter(l => l.hasHit).length;
       const hr = hits / settled.length;
       const hrPct = Math.round(hr * 100);
-      const lbl = mu.lbl.replace('🔥 ','');
-      const correct = (lbl==='STRONG' && hr>=0.65)||(lbl==='LEAN' && hr>=0.55)||
-                      (lbl==='NEUTRAL' && hr>=0.45 && hr<0.65)||(lbl==='AVOID' && hr<0.50);
+      const lbl = mu.lbl;
+      // NEUTRAL now spans the old NEUTRAL+LEAN range (total 3-5) — its
+      // "correct" band fills the gap between AVOID's and STRONG's cutoffs
+      // with no overlap, rather than the old asymmetric NEUTRAL/LEAN bands.
+      const correct = (lbl==='STRONG' && hr>=0.65)||
+                      (lbl==='NEUTRAL' && hr>=0.50 && hr<0.65)||(lbl==='AVOID' && hr<0.50);
       const icon = correct ? '✓' : '✗';
       const col  = correct ? 'var(--good)' : 'var(--mismatch-avoid)';
       return `<div class="gm-eval-cell" style="font-family:var(--mono);font-size:8px;display:flex;align-items:center;gap:4px" title="${hits}/${settled.length} got hits (${hrPct}%)">
@@ -6242,9 +6127,6 @@ function buildScoreCard(matchup, batters, betKeys) {
     </div>`;
     return `<div class="card gamecard-collapsible${collapsed?' collapsed':''}" id="${cardId}" style="padding:0;overflow:hidden${isAllStarGame?';border-top:2px solid #D4AF37':''}">
       <div class="gm-header" onclick="if(!event.target.closest('a'))toggleCard('${cardId}')">
-        <span class="scores-drag-handle" data-gamepk="${gamePk}" title="Drag to reorder"
-          onpointerdown="event.stopPropagation();_scoresDragStart(event,'${gamePk}')"
-          style="position:absolute;top:3px;left:5px;z-index:2;cursor:grab;font-size:13px;line-height:1;color:var(--sage);opacity:.5;padding:5px;touch-action:none;user-select:none">⠿</span>
         ${isAllStarGame
           ? `<div style="padding:5px 10px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(184,50,46,.16),rgba(212,175,55,.14),rgba(30,75,142,.16));text-align:center"><span title="MLB All-Star Game — exhibition rosters, not real franchise matchups; lean grades below still compare each side's lineup vs. the opposing pitcher, same math as any other game" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#D4AF37">⭐ MLB ALL-STAR GAME ⭐</span></div>`
           : storyline?`<div style="padding:4px 10px;border-bottom:1px solid var(--line);background:rgba(var(--overlay-rgb),.02);text-align:center"><span title="${esc(storyline.title)}" style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:${storyline.color}">✦ ${storyline.label}</span></div>`:''}
@@ -6266,11 +6148,6 @@ function buildScoreCard(matchup, batters, betKeys) {
 
 
 function renderScores(){
-  // mid-drag: a full innerHTML rebuild (from the 30s live poller, a bet-slip
-  // change, etc.) would destroy the dragged node and drop pointer capture.
-  // Safe to no-op — _scoresDragEnd calls renderScores() itself right after
-  // committing the drop, so nothing is permanently lost, just deferred.
-  if(_scoresDragActive) return;
   _scrollPreserved(_renderScoresInner);
 }
 function _renderScoresInner() {
@@ -6307,16 +6184,6 @@ function _renderScoresInner() {
     if(!gameMap.has(key)) gameMap.set(key, []);
     gameMap.get(key).push(l);
   });
-
-  // prune stored custom-order gamePks that aren't in today's game set, so
-  // localStorage doesn't accumulate stale entries across days (gamePks are
-  // fresh every day, same property scores_pinned_* already relies on).
-  {
-    const todayGamePks = new Set([...gameMap.values()].map(b => String(b[0]?.gamePk || '')).filter(Boolean));
-    const stored = _getScoresCustomOrder();
-    const pruned = stored.filter(gpk => todayGamePks.has(gpk));
-    if(pruned.length !== stored.length) _setScoresCustomOrder(pruned);
-  }
 
   const games = [...gameMap.entries()].filter(([,batters]) => {
     const gs = batters[0]?.gameState || '';
@@ -6364,24 +6231,6 @@ function _renderScoresInner() {
       // divergence between the two lineups' fortunes.
       return scoresSortDir * (gameGrades(b[1]).matchup - gameGrades(a[1]).matchup);
     }
-    if(scoresSort === 'custom') {
-      const order = _getScoresCustomOrder();
-      const gpkA = String(a[1][0]?.gamePk || ''), gpkB = String(b[1][0]?.gamePk || '');
-      const ia = order.indexOf(gpkA), ib = order.indexOf(gpkB);
-      // note: pin-first already ran above this branch, so a dragged card
-      // placed above a still-pinned game will visually work during the drag
-      // but snap back to the pinned group on the next render — accepted,
-      // same "pin always wins" shape the other sort modes already have.
-      if(ia !== -1 && ib !== -1) return ia - ib;
-      if(ia !== -1) return -1;
-      if(ib !== -1) return 1;
-      // neither game has been manually placed yet (e.g. a doubleheader G2
-      // that appeared mid-slate after the last drag) — fall back to the
-      // same time ordering 'time' mode uses, reusing timeVal() below rather
-      // than duplicating its AM/PM parsing (legal: function declarations
-      // hoist within their enclosing scope).
-      return timeVal(a[1][0]?.startTime) - timeVal(b[1][0]?.startTime);
-    }
     function timeVal(t){
       if(!t) return 9999;
       const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
@@ -6398,9 +6247,6 @@ function _renderScoresInner() {
     el.innerHTML = '<div class="card"><div class="empty">No games match this filter.</div></div>';
     return;
   }
-
-  const customBadge = document.getElementById('scores-sort-custom-badge');
-  if(customBadge) customBadge.style.display = scoresSort === 'custom' ? '' : 'none';
 
   el.innerHTML = games.map(([, batters]) => buildScoreCard(batters[0]?.matchup || 'Unknown', batters, betKeys)).join('');
   updateCollapseAllLabel();
@@ -6909,10 +6755,12 @@ function parseLogCSV(text) {
       p:        parseFloat(c[iP]) || 0,
       odds:     c[iHitOdds] || '',
       batterId: c[iBatterId] || '',
-      // STRONG/LEAN/NEUTRAL/AVOID, computed pregame by live_slate.py the
-      // same way muLabel() computes it live on the Scores card — blank
-      // for rows predating the column (2026-07-17) or outside the
-      // slates/ archive's coverage (see backfill_lean_tag.py)
+      // STRONG/NEUTRAL/AVOID (LEAN merged into NEUTRAL 2026-07-23),
+      // computed pregame by live_slate.py the same way muLabel() computes
+      // it live on the Scores card — blank for rows predating the column
+      // (2026-07-17) or outside the slates/ archive's coverage (see
+      // backfill_lean_tag.py). Legacy 'LEAN' values from before the merge
+      // are still stored as-is; the History audit folds them into NEUTRAL.
       leanTag:  iLeanTag>=0 ? (c[iLeanTag] || '') : '',
       // used to blank out a '0' from today's date here, on the theory that a
       // same-day miss might be a stale leftover from before the game
@@ -7462,22 +7310,24 @@ function renderHistory(resetPage) {
     </tr>`;
   }).join('')}</tbody></table>`;
 
-  // ── lean-tag buckets — same STRONG/LEAN/NEUTRAL/AVOID label the Scores
+  // ── lean-tag buckets — same STRONG/NEUTRAL/AVOID label the Scores
   // card computes live (muLabel()), persisted pregame by live_slate.py as
   // picks_log.csv's lean_tag column (added 2026-07-17; blank for rows
   // predating it or outside the slates/ archive's coverage — see
   // backfill_lean_tag.py). Same bar-chart-plus-table shape as the
-  // probability-decile Calibration block above, just 4 fixed buckets
+  // probability-decile Calibration block above, just 3 fixed buckets
   // instead of 9 ranges. See LEAN_TAG_AUDIT_2026-07-17.md for the
   // one-off manual version of this same analysis.
+  // LEAN merged into NEUTRAL 2026-07-23 (no distinguishable separation in
+  // real outcomes) — legacy rows persisted as 'LEAN' before the merge are
+  // folded into the NEUTRAL bucket here rather than rewriting picks_log.csv.
   const leanColors = {
-    STRONG:  {col:'var(--good-dark)',       label:'🔥 STRONG'},
-    LEAN:    {col:'var(--mismatch-lean)',   label:'LEAN'},
+    STRONG:  {col:'var(--good-dark)',       label:'STRONG'},
     NEUTRAL: {col:'var(--sage)',            label:'NEUTRAL'},
     AVOID:   {col:'var(--mismatch-avoid)',  label:'AVOID'},
   };
-  const leanBuckets = ['STRONG','LEAN','NEUTRAL','AVOID'].map(tag => {
-    const bs = settled.filter(r => r.leanTag === tag);
+  const leanBuckets = ['STRONG','NEUTRAL','AVOID'].map(tag => {
+    const bs = settled.filter(r => r.leanTag === tag || (tag==='NEUTRAL' && r.leanTag==='LEAN'));
     const bn = bs.length;
     const bh = bs.filter(r=>r.actual==='1').length;
     const avgPred = bn ? bs.reduce((s,r)=>s+r.p,0)/bn : 0;
