@@ -550,6 +550,7 @@
   .restbadge{font-family:var(--mono);font-size:9px;color:var(--rest);background:rgba(var(--rest-rgb),.1);border:1px solid rgba(var(--rest-rgb),.3);border-radius:4px;padding:1px 5px;white-space:nowrap;line-height:1.5;text-transform:uppercase;letter-spacing:.4px}
   .restbadge-warn{color:var(--grade-f);background:rgba(var(--grade-f-rgb),.08);border-color:rgba(var(--grade-f-rgb),.3)}
   .rookiebadge{font-family:var(--mono);font-size:9px;color:var(--rookie);background:rgba(var(--rookie-rgb),.1);border:1px solid rgba(var(--rookie-rgb),.3);border-radius:4px;padding:1px 5px;white-space:nowrap;line-height:1.5;text-transform:uppercase;letter-spacing:.4px}
+  .krbadge{font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(var(--amber-rgb),.1);border:1px solid rgba(var(--amber-rgb),.32);border-radius:4px;padding:1px 5px;white-space:nowrap;flex:none;line-height:1.5;text-transform:uppercase;letter-spacing:.4px}
   .streak-lbl{font-family:var(--mono);font-size:9px;color:var(--sage)}
   /* saved bets */
   .sbet{padding:12px 15px;border-bottom:1px solid var(--line)}
@@ -1824,6 +1825,23 @@ async function _loadBullpenPreview() {
   } catch(_) { /* silently fail — sideHtml() falls back cleanly */ }
 }
 
+// last-5-games pitcher-card trend (live_slate.py's build_pitcher_recent_games)
+// — {pitcherId: [{date, ip, h, r, er, bb, k, hr}, ...]} for tonight's
+// probable starters only; a previewed/live-swapped alt candidate's last5
+// travels inside bullpen_preview.json itself instead (see
+// _resolvePitcherData's alt branch), so this file only needs one lookup.
+window._pitcherRecentGames = {};
+let _pitcherRecentGamesLoaded = false;
+async function _loadPitcherRecentGames() {
+  if(_pitcherRecentGamesLoaded) return;
+  _pitcherRecentGamesLoaded = true;
+  try {
+    const res = await fetch('./pitcher_recent_games.json?t=' + Date.now());
+    if(!res.ok) return;
+    window._pitcherRecentGames = await res.json() || {};
+  } catch(_) { /* silently fail — pitcherPopupHtml() just omits the section */ }
+}
+
 async function fetchMoneylines() {
   // Kalshi KXMLBGAME series — per-game MLB winner markets (server.py proxies
   // /kalshi/winner to that series; KXMLB alone is the season championship futures)
@@ -2247,10 +2265,12 @@ function parseCSV(raw){
   const iPCsw=head.findIndex(h=>h==='p_csw');
   const iPKbb=head.findIndex(h=>h==='p_k_bb');
   const iPHH=head.findIndex(h=>h==='p_hardhit_allowed');
+  const iPKRate=head.findIndex(h=>h==='p_k_rate');
   const iBHitRate=head.findIndex(h=>h==='b_hit_rate');
   const iBXba=head.findIndex(h=>h==='b_xba');
   const iBHH=head.findIndex(h=>h==='b_hardhit');
   const iBBabip=head.findIndex(h=>h==='b_babip');
+  const iBKRate=head.findIndex(h=>h==='b_k_rate');
   const iSplitDiff=head.findIndex(h=>h==='split_diff');
   const iParkFactor=head.findIndex(h=>h==='park_factor');
   const iBNGames=head.findIndex(h=>h==='b_n_games');
@@ -2345,10 +2365,12 @@ function parseCSV(raw){
     entry.pCsw=iPCsw>=0?parseFloat(c[iPCsw])||null:null;
     entry.pKbb=iPKbb>=0?parseFloat(c[iPKbb])||null:null;
     entry.pHH=iPHH>=0?parseFloat(c[iPHH])||null:null;
+    entry.pKRate=iPKRate>=0?parseFloat(c[iPKRate])||null:null;
     entry.bHitRate=iBHitRate>=0?parseFloat(c[iBHitRate])||null:null;
     entry.bXba=iBXba>=0?parseFloat(c[iBXba])||null:null;
     entry.bHH=iBHH>=0?parseFloat(c[iBHH])||null:null;
     entry.bBabip=iBBabip>=0?parseFloat(c[iBBabip])||null:null;
+    entry.bKRate=iBKRate>=0?parseFloat(c[iBKRate])||null:null;
     const _sd=iSplitDiff>=0?parseFloat(c[iSplitDiff]):NaN; entry.splitDiff=isNaN(_sd)?null:_sd;
     const _pf=iParkFactor>=0?parseFloat(c[iParkFactor]):NaN; entry.parkFactor=isNaN(_pf)?null:_pf;
     entry.bNGames=iBNGames>=0?parseInt(c[iBNGames])||0:0;
@@ -2380,7 +2402,13 @@ function parseCSV(raw){
     const _bHrVsOs=iBHrVsOs>=0?parseFloat(c[iBHrVsOs]):NaN; entry.bHrVsOs=isNaN(_bHrVsOs)?null:_bHrVsOs;
     const _bHrOverall=iBHrOverall>=0?parseFloat(c[iBHrOverall]):NaN; entry.bHrOverall=isNaN(_bHrOverall)?null:_bHrOverall;
     entry.batterId=iBatterId>=0?(c[iBatterId]||'').trim():'';
-    entry.pitcherId=iPitcherId>=0?(c[iPitcherId]||'').trim():'';
+    // opp_pitcher_id is a nullable-int pandas column (NaN for TBD pitchers),
+    // so pandas writes real values as "663554.0" not "663554" — strip the
+    // trailing ".0" so this matches the clean int-string keys used by
+    // pitcher_recent_games.json / bullpen_preview.json (both built from
+    // real Python ints server-side). Without this, any dict lookup keyed by
+    // pitcherId silently misses even though the two IDs are the same pitcher.
+    entry.pitcherId=iPitcherId>=0?(c[iPitcherId]||'').trim().replace(/\.0$/,''):'';
     entry.gamePk=iGamePk>=0?(c[iGamePk]||'').trim():'';
     const iIsOpener=head.findIndex(h=>h==='is_opener');
     entry.isOpener=iIsOpener>=0?(parseInt(c[iIsOpener])||0)===1:false;
@@ -2725,7 +2753,7 @@ function battingDetailBlock(l){
   const streakRow=s10?`<div style="display:flex;align-items:center;gap:6px;margin-top:6px"><span class="streak-lbl">L10</span><div class="sdots">${dots}</div></div>`:'';
   const thin=l.bNGames>0&&l.bNGames<15?`<span class="thinbadge" title="Only ${l.bNGames} games in model history">${l.bNGames}g thin</span>`:'';
   const rest=l.bDaysRest>=8?(()=>{const warn=l.bDaysRest>=15;return`<span class="restbadge${warn?' restbadge-warn':''}" title="${l.bDaysRest}d since last game">${l.bDaysRest}d rest</span>`;})():'';
-  const badges=[streakBadge(l.last5),rookieBadge(l.bIsRookie),thin,rest].filter(Boolean).join('');
+  const badges=[streakBadge(l.last5),rookieBadge(l.bIsRookie),thin,rest,kRateMatchupChip(l)].filter(Boolean).join('');
   const badgesRow=badges?`<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">${badges}</div>`:'';
   return `<div style="padding:10px 14px;background:rgba(0,0,0,.15);border-top:1px solid var(--line)">
     <div class="detail-grid">
@@ -2761,6 +2789,21 @@ function quality3Badge(l){
   const sign = pct>=0?'+':'';
   const tier = pct>=3?'good':pct<=-3?'bad':'sage';
   return `<span title="Valor intrínseco: tasa de hit en los primeros 3 turnos de cada partido, neutralizada por parque y calidad del lanzador rival — no depende de la posición en la alineación ni del rival de hoy. ${sign}${pct}% vs. promedio de liga (${l.bNGames3} partidos)." style="font-family:var(--mono);font-size:8px;color:var(--${tier});background:rgba(var(--${tier}-rgb),.1);border:1px solid rgba(var(--${tier}-rgb),.3);border-radius:3px;padding:1px 5px;white-space:nowrap;flex:none">3AB ${sign}${pct}%</span>`;
+}
+// K-rate matchup chip — flags when a high-strikeout batter faces a
+// high-strikeout pitcher at the same time. b_k_rate/p_k_rate are both
+// already-trained FEATURES (hit_model.py) the score already accounts for —
+// this isn't a new signal, just a visible flag for a compounding whiff risk
+// the raw score number doesn't call out on its own. Thresholds are each
+// stat's roughly-top-quartile mark from holdout.csv (b_k_rate p75≈.287,
+// p_k_rate p75≈.255; league-average trailing K rate for both sides is
+// ~.22-.23), so this only lights up for genuinely elevated K rates on both
+// sides at once, not just one side running slightly hot.
+function kRateMatchupChip(l){
+  if(l.bKRate==null||l.pKRate==null) return '';
+  if(l.bKRate<0.28||l.pKRate<0.25) return '';
+  const bPct=Math.round(l.bKRate*100), pPct=Math.round(l.pKRate*100);
+  return `<span class="krbadge" title="Both sides run hot on strikeouts — batter trailing K rate ${bPct}% and pitcher trailing K rate allowed ${pPct}% (league-average trailing K rate is ~22-23% for both). Already priced into the score above; this just flags the compounding whiff risk.">K RISK</span>`;
 }
 function addBlank(){ legs.push(mk('',0.7,'')); render(); }
 function loadSample(){
@@ -2971,7 +3014,6 @@ function battingEdgeScore(l){
   return s;
 }
 function slotVisible(l){
-  if(l.inSlip) return false;
   if(filterMinP && (l.p||0) < filterMinP) return false;
   if(filterLiveOnly && !isLive(l.gameState)) return false;
   if(filterUpcoming && (isLive(l.gameState)||isFinal(l.gameState))) return false;
@@ -3322,6 +3364,7 @@ function render(){
                   ${hitBadge}
                   ${kalshiDeltaChip(l)}
                   ${quality3Badge(l)}
+                  ${kRateMatchupChip(l)}
                 </div>
                 ${(()=>{
                   const handSpan=l.batterHand?`<span style="font-size:11px;font-weight:400;opacity:.55;margin-left:3px">${l.batterHand}</span>`:'';
@@ -3408,10 +3451,16 @@ function render(){
             const kbbV=l.pKbb;
             const hhV=l.pHH!=null?(l.pHH*100):null;
             const statsRow=l.pRating!=null?`<div class="p-col-stats" style="display:flex;gap:10px;margin-top:5px">
-              ${pstat('CSW',cswV,30,24,v=>v.toFixed(1)+'%')}
-              ${pstat('K/BB',kbbV,3.0,1.5,v=>Number(v).toFixed(2))}
+              ${pstat('CSW',cswV,null,null,v=>{
+                const c=v>=30?'var(--bad)':v<=24?'var(--good)':'var(--chalk)';
+                return `<span style="color:${c}">${v.toFixed(1)}%</span>`;
+              })}
+              ${pstat('K/BB',kbbV,null,null,v=>{
+                const c=v>=3.0?'var(--bad)':v<=1.5?'var(--good)':'var(--chalk)';
+                return `<span style="color:${c}">${Number(v).toFixed(2)}</span>`;
+              })}
               ${pstat('HH%',hhV,null,null,v=>{
-                const c=v>=44?'var(--bad)':v<=30?'var(--good)':'var(--chalk)';
+                const c=v>=44?'var(--good)':v<=30?'var(--bad)':'var(--chalk)';
                 return `<span style="color:${c}">${v.toFixed(0)}%</span>`;
               })}
             </div>`:'';
@@ -5078,6 +5127,7 @@ function _bootApp(){
   }
 
   _loadBullpenPreview();
+  _loadPitcherRecentGames();
 
   if(location.protocol==='http:'||location.protocol==='https:'){
     const isLocalServer = location.hostname==='localhost'||location.hostname==='127.0.0.1';
@@ -5392,6 +5442,7 @@ function batterPopupHtml(l){
       ${pitcherRateStatsHtml(pdata)}
       ${pitcherPer9Html(pdata)}
       ${pitcherTTOHtml(pdata)}
+      ${pitcherLast5Html(pdata)}
       <div style="display:flex;justify-content:center">${pitchMatchupHtml(l)}</div>
     </div>`;
   })() : '';
@@ -5421,6 +5472,7 @@ function batterPopupHtml(l){
       ${hitBadge}
       ${kalshiDeltaChip(l)}
       ${quality3Badge(l)}
+      ${kRateMatchupChip(l)}
     </div>
     <div style="font-family:var(--disp);font-size:20px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);margin-top:6px;display:flex;align-items:baseline;justify-content:center;gap:6px">${nameNode}${performanceArrow(l)}</div>
     ${badgesRow}
@@ -5454,7 +5506,7 @@ function _resolvePitcherData(pitcherId, gamePk, pitchingTeamAbbr){
       gamesPitched: cand.p_games_pitched, bfOfficial: cand.p_bf_official,
       hitsAllowed: cand.p_hits_allowed, bfPerG: cand.p_bf_per_g,
       k9: cand.p_k9, bb9: cand.p_bb9, h9: cand.p_h9, hr9: cand.p_hr9,
-      avgBf: cand.p_avg_bf,
+      avgBf: cand.p_avg_bf, last5: cand.last5 || [],
       useFb: null, useBb: null, useOs: null, matchup: '',
       isPreview: true,
     };
@@ -5483,7 +5535,7 @@ function _pitcherDataFromLeg(l){
     gamesPitched: l.pGamesPitched, bfOfficial: l.pBfOfficial,
     hitsAllowed: l.pHitsAllowed, bfPerG: l.pBfPerG,
     k9: l.pK9, bb9: l.pBb9, h9: l.pH9, hr9: l.pHr9,
-    avgBf: l.pAvgBf,
+    avgBf: l.pAvgBf, last5: window._pitcherRecentGames[String(l.pitcherId)] || [],
     useFb: l.pUseFb, useBb: l.pUseBb, useOs: l.pUseOs, matchup: l.matchup||'',
     isPreview: false,
   };
@@ -5514,6 +5566,14 @@ document.addEventListener('keydown', e => {
 // only has to happen once, here, instead of drifting between two hand-
 // written copies (see 2026-07-24: the batter popup's pitcherBlock had gone
 // stale relative to this file's standalone pitcherPopupHtml).
+//
+// Color convention (2026-07-24): green/red always mean "better/worse for
+// the BATTER's hit chances," never "good/bad for the pitcher." A pitcher
+// posting a great ERA is bad news for the hit prop, so it's colored red,
+// the mirror image of how ERA is colored everywhere else in sports media.
+// Same inversion applies to WHIP, K/9, BB/9, HR/9, CSW%, K/BB, W-L, saves,
+// and times-through-the-order below — don't "fix" these back to the
+// traditional pitcher-quality coloring.
 function pitcherRoleBadge(p){
   const label = p.role==='RP' ? 'Reliever' : p.role==='SP' ? 'Starter' : '';
   return label ? `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7;border:1px solid var(--line);border-radius:3px;padding:1px 5px">${label}</span>` : '';
@@ -5523,14 +5583,14 @@ function pitcherSeasonStatsHtml(p){
   // trained FEATURES, see CLAUDE.md / fetch_pitcher_season_stats() docstring)
   if(p.era==null && p.whip==null && !p.ip) return '';
   const isRP = p.role === 'RP';
-  const eraFmt = v => { const c = v<=3.50?'var(--good)':v>=4.75?'var(--bad)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(2)}</span>`; };
-  const whipFmt = v => { const c = v<=1.15?'var(--good)':v>=1.40?'var(--bad)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(2)}</span>`; };
+  const eraFmt = v => { const c = v<=3.50?'var(--bad)':v>=4.75?'var(--good)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(2)}</span>`; };
+  const whipFmt = v => { const c = v<=1.15?'var(--bad)':v>=1.40?'var(--good)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(2)}</span>`; };
   const wlFmt = () => {
-    const c = p.wins>p.losses?'var(--good)':p.losses>p.wins?'var(--bad)':'var(--chalk)';
+    const c = p.wins>p.losses?'var(--bad)':p.losses>p.wins?'var(--good)':'var(--chalk)';
     return `<span style="color:${c}">${p.wins}-${p.losses}</span>`;
   };
   const svFmt = () => {
-    const bs = p.blownSaves ? ` <span style="color:var(--bad);opacity:.8">(${p.blownSaves} BS)</span>` : '';
+    const bs = p.blownSaves ? ` <span style="color:var(--good);opacity:.8">(${p.blownSaves} BS)</span>` : '';
     return `<span style="color:var(--chalk)">${p.saves}</span>${bs}`;
   };
   return `<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px">
@@ -5546,19 +5606,19 @@ function pitcherRateStatsHtml(p){
   if(p.rating==null) return '';
   const cswV = p.csw!=null?(p.csw*100):null, kbbV = p.kbb, hhV = p.hh!=null?(p.hh*100):null;
   return `<div style="display:flex;gap:16px;justify-content:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
-    ${pstat('CSW',cswV,30,24,v=>v.toFixed(1)+'%')}
-    ${pstat('K/BB',kbbV,3.0,1.5,v=>Number(v).toFixed(2))}
-    ${pstat('HH%',hhV,null,null,v=>{const c=v>=44?'var(--bad)':v<=30?'var(--good)':'var(--chalk)';return `<span style="color:${c}">${v.toFixed(0)}%</span>`;})}
+    ${pstat('CSW',cswV,null,null,v=>{const c=v>=30?'var(--bad)':v<=24?'var(--good)':'var(--chalk)';return `<span style="color:${c}">${v.toFixed(1)}%</span>`;})}
+    ${pstat('K/BB',kbbV,null,null,v=>{const c=v>=3.0?'var(--bad)':v<=1.5?'var(--good)':'var(--chalk)';return `<span style="color:${c}">${Number(v).toFixed(2)}</span>`;})}
+    ${pstat('HH%',hhV,null,null,v=>{const c=v>=44?'var(--good)':v<=30?'var(--bad)':'var(--chalk)';return `<span style="color:${c}">${v.toFixed(0)}%</span>`;})}
   </div>`;
 }
 function pitcherPer9Html(p){
   // per-9-innings rates — official season stats, same "lower/higher is
   // better" self-coloring pattern as the season-line stats above
   if(p.k9==null && p.bb9==null && p.h9==null && p.hr9==null) return '';
-  const k9Fmt  = v => { const c = v>=9.5?'var(--good)':v<=6.5 ?'var(--bad)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(1)}</span>`; };
-  const bb9Fmt = v => { const c = v<=2.5?'var(--good)':v>=4.0 ?'var(--bad)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(1)}</span>`; };
-  const h9Fmt  = v => { const c = v<=7.5?'var(--good)':v>=10.0?'var(--bad)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(1)}</span>`; };
-  const hr9Fmt = v => { const c = v<=0.9?'var(--good)':v>=1.6 ?'var(--bad)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(1)}</span>`; };
+  const k9Fmt  = v => { const c = v>=9.5?'var(--bad)':v<=6.5 ?'var(--good)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(1)}</span>`; };
+  const bb9Fmt = v => { const c = v<=2.5?'var(--bad)':v>=4.0 ?'var(--good)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(1)}</span>`; };
+  const h9Fmt  = v => { const c = v<=7.5?'var(--bad)':v>=10.0?'var(--good)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(1)}</span>`; };
+  const hr9Fmt = v => { const c = v<=0.9?'var(--bad)':v>=1.6 ?'var(--good)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(1)}</span>`; };
   return `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);text-align:center">
     <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);margin-bottom:5px">Per 9 Innings</div>
     <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
@@ -5579,11 +5639,37 @@ function pitcherTTOHtml(p){
   // "as of tonight" reference point for the same idea.
   if(p.avgBf==null) return '';
   const times = p.avgBf/9;
-  const c = times>=2.5?'var(--bad)':times<=1.7?'var(--good)':'var(--chalk)';
+  const c = times>=2.5?'var(--good)':times<=1.7?'var(--bad)':'var(--chalk)';
   const bfNote = p.bfPerG!=null ? ` <span style="font-size:9px;color:var(--sage);font-weight:400">(BF/G ${p.bfPerG})</span>` : '';
   return `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);text-align:center">
     <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)">Times Through Order</div>
     <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:${c}" title="Trailing avg batters faced per start (${p.avgBf.toFixed(1)}) ÷ ~9 per time through the lineup. Hit rate against typically climbs the more times a lineup has already seen this pitcher that game.">~${times.toFixed(1)}x${bfNote}</div>
+  </div>`;
+}
+function pitcherLast5Html(p){
+  // last-5-games trend (client asked 2026-07-24 for a "TV broadcast"-style
+  // recent-outings line) — real per-game box-score lines from
+  // pitcher_boxscore_history.csv (live_slate.py's build_pitcher_recent_games /
+  // recent_games_for_pitcher), same source Track B's ERA/WHIP diagnostic
+  // used. ER is the one self-colored column — 0 ER is a dominant outing
+  // (red: bad for the hit prop), 4+ ER is a rough one (green: good for it) —
+  // same hit-probability coloring convention as everywhere else on this card.
+  if(!p.last5 || !p.last5.length) return '';
+  const erColor = er => er===0 ? 'var(--bad)' : er>=4 ? 'var(--good)' : 'var(--chalk)';
+  const rows = p.last5.map(g => {
+    const d = (g.date||'').slice(5).replace('-', '/'); // "2026-07-22" -> "07/22"
+    return `<div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;padding:3px 0;border-top:1px solid rgba(var(--overlay-rgb),.06)">
+      <span style="width:32px;flex:none;color:var(--sage)">${esc(d)}</span>
+      <span style="width:40px;flex:none;text-align:right;color:var(--chalk)">${esc(g.ip)} IP</span>
+      <span style="flex:1;text-align:right;color:var(--chalk)">${g.h}H</span>
+      <span style="flex:1;text-align:right;color:${erColor(g.er)}">${g.er}ER</span>
+      <span style="flex:1;text-align:right;color:var(--chalk)">${g.bb}BB</span>
+      <span style="flex:1;text-align:right;color:var(--chalk)">${g.k}K</span>
+    </div>`;
+  }).join('');
+  return `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+    <div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage);text-align:center;margin-bottom:2px">Last ${p.last5.length} Games</div>
+    ${rows}
   </div>`;
 }
 function pitcherPitchMixLabel(p){
@@ -5618,6 +5704,7 @@ function pitcherPopupHtml(p){
     ${pitcherRateStatsHtml(p)}
     ${pitcherPer9Html(p)}
     ${pitcherTTOHtml(p)}
+    ${pitcherLast5Html(p)}
     ${pitcherPitchMixLabel(p)}
     ${matchupBlock}
   </div>`;
@@ -6169,6 +6256,7 @@ function buildScoreCard(matchup, batters, betKeys) {
           <span style="flex:none;width:12px;text-align:center" title="Trending vs. model expectation">${performanceArrow(l)}</span>
           <span style="font-family:var(--mono);font-size:10px;color:${nameCol};flex:none;width:28px;text-align:right">${Math.round(effP*100)}</span>
           ${quality3Badge(l)}
+          ${kRateMatchupChip(l)}
           <span style="font-family:var(--mono);font-size:11px;color:${nameCol};${hit?'text-decoration:line-through;opacity:.45':''};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.name)}</span>
           ${subbedTag?`<span class="scores-hit-col" title="Subbed out of the game — no more plate appearances" style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.85;flex:none">SUBBED</span>`:isPostponedGame?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.75;flex:none">PPD</span>`:noHit?`<span class="scores-hit-col" style="font-family:var(--mono);font-size:8px;color:var(--bad);opacity:.75;flex:none">NO HIT</span>`:''}
           ${atBat?`<span style="font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--amber);flex:none">AT BAT</span>`:''}
@@ -6218,10 +6306,16 @@ function buildScoreCard(matchup, batters, betKeys) {
               ${previewPicker}
             </div>
             ${pCsw!=null||pKbb!=null||pHH!=null ? `<div class="pbar-stats">
-              ${pstat('CSW',pCsw!=null?pCsw*100:null,30,24,v=>v.toFixed(1)+'%')}
-              ${pstat('K/BB',pKbb,3.0,1.5,v=>Number(v).toFixed(2))}
+              ${pstat('CSW',pCsw!=null?pCsw*100:null,null,null,v=>{
+                const c=v>=30?'var(--bad)':v<=24?'var(--good)':'var(--chalk)';
+                return `<span style="color:${c}">${v.toFixed(1)}%</span>`;
+              })}
+              ${pstat('K/BB',pKbb,null,null,v=>{
+                const c=v>=3.0?'var(--bad)':v<=1.5?'var(--good)':'var(--chalk)';
+                return `<span style="color:${c}">${Number(v).toFixed(2)}</span>`;
+              })}
               ${pstat('HH%',pHH!=null?pHH*100:null,null,null,v=>{
-                const c=v>=44?'var(--bad)':v<=30?'var(--good)':'var(--chalk)';
+                const c=v>=44?'var(--good)':v<=30?'var(--bad)':'var(--chalk)';
                 return `<span style="color:${c}">${v.toFixed(0)}%</span>`;
               })}
             </div>` : ''}
@@ -6230,8 +6324,8 @@ function buildScoreCard(matchup, batters, betKeys) {
               ${usingAlt ? '' : rookieBadge(side[0]?.pIsRookie)}
               ${pNGames < 8 ? `<span title="Small sample — only ${pNGames} starts" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(var(--amber-rgb),.1);border:1px solid rgba(var(--amber-rgb),.3);border-radius:3px;padding:1px 5px">⚠ ${pNGames}G</span>` : ''}
               ${pDaysRest >= 15 ? `<span title="${pDaysRest} days since last appearance" style="font-family:var(--mono);font-size:9px;color:var(--amber);background:rgba(var(--amber-rgb),.1);border:1px solid rgba(var(--amber-rgb),.3);border-radius:3px;padding:1px 5px">⚠ ${pDaysRest}D</span>` : ''}
-              ${pHH != null && pHH >= 0.43 ? `<span title="High hard-hit rate allowed: ${(pHH*100).toFixed(0)}%" style="font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(var(--bad-rgb),.1);border:1px solid rgba(var(--bad-rgb),.3);border-radius:3px;padding:1px 5px">HH</span>` : ''}
-              ${pKbb != null && pKbb < 2.0 ? `<span title="Low K/BB ratio: ${pKbb.toFixed(1)}" style="font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(var(--bad-rgb),.1);border:1px solid rgba(var(--bad-rgb),.3);border-radius:3px;padding:1px 5px">KB</span>` : ''}
+              ${pHH != null && pHH >= 0.43 ? `<span title="High hard-hit rate allowed: ${(pHH*100).toFixed(0)}% — good matchup for the hitter" style="font-family:var(--mono);font-size:9px;color:var(--good);background:rgba(var(--good-rgb),.1);border:1px solid rgba(var(--good-rgb),.3);border-radius:3px;padding:1px 5px">HH</span>` : ''}
+              ${pKbb != null && pKbb < 2.0 ? `<span title="Low K/BB ratio: ${pKbb.toFixed(1)} — good matchup for the hitter" style="font-family:var(--mono);font-size:9px;color:var(--good);background:rgba(var(--good-rgb),.1);border:1px solid rgba(var(--good-rgb),.3);border-radius:3px;padding:1px 5px">KB</span>` : ''}
               ${(()=>{
                 if(pCsw == null) return '';
                 const csw = pCsw * 100;
@@ -6654,9 +6748,9 @@ function _renderScoresAllBattersInner() {
     ['P.Team', l => esc(pitcherTeam(l)),                                'center', null, "The opposing team (pitcher's team)"],
     ['Pitcher',null, 'left', null, "Tonight's starting pitcher — click to open the pitcher card"],
     ['P.Grd',  l => l.pGrade||'—',                                     'center',  l => l.pGrade ? gradeCol(l.pGrade) : 'var(--sage)', "Pitcher's overall grade, A (best) to F (worst) — color matches the letter"],
-    ['P.CSW',  l => pct(l.pCsw),                                       'right',   l => hiLoCol(l.pCsw!=null?l.pCsw*100:null,30,24), "Pitcher's called-strike + whiff rate (stuff quality). Green ≥30%, red ≤24%"],
-    ['P.K/BB', l => num(l.pKbb,2),                                     'right',   l => hiLoCol(l.pKbb,3.0,1.5), "Pitcher's strikeout-to-walk ratio (command). Green ≥3.0, red ≤1.5"],
-    ['P.HH%',  l => pct(l.pHH),                                        'right',   l => l.pHH==null||isNaN(l.pHH) ? 'var(--sage)' : (l.pHH*100)>=44 ? 'var(--bad)' : (l.pHH*100)<=30 ? 'var(--good)' : 'var(--chalk)', 'Hard-hit rate the pitcher allows. Lower is better for the pitcher (worse for the batter) — green ≤30% allowed, red ≥44% allowed'],
+    ['P.CSW',  l => pct(l.pCsw),                                       'right',   l => l.pCsw==null||isNaN(l.pCsw) ? 'var(--sage)' : (l.pCsw*100)>=30 ? 'var(--bad)' : (l.pCsw*100)<=24 ? 'var(--good)' : 'var(--chalk)', "Pitcher's called-strike + whiff rate (stuff quality) — high is bad for the hit prop. Red ≥30%, green ≤24%"],
+    ['P.K/BB', l => num(l.pKbb,2),                                     'right',   l => l.pKbb==null||isNaN(l.pKbb) ? 'var(--sage)' : l.pKbb>=3.0 ? 'var(--bad)' : l.pKbb<=1.5 ? 'var(--good)' : 'var(--chalk)', "Pitcher's strikeout-to-walk ratio (command) — high is bad for the hit prop. Red ≥3.0, green ≤1.5"],
+    ['P.HH%',  l => pct(l.pHH),                                        'right',   l => l.pHH==null||isNaN(l.pHH) ? 'var(--sage)' : (l.pHH*100)>=44 ? 'var(--good)' : (l.pHH*100)<=30 ? 'var(--bad)' : 'var(--chalk)', 'Hard-hit rate the pitcher allows — high is good for the hit prop (batters squaring him up). Green ≥44% allowed, red ≤30% allowed'],
     ['P.Rest', l => l.pDaysRest??'—',                                  'right',   l => pRestCol(l.pDaysRest), "Days since the pitcher's last outing. Amber if ≤2d (short rest — bullpen arm or opener) or ≥18d (possible IL return); otherwise normal rotation rest"],
     ['P.Rk',   l => l.pIsRookie?'Y':'',                                'center', null, "Pitcher is a rookie this season (Y = yes) — informational only, not good or bad"],
     ['Multi',  l => pct(l.pMultihit),                                  'right',   l => hiLoCol(l.pMultihit,.28,.15), 'Model probability of 2+ hits tonight — a separate, newer model (see calibration_multihit.png). Green ≥28%, red ≤15%. League base rate is ~20%'],
@@ -6713,7 +6807,7 @@ function _renderScoresAllBattersInner() {
     // up with the exact game this row belongs to on a doubleheader.
     const pitcherCell = `<td style="text-align:left">${pitcherLastName && l.pitcherId ? `<a href="#" onclick="event.preventDefault();event.stopPropagation();openPitcherPopup('${l.pitcherId}','${l.gamePk||''}')" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(pitcherLastName)}</a>` : esc(pitcherLastName)}</td>`;
     const cells = cols.map(([lbl,fn,align,colorFn]) => lbl==='Pick' ? pickCell : lbl==='Team' ? teamCell : lbl==='P.Team' ? pTeamCell : lbl==='Name' ? nameCell : lbl==='Scr' ? scoreCell : lbl==='Pitcher' ? pitcherCell : `<td style="text-align:${align};${colorFn?`color:${colorFn(l)}`:''}">${fn(l)}</td>`).join('');
-    return `<tr>${cells}</tr>`;
+    return `<tr${l.inSlip?' class="row-in-slip"':''}>${cells}</tr>`;
   }).join('');
   el.innerHTML = `<div class="card" style="overflow-x:auto;padding:0">
     <table class="allbatters-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>
