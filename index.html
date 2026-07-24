@@ -915,6 +915,14 @@
   #batter-popup-close:hover{opacity:1;color:var(--chalk)}
   @keyframes popupIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
   @media(max-width:600px){#batter-popup-backdrop{padding:16px;align-items:center}#batter-popup-card{max-width:100%;max-height:100%;overflow-y:auto}}
+
+  /* ── pitcher popup — same structure/animation as the batter popup above ── */
+  #pitcher-popup-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
+  #pitcher-popup-backdrop.open{display:flex}
+  #pitcher-popup-card{width:100%;max-width:520px;margin-top:0;position:relative;animation:popupIn .18s ease-out}
+  #pitcher-popup-close{position:absolute;top:10px;right:12px;font-family:var(--mono);font-size:11px;color:var(--sage);opacity:.7;line-height:1;background:var(--field);border:1px solid var(--line);border-radius:4px;padding:3px 9px;cursor:pointer;z-index:1}
+  #pitcher-popup-close:hover{opacity:1;color:var(--chalk)}
+  @media(max-width:600px){#pitcher-popup-backdrop{padding:16px;align-items:center}#pitcher-popup-card{max-width:100%;max-height:100%;overflow-y:auto}}
   /* row-*-glow: glow moved to a ::after overlay with animated opacity instead
      of animating the row's own box-shadow directly — .row already has
      position:relative, so this is a free upgrade. Animating box-shadow on a
@@ -1203,6 +1211,16 @@
     <div id="batter-popup-card" class="card">
       <button id="batter-popup-close" onclick="closeBatterPopup()" title="← → to browse other batters, Esc to close">✕ close</button>
       <div id="batter-popup-body"></div>
+    </div>
+  </div>
+
+  <!-- PITCHER POPUP — same pattern as the batter popup above, opened from
+       any pitcher name/grade in the app via openPitcherPopup() (replaces
+       every former Fox Sports external link) -->
+  <div id="pitcher-popup-backdrop" onclick="if(event.target===this)closePitcherPopup()">
+    <div id="pitcher-popup-card" class="card">
+      <button id="pitcher-popup-close" onclick="closePitcherPopup()" title="Esc to close">✕ close</button>
+      <div id="pitcher-popup-body"></div>
     </div>
   </div>
 
@@ -2268,6 +2286,18 @@ function parseCSV(raw){
   const iGamePk=head.findIndex(h=>h==='game_pk');
   const iPMultihit=head.findIndex(h=>h==='p_multihit');
   const iPHrRbi=head.findIndex(h=>h==='p_hrrbi');
+  const iPEra=head.findIndex(h=>h==='p_era');
+  const iPWhipOfficial=head.findIndex(h=>h==='p_whip_official');
+  const iPIp=head.findIndex(h=>h==='p_ip');
+  const iPWins=head.findIndex(h=>h==='p_wins');
+  const iPLosses=head.findIndex(h=>h==='p_losses');
+  const iPSo=head.findIndex(h=>h==='p_so');
+  const iPBbOfficial=head.findIndex(h=>h==='p_bb_official');
+  const iPSaves=head.findIndex(h=>h==='p_saves');
+  const iPBlownSaves=head.findIndex(h=>h==='p_blown_saves');
+  const iPSaveOpps=head.findIndex(h=>h==='p_save_opps');
+  const iPGamesStarted=head.findIndex(h=>h==='p_games_started');
+  const iPRole=head.findIndex(h=>h==='p_role');
   const start=(iP>=0)?1:0;
   const fresh=[];
   for(let i=start;i<lines.length;i++){
@@ -2350,6 +2380,20 @@ function parseCSV(raw){
     entry.yesCents=ycRaw&&ycRaw!=='nan'&&ycRaw!=='NaN'?parseFloat(ycRaw)||null:null;
     const _pMultihit=iPMultihit>=0?parseFloat(c[iPMultihit]):NaN; entry.pMultihit=isNaN(_pMultihit)?null:_pMultihit;
     const _pHrRbi=iPHrRbi>=0?parseFloat(c[iPHrRbi]):NaN; entry.pHrRbi=isNaN(_pHrRbi)?null:_pHrRbi;
+    // official season stat line — display-only pitcher-card context (not
+    // trained-model FEATURES; see CLAUDE.md / hit_model.py FEATURES notes)
+    const _pEra=iPEra>=0?parseFloat(c[iPEra]):NaN; entry.pEra=isNaN(_pEra)?null:_pEra;
+    const _pWhipOfficial=iPWhipOfficial>=0?parseFloat(c[iPWhipOfficial]):NaN; entry.pWhipOfficial=isNaN(_pWhipOfficial)?null:_pWhipOfficial;
+    entry.pIp=iPIp>=0?(c[iPIp]||'').trim():''; // MLB's "108.1" string — thirds of an inning, don't parse as a decimal
+    const _pWins=iPWins>=0?parseInt(c[iPWins]):NaN; entry.pWins=isNaN(_pWins)?null:_pWins;
+    const _pLosses=iPLosses>=0?parseInt(c[iPLosses]):NaN; entry.pLosses=isNaN(_pLosses)?null:_pLosses;
+    const _pSo=iPSo>=0?parseInt(c[iPSo]):NaN; entry.pSo=isNaN(_pSo)?null:_pSo;
+    const _pBbOfficial=iPBbOfficial>=0?parseInt(c[iPBbOfficial]):NaN; entry.pBbOfficial=isNaN(_pBbOfficial)?null:_pBbOfficial;
+    const _pSaves=iPSaves>=0?parseInt(c[iPSaves]):NaN; entry.pSaves=isNaN(_pSaves)?null:_pSaves;
+    const _pBlownSaves=iPBlownSaves>=0?parseInt(c[iPBlownSaves]):NaN; entry.pBlownSaves=isNaN(_pBlownSaves)?null:_pBlownSaves;
+    const _pSaveOpps=iPSaveOpps>=0?parseInt(c[iPSaveOpps]):NaN; entry.pSaveOpps=isNaN(_pSaveOpps)?null:_pSaveOpps;
+    const _pGamesStarted=iPGamesStarted>=0?parseInt(c[iPGamesStarted]):NaN; entry.pGamesStarted=isNaN(_pGamesStarted)?null:_pGamesStarted;
+    entry.pRole=iPRole>=0?(c[iPRole]||'').trim():'';
     fresh.push(entry);
   }
   return fresh;
@@ -2465,7 +2509,7 @@ function updateSavedBadge(){
   }
 }
 function clearSaved(){ try{ localStorage.removeItem('dugout_csv'); localStorage.removeItem('dugout_csv_ts'); }catch(e){} updateSavedBadge(); }
-function mk(name,p,slot,matchup,team){ return {id:++uid,name,p,slot,matchup:matchup||'',team:team||'',pitcher:'',pitcherHand:'',batterHand:'',hit:'',no:'',inSlip:false,grp:'',hasHit:false,startTime:'',gameDate:'',gameState:'',last5:'',lineupEst:false,bvpAb:0,bvpH:0,bvpAvg:0,vsL:null,vsR:null,pRating:null,pGrade:'',pCsw:null,pKbb:null,pHH:null,bHitRate:null,bXba:null,bHH:null,bBabip:null,splitDiff:null,parkFactor:null,bNGames:0,bDaysRest:0,pNGames:0,pDaysRest:0,batterId:'',pitcherId:'',gamePk:'',yesCents:null,isOpener:false,pUseFb:null,pUseBb:null,pUseOs:null,bHrVsFb:null,bHrVsBb:null,bHrVsOs:null,bHrOverall:null,bHitRateVsSp:null,bPaVsSp:0,bHitRateVsRp:null,bPaVsRp:0,bIsRookie:false,pIsRookie:false,subbedOut:false,baseP:null,matchupDelta:null,bAvgAb:null,bGamesPlayed:0,pMultihit:null,pHrRbi:null,bQuality3:null,bNGames3:0}; }
+function mk(name,p,slot,matchup,team){ return {id:++uid,name,p,slot,matchup:matchup||'',team:team||'',pitcher:'',pitcherHand:'',batterHand:'',hit:'',no:'',inSlip:false,grp:'',hasHit:false,startTime:'',gameDate:'',gameState:'',last5:'',lineupEst:false,bvpAb:0,bvpH:0,bvpAvg:0,vsL:null,vsR:null,pRating:null,pGrade:'',pCsw:null,pKbb:null,pHH:null,bHitRate:null,bXba:null,bHH:null,bBabip:null,splitDiff:null,parkFactor:null,bNGames:0,bDaysRest:0,pNGames:0,pDaysRest:0,batterId:'',pitcherId:'',gamePk:'',yesCents:null,isOpener:false,pUseFb:null,pUseBb:null,pUseOs:null,bHrVsFb:null,bHrVsBb:null,bHrVsOs:null,bHrOverall:null,bHitRateVsSp:null,bPaVsSp:0,bHitRateVsRp:null,bPaVsRp:0,bIsRookie:false,pIsRookie:false,subbedOut:false,baseP:null,matchupDelta:null,bAvgAb:null,bGamesPlayed:0,pMultihit:null,pHrRbi:null,bQuality3:null,bNGames3:0,pEra:null,pWhipOfficial:null,pIp:'',pWins:null,pLosses:null,pSo:null,pBbOfficial:null,pSaves:null,pBlownSaves:null,pSaveOpps:null,pGamesStarted:null,pRole:''}; }
 
 // moneyline ('ml') / game-total ('ou') slip leg — lives in teamLegs, not
 // legs. opts (ml): {team, oddsStr, impliedP}. opts (ou): {selection:
@@ -3009,7 +3053,6 @@ function _inningMidSuffix(inningState){
   return '';
 }
 function teamUrl(abbr){ const s=MLB_TEAM_SLUG[abbr]; return s?`https://www.mlb.com/${s}`:''; }
-function pitcherUrl(name){ const slug=name.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim().replace(/\s+/g,'-'); return `https://www.foxsports.com/mlb/${slug}-player`; }
 function liveInningAbHtml(l){
   if(!isLive(l.gameState)) return '';
   const ls = _liveLinescore.get(String(l.gamePk));
@@ -3311,7 +3354,7 @@ function render(){
             })();
             const mobileBar = (()=>{
               const gradeChip = l.pGrade ? `<span class="pgrade pgrade-${l.pGrade}" style="font-size:9px;padding:1px 4px">${l.pGrade}</span>` : '';
-              const pitPart = l.pitcher ? `<a href="${pitcherUrl(l.pitcher)}" target="_blank" rel="noopener" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(l.pitcher.split(' ').pop())}</a>${l.pitcherHand?`<span> ${l.pitcherHand}</span>`:''}${gradeChip}` : '';
+              const pitPart = l.pitcher ? `<a href="#" onclick="event.preventDefault();openPitcherPopup('${l.pitcherId}','${l.gamePk}')" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(l.pitcher.split(' ').pop())}</a>${l.pitcherHand?`<span> ${l.pitcherHand}</span>`:''}${gradeChip}` : '';
               const gameState = isLive(l.gameState) ? `<span style="color:var(--live)">● LIVE</span>` : ppd ? `<span style="color:var(--sage);opacity:.7;font-family:var(--mono);font-size:9px;letter-spacing:.04em">PPD</span>` : isFinal(l.gameState) ? `<span style="color:var(--sage);opacity:.7;font-family:var(--mono);font-size:9px;letter-spacing:.04em">FINAL</span>` : l.startTime ? `<span style="color:var(--amber)">${esc(l.startTime)}</span>` : '';
               const matchPart = l.matchup ? `<span style="color:var(--chalk);opacity:.7">${esc(l.matchup)}</span>` : '';
               if(!pitPart && !matchPart) return '';
@@ -3355,7 +3398,7 @@ function render(){
             const handLetter=l.pitcherHand?`<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${l.pitcherHand}</span>`:'';
             return `<div class="pitcher-col" style="width:160px;${opnStyle}flex:none">
               <div class="col-hdr" style="color:${l.isOpener?'var(--opener)':'var(--sage)'}">${l.isOpener?'Opener':'Pitcher'}</div>
-              <div style="font-family:var(--disp);font-size:12px;font-weight:400;letter-spacing:.3px;text-transform:uppercase;color:var(--chalk);display:flex;align-items:center;gap:4px;flex-wrap:wrap">${grade}<a href="${pitcherUrl(l.pitcher)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(l.pitcher)}</a>${handLetter}</div>
+              <div style="font-family:var(--disp);font-size:12px;font-weight:400;letter-spacing:.3px;text-transform:uppercase;color:var(--chalk);display:flex;align-items:center;gap:4px;flex-wrap:wrap">${grade}<a href="#" onclick="event.preventDefault();openPitcherPopup('${l.pitcherId}','${l.gamePk}')" style="color:inherit;text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(l.pitcher)}</a>${handLetter}</div>
               <div style="margin-top:3px;display:flex;gap:3px;flex-wrap:wrap">${hhPitcher}${rookieBadge(l.pIsRookie)}${pSusp}${pThin}${pRest}</div>
               ${statsRow}
               ${pitchMatchupHtml(l)}
@@ -5327,7 +5370,7 @@ function batterPopupHtml(l){
     const handLetter=l.pitcherHand?`<span style="font-family:var(--mono);font-size:10px;color:var(--sage);opacity:.7">${l.pitcherHand}</span>`:'';
     return `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);text-align:center">
       <div style="font-family:var(--disp);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--sage);margin-bottom:4px">${l.isOpener?'Opener':'vs Pitcher'}</div>
-      <div style="font-family:var(--disp);font-size:14px;font-weight:400;letter-spacing:.3px;text-transform:uppercase;color:var(--chalk);display:flex;align-items:center;justify-content:center;gap:5px">${grade}<a href="${pitcherUrl(l.pitcher)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px solid transparent">${esc(l.pitcher)}</a>${handLetter}</div>
+      <div style="font-family:var(--disp);font-size:14px;font-weight:400;letter-spacing:.3px;text-transform:uppercase;color:var(--chalk);display:flex;align-items:center;justify-content:center;gap:5px">${grade}<a href="#" onclick="event.preventDefault();openPitcherPopup('${l.pitcherId}','${l.gamePk}')" style="color:inherit;text-decoration:none;border-bottom:1px solid transparent">${esc(l.pitcher)}</a>${handLetter}</div>
       <div style="margin-top:4px;display:flex;gap:3px;justify-content:center;flex-wrap:wrap">${rookieBadge(l.pIsRookie)}${pThin}${pRest}</div>
       ${statsRow}
       <div style="display:flex;justify-content:center">${pitchMatchupHtml(l)}</div>
@@ -5369,6 +5412,129 @@ function batterPopupHtml(l){
     ${slipBtn}
   </div>`;
 }
+
+// ── pitcher popup — standalone card, replaces every former Fox Sports
+// external link (see openPitcherPopup() call sites). Two data sources:
+// a `legs` entry (tonight's probable starter) or a bullpen_preview.json
+// alt/live-swap candidate (passed via pitchingTeamAbbr) — normalized to one
+// shared shape here so pitcherPopupHtml() doesn't need to know which.
+function _resolvePitcherData(pitcherId, gamePk, pitchingTeamAbbr){
+  const pid = String(pitcherId||'');
+  if(!pid) return null;
+  if(pitchingTeamAbbr){
+    const cand = window._bullpenPreview?.[String(gamePk)]?.[pitchingTeamAbbr]?.[pid];
+    if(cand) return {
+      pitcherId: pid, gamePk, name: cand.name, hand: cand.hand||'', role: cand.role||'',
+      isRookie: false, nGames: cand.n_games||0, daysRest: cand.days_rest||0,
+      grade: '', rating: null, // no precomputed letter grade for an alt candidate — same reasoning as the Scores pitcher-bar
+      csw: cand.p_csw, kbb: cand.p_k_bb, hh: cand.p_hardhit_allowed,
+      era: cand.p_era, whip: cand.p_whip_official, ip: cand.p_ip,
+      wins: cand.p_wins, losses: cand.p_losses, so: cand.p_so, bb: cand.p_bb_official,
+      saves: cand.p_saves, blownSaves: cand.p_blown_saves, saveOpps: cand.p_save_opps,
+      gamesStarted: cand.p_games_started,
+      useFb: null, useBb: null, useOs: null, matchup: '',
+      isPreview: true,
+    };
+  }
+  const l = legs.find(x => String(x.pitcherId)===pid && String(x.gamePk)===String(gamePk))
+         || legs.find(x => String(x.pitcherId)===pid);
+  if(!l) return null;
+  return {
+    pitcherId: pid, gamePk: l.gamePk, name: l.pitcher, hand: l.pitcherHand||'', role: l.pRole||'',
+    isRookie: l.pIsRookie, nGames: l.pNGames, daysRest: l.pDaysRest,
+    grade: l.pGrade, rating: l.pRating,
+    csw: l.pCsw, kbb: l.pKbb, hh: l.pHH,
+    era: l.pEra, whip: l.pWhipOfficial, ip: l.pIp,
+    wins: l.pWins, losses: l.pLosses, so: l.pSo, bb: l.pBbOfficial,
+    saves: l.pSaves, blownSaves: l.pBlownSaves, saveOpps: l.pSaveOpps,
+    gamesStarted: l.pGamesStarted,
+    useFb: l.pUseFb, useBb: l.pUseBb, useOs: l.pUseOs, matchup: l.matchup||'',
+    isPreview: false,
+  };
+}
+function openPitcherPopup(pitcherId, gamePk, pitchingTeamAbbr){
+  const p = _resolvePitcherData(pitcherId, gamePk, pitchingTeamAbbr);
+  if(!p) return;
+  const body = document.getElementById('pitcher-popup-body');
+  const backdrop = document.getElementById('pitcher-popup-backdrop');
+  if(!body || !backdrop) return;
+  body.innerHTML = pitcherPopupHtml(p);
+  backdrop.classList.add('open');
+}
+function closePitcherPopup(){
+  const backdrop = document.getElementById('pitcher-popup-backdrop');
+  if(backdrop) backdrop.classList.remove('open');
+}
+document.addEventListener('keydown', e => {
+  const backdrop = document.getElementById('pitcher-popup-backdrop');
+  if(!backdrop || !backdrop.classList.contains('open')) return;
+  if(e.key==='Escape') closePitcherPopup();
+});
+
+function pitcherPopupHtml(p){
+  const grade = p.grade ? `<span class="pgrade pgrade-${p.grade}" title="Pitcher rating ${p.rating!=null?p.rating.toFixed(0):''}/100">${p.grade}</span>` : '';
+  const handSpan = p.hand ? `<span style="font-size:12px;font-weight:400;opacity:.55;margin-left:3px">${p.hand}HP</span>` : '';
+  const pThin = p.nGames>0 && p.nGames<10 ? `<span class="thinbadge" title="Only ${p.nGames} appearances">${p.nGames}g thin</span>` : '';
+  const pRest = p.daysRest>=8 ? (()=>{const warn=p.daysRest>=18;return `<span class="restbadge${warn?' restbadge-warn':''}" title="${p.daysRest}d since last outing">${p.daysRest}d rest</span>`;})() : '';
+  const roleLabel = p.role==='RP' ? 'Reliever' : p.role==='SP' ? 'Starter' : '';
+  const roleBadge = roleLabel ? `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7;border:1px solid var(--line);border-radius:3px;padding:1px 5px">${roleLabel}</span>` : '';
+  const previewBadge = p.isPreview ? `<span title="Hypothetical preview/live-swap candidate — not necessarily who started tonight" style="font-family:var(--mono);font-size:9px;font-weight:700;color:var(--sage);background:rgba(var(--sage-rgb),.12);border:1px solid rgba(var(--sage-rgb),.35);border-radius:3px;padding:1px 5px">👁 PREVIEW</span>` : '';
+  const badgesRow = [rookieBadge(p.isRookie), roleBadge, pThin, pRest, previewBadge].filter(Boolean).join('');
+
+  // official season stat line — display-only context (ERA/W-L/WHIP aren't
+  // trained FEATURES, see CLAUDE.md / fetch_pitcher_season_stats() docstring)
+  const isRP = p.role === 'RP';
+  const eraFmt = v => { const c = v<=3.50?'var(--good)':v>=4.75?'var(--bad)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(2)}</span>`; };
+  const whipFmt = v => { const c = v<=1.15?'var(--good)':v>=1.40?'var(--bad)':'var(--chalk)'; return `<span style="color:${c}">${Number(v).toFixed(2)}</span>`; };
+  const wlFmt = () => {
+    const c = p.wins>p.losses?'var(--good)':p.losses>p.wins?'var(--bad)':'var(--chalk)';
+    return `<span style="color:${c}">${p.wins}-${p.losses}</span>`;
+  };
+  const svFmt = () => {
+    const bs = p.blownSaves ? ` <span style="color:var(--bad);opacity:.8">(${p.blownSaves} BS)</span>` : '';
+    return `<span style="color:var(--chalk)">${p.saves}</span>${bs}`;
+  };
+  const seasonRow = (p.era!=null || p.whip!=null || p.ip) ? `<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:6px">
+    ${pstat('ERA', p.era, null, null, eraFmt)}
+    ${isRP ? pstat('SV-BSV', p.saves, null, null, svFmt) : pstat('W-L', (p.wins!=null&&p.losses!=null)?p.wins:null, null, null, wlFmt)}
+    ${p.ip ? `<div style="text-align:center"><div style="font-family:var(--disp);font-size:8px;letter-spacing:.8px;text-transform:uppercase;color:var(--sage)">IP</div><div style="font-family:var(--mono);font-size:11px;color:var(--chalk)">${esc(p.ip)}</div></div>` : ''}
+    ${pstat('WHIP', p.whip, null, null, whipFmt)}
+    ${p.so!=null ? pstat('K', p.so, null, null, v=>`<span style="color:var(--chalk)">${v}</span>`) : ''}
+    ${p.bb!=null ? pstat('BB', p.bb, null, null, v=>`<span style="color:var(--chalk)">${v}</span>`) : ''}
+  </div>` : '';
+
+  const cswV = p.csw!=null?(p.csw*100):null, kbbV = p.kbb, hhV = p.hh!=null?(p.hh*100):null;
+  const rateRow = p.rating!=null ? `<div style="display:flex;gap:16px;justify-content:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+    ${pstat('CSW',cswV,30,24,v=>v.toFixed(1)+'%')}
+    ${pstat('K/BB',kbbV,3.0,1.5,v=>Number(v).toFixed(2))}
+    ${pstat('HH%',hhV,null,null,v=>{const c=v>=44?'var(--bad)':v<=30?'var(--good)':'var(--chalk)';return `<span style="color:${c}">${v.toFixed(0)}%</span>`;})}
+  </div>` : '';
+
+  // pitch-mix label only — no batter overlay, since this card has no
+  // specific batter in view (unlike pitchMatchupHtml(), which pairs the
+  // same mix classification with one selected batter's HR-vs-pitch-type rate)
+  const mixLabel = (()=>{
+    const fb=p.useFb, bb=p.useBb, os=p.useOs;
+    if(fb==null&&bb==null&&os==null) return '';
+    let label = 'Mixed';
+    if(fb!=null&&fb>=0.55) label='FB-heavy';
+    else if(bb!=null&&bb>=0.40) label='BB-heavy';
+    else if(os!=null&&os>=0.30) label='OS-heavy';
+    return `<div style="margin-top:8px;font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.85">${label}</div>`;
+  })();
+
+  const matchupBlock = p.matchup ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);text-align:center;font-family:var(--mono);font-size:11px;color:var(--chalk)">${esc(p.matchup)}</div>` : '';
+
+  return `<div style="padding:22px 24px;text-align:center">
+    <div style="font-family:var(--disp);font-size:20px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;color:var(--chalk);display:flex;align-items:center;justify-content:center;gap:6px">${grade}${esc(p.name||'')}${handSpan}</div>
+    <div style="margin-top:6px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap">${badgesRow}</div>
+    ${seasonRow}
+    ${rateRow}
+    ${mixLabel}
+    ${matchupBlock}
+  </div>`;
+}
+
 function switchTab(name, btn) {
   currentTab = name;
   try{ localStorage.setItem('dugout_last_tab', name); }catch(e){}
@@ -5822,6 +5988,9 @@ function buildScoreCard(matchup, batters, betKeys) {
       const pgBg  = gradeBg(pGrade  || 'C');
       const pitcherFullName = usingAlt ? alt.name : (side[0]?.pitcher || '');
       const pitcherName = pitcherFullName ? pitcherFullName.split(' ').slice(-1)[0] : '';
+      // effective pitcher id for the popup — the previewed/live-swapped
+      // reliever when one's active, otherwise the probable starter
+      const pitcherIdForPopup = usingAlt ? (previewPitcherId || livePitcherId) : (side[0]?.pitcherId || '');
       const pitcherHandDisp = usingAlt ? alt.hand : side[0]?.pitcherHand;
       const handTag = pitcherHandDisp ? `<span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">${pitcherHandDisp}HP</span>` : '';
       const liveSwapBadge = previewAlt
@@ -5955,7 +6124,7 @@ function buildScoreCard(matchup, batters, betKeys) {
             <div class="pbar-id">
               <span style="font-family:var(--mono);font-size:9px;color:var(--sage);opacity:.7">vs</span>
               ${pGrade?`<span style="font-family:var(--mono);font-size:9px;font-weight:600;border-radius:3px;padding:1px 5px;white-space:nowrap;color:${pgCol};background:${pgBg};border:1px solid ${pgCol}55">${pGrade}</span>`:''}
-              <a href="${pitcherUrl(pitcherFullName)}" target="_blank" rel="noopener" class="pbar-name" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(pitcherName)}</a>
+              <a href="#" onclick="event.preventDefault();openPitcherPopup('${pitcherIdForPopup}','${gamePk}'${usingAlt?`,'${opponentTeam}'`:''})" class="pbar-name" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'">${esc(pitcherName)}</a>
               ${handTag}
               ${liveSwapBadge}
               ${previewPicker}
@@ -7834,7 +8003,7 @@ function liveMatchupLine(score, opts){
   const pbp = gpk ? _pbpCache.get(gpk) : null;
   const paHistory = (batId && pbp) ? pbp.filter(p => p.batterId === batId).map(p => p.code) : [];
   const fs = big ? '11px' : '9px';
-  const pitNode = pitName ? `<a href="${pitcherUrl(pit.fullName)}" target="_blank" rel="noopener" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">P </span>${esc(pitName)}</a>${pitchCount!==null?` <span style="color:var(--sage)">${pitchCount}p</span>`:''}${pitER!==null?` <span style="color:${pitER>0?'var(--bad)':'var(--sage)'}">${pitER}ER</span>`:''}` : '';
+  const pitNode = pitName ? `<a href="#" onclick="event.preventDefault();openPitcherPopup('${pitId||''}','${gpk||''}')" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">P </span>${esc(pitName)}</a>${pitchCount!==null?` <span style="color:var(--sage)">${pitchCount}p</span>`:''}${pitER!==null?` <span style="color:${pitER>0?'var(--bad)':'var(--sage)'}">${pitER}ER</span>`:''}` : '';
   const batNode = batName ? `${batId?`<a href="#" onclick="event.preventDefault();goToBatter('${batId}','${gpk||''}')" style="color:var(--chalk);text-decoration:none;border-bottom:1px solid transparent" onmouseover="this.style.borderBottomColor='var(--amber)'" onmouseout="this.style.borderBottomColor='transparent'"><span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}</a>`:`<span style="color:var(--sage);opacity:.6">AB </span>${esc(batName)}`}${batLine?` <span style="color:var(--amber)">${batLine}</span>`:''}${paHistory.length?` <span style="color:var(--sage);opacity:.7">(${paHistory.join(', ')})</span>`:''}` : '';
   // pitNode/batNode are each several sibling inline elements (name + pitch
   // count + ER, etc.) — wrap each in its own row so flex-direction:column
