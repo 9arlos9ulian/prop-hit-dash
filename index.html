@@ -3043,23 +3043,61 @@ function _teamMuMap(){
 // (p_multihit r=0.905, b_avg_ab r=0.564). The point of this score is
 // cross-referenced context the client can reason about, not a sharper number
 // than the model already gives — don't chase AUC with it.
+// battingEdgeParts() is the single implementation; battingEdgeScore() is just
+// its sum. Split this way (2026-07-25) so the popup breakdown and the filter
+// can never disagree about why a batter scored what they scored — the old
+// version computed a bare integer and the "why" had to be re-derived by eye.
+// Every branch below is the ORIGINAL arithmetic, unchanged; only the
+// bookkeeping is new. `val` is the human-readable stat, `why` the threshold
+// that fired.
+function battingEdgeParts(l){
+  const parts = [];
+  const add = (key,label,pts,val,why,note) => parts.push({key,label,pts,val,why,note});
+  const f3 = v => Number(v).toFixed(3).replace(/^0/,'');
+  const pc = v => (Number(v)*100).toFixed(0)+'%';
+
+  if(l.p!=null){
+    const p=l.p;
+    const pts = p>=0.70?3:p>=0.60?2:p>=0.55?1:p<=0.28?-3:p<=0.38?-2:p<=0.45?-1:0;
+    add('p','Model P(hit)',pts,pc(p),
+      pts===3?'≥70%':pts===2?'≥60%':pts===1?'≥55%':pts===-1?'≤45%':pts===-2?'≤38%':pts===-3?'≤28%':'45–55% neutral',
+      'Weighted heaviest — it is the calibrated model, and already folds in AVG/xBA/HH%/platoon/park/pitcher quality.');
+  }
+  if(l.pMultihit!=null) add('multi','Multi-hit model',l.pMultihit>=0.28?1:l.pMultihit<=0.15?-1:0,pc(l.pMultihit),
+    l.pMultihit>=0.28?'≥28%':l.pMultihit<=0.15?'≤15%':'15–28% neutral',
+    'Backtests at r=0.91 with P(hit) — mostly an echo of the score above, not independent evidence.');
+  if(l.bHitRate!=null) add('avg','Trailing AVG',l.bHitRate>=.300?1:l.bHitRate<=.230?-1:0,f3(l.bHitRate),
+    l.bHitRate>=.300?'≥.300':l.bHitRate<=.230?'≤.230':'.230–.300 neutral');
+  if(l.bXba!=null) add('xba','xBA',l.bXba>=.290?1:l.bXba<=.220?-1:0,f3(l.bXba),
+    l.bXba>=.290?'≥.290':l.bXba<=.220?'≤.220':'.220–.290 neutral');
+  if(l.bHH!=null) add('hh','Hard-hit %',l.bHH>=.50?1:l.bHH<=.30?-1:0,pc(l.bHH),
+    l.bHH>=.50?'≥50%':l.bHH<=.30?'≤30%':'30–50% neutral');
+
+  const sh = streakHits(l);
+  if(sh>=0){
+    const seq=(l.last5||'').replace(/[^01]/g,'').slice(-10);
+    add('streak','Recent form',sh>=7?1:sh<=2?-1:0,`${sh} of ${seq.length}`,
+      sh>=7?'7+ hit games':sh<=2?'≤2 hit games':'3–6 neutral',
+      seq.length<10?`Only ${seq.length} games of history — on thin samples this term tracks bench/roster status more than a real cold streak (those batters hit 52% vs a 60% base).`:'');
+  }
+  const mu = (l.gamePk && l.team) ? _teamMuMap().get(l.gamePk+'|'+l.team) : null;
+  if(mu) add('mu','Team matchup',mu.lbl.includes('STRONG')?1:mu.lbl.includes('AVOID')?-1:0,mu.lbl,
+    mu.lbl.includes('STRONG')?'strong tier':mu.lbl.includes('AVOID')?'avoid tier':'neutral — no vote',
+    'Your side’s offense vs the opposing starter.');
+  if(l.pGrade) add('pgrade','Opposing starter',l.pGrade==='F'?1:l.pGrade==='A'?-1:0,'Grade '+l.pGrade,
+    l.pGrade==='F'?'weakest tier':l.pGrade==='A'?'strongest tier':'middle tier — no vote');
+  if(l.bAvgAb!=null) add('abg','Playing time (AB/G)',l.bAvgAb>=4.2?1:l.bAvgAb<=3.3?-1:0,Number(l.bAvgAb).toFixed(2),
+    l.bAvgAb>=4.2?'≥4.2':l.bAvgAb<=3.3?'≤3.3':'3.3–4.2 neutral',
+    'A great matchup is moot without plate appearances.');
+  if(l.bQuality3!=null) add('q3','First-3-AB quality',l.bQuality3>=0.03?1:l.bQuality3<=-0.03?-1:0,
+    (l.bQuality3>0?'+':'')+Math.round(l.bQuality3*100)+'%',
+    l.bQuality3>=0.03?'≥+3%':l.bQuality3<=-0.03?'≤−3%':'−3%…+3% neutral',
+    'Park/pitcher-neutralised intrinsic value — deliberately NOT a trained feature.');
+  return parts;
+}
 function battingEdgeScore(l){
   let s = 0;
-  if(l.p!=null){
-    if(l.p>=0.70) s+=3; else if(l.p>=0.60) s+=2; else if(l.p>=0.55) s+=1;
-    else if(l.p<=0.28) s-=3; else if(l.p<=0.38) s-=2; else if(l.p<=0.45) s-=1;
-  }
-  if(l.pMultihit!=null){ if(l.pMultihit>=0.28) s+=1; else if(l.pMultihit<=0.15) s-=1; }
-  if(l.bHitRate!=null){ if(l.bHitRate>=.300) s+=1; else if(l.bHitRate<=.230) s-=1; }
-  if(l.bXba!=null){ if(l.bXba>=.290) s+=1; else if(l.bXba<=.220) s-=1; }
-  if(l.bHH!=null){ if(l.bHH>=.50) s+=1; else if(l.bHH<=.30) s-=1; }
-  const sh = streakHits(l);
-  if(sh>=7) s+=1; else if(sh>=0 && sh<=2) s-=1;
-  const mu = (l.gamePk && l.team) ? _teamMuMap().get(l.gamePk+'|'+l.team) : null;
-  if(mu){ if(mu.lbl.includes('STRONG')) s+=1; else if(mu.lbl.includes('AVOID')) s-=1; }
-  if(l.pGrade==='F') s+=1; else if(l.pGrade==='A') s-=1;
-  if(l.bAvgAb!=null){ if(l.bAvgAb>=4.2) s+=1; else if(l.bAvgAb<=3.3) s-=1; }
-  if(l.bQuality3!=null){ if(l.bQuality3>=0.03) s+=1; else if(l.bQuality3<=-0.03) s-=1; }
+  for(const p of battingEdgeParts(l)) s += p.pts;
   return s;
 }
 // Best of Best / Worst of Worst select the top and bottom EDGE_PCT of
@@ -5455,6 +5493,74 @@ function livePopupLine(l){
   return `<div style="font-family:var(--mono);font-size:12px;color:${col};font-weight:700;margin-top:4px">${h}-for-${ab}${extras.length?` <span style="color:var(--sage);font-weight:400;font-size:10px">${extras.join(', ')}</span>`:''}</div>`;
 }
 
+// Where this batter sits in tonight's edge ranking — same sort key
+// _edgeSets() cuts the top/bottom decile with, so the popup's "top 10%" and
+// the 💎/🧊 filters can't disagree.
+function edgeStanding(l){
+  if(!legs.length) return null;
+  const scored = legs.map(x => ({ id:x.id, s:battingEdgeScore(x), p:(x.p!=null?x.p:0) }))
+                     .sort((a,b)=>(b.s-a.s)||(b.p-a.p));
+  const i = scored.findIndex(o=>o.id===l.id);
+  if(i<0) return null;
+  const e=_edgeSets();
+  // never round down to "top 0%" — rank 1 of 270 is top 1%, not top 0%
+  return { rank:i+1, total:scored.length, pct:Math.max(1,Math.round((i+1)/scored.length*100)),
+           tier: e.best.has(l.id)?'best' : e.worst.has(l.id)?'worst' : '' };
+}
+// The score's own reasoning, shown rather than asserted. This is the point of
+// the composite — per the project's mission it exists to cross-reference
+// context for the client's own judgement, not to be a sharper number than the
+// model (it measurably isn't — see the note above battingEdgeScore()). So the
+// redundancy caveats are surfaced here too, not hidden.
+function edgeBreakdownHtml(l){
+  const parts = battingEdgeParts(l);
+  if(!parts.length) return '';
+  const total = parts.reduce((a,p)=>a+p.pts,0);
+  const st = edgeStanding(l);
+  const totCol = total>=6?'var(--good)':total<=-6?'var(--bad)':'var(--chalk)';
+  const tierChip = st && st.tier==='best'
+      ? `<span style="font-family:var(--mono);font-size:9px;color:var(--good);background:rgba(var(--good-rgb),.1);border:1px solid rgba(var(--good-rgb),.3);border-radius:3px;padding:1px 5px">💎 BEST OF BEST</span>`
+    : st && st.tier==='worst'
+      ? `<span style="font-family:var(--mono);font-size:9px;color:var(--bad);background:rgba(var(--bad-rgb),.1);border:1px solid rgba(var(--bad-rgb),.3);border-radius:3px;padding:1px 5px">🧊 WORST OF WORST</span>` : '';
+  // "top 92%" is a technically-correct percentile that reads as nonsense for a
+  // fade candidate — flip to "bottom N%" once past the midpoint.
+  const place = st ? (st.pct>50
+      ? `bottom ${Math.max(1,Math.round((st.total-st.rank+1)/st.total*100))}%`
+      : `top ${st.pct}%`) : '';
+  const standing = st ? `<div style="font-family:var(--mono);font-size:9px;color:var(--sage);margin-top:3px">rank ${st.rank} of ${st.total} tonight · ${place}</div>` : '';
+
+  const row = p => {
+    const col = p.pts>0?'var(--good)':p.pts<0?'var(--bad)':'var(--sage)';
+    const dim = p.pts===0?'opacity:.45;':'';
+    const sign = p.pts>0?`+${p.pts}`:p.pts<0?`${p.pts}`:'0';
+    const note = p.note?`<div style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.75;line-height:1.45;margin-top:2px">${esc(p.note)}</div>`:'';
+    return `<div style="${dim}padding:5px 0;border-top:1px solid var(--line)">
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <div style="flex:1;min-width:0;font-family:var(--mono);font-size:10px;color:var(--chalk);text-align:left">${esc(p.label)}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--chalk)">${esc(String(p.val))}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--sage);width:96px;text-align:right">${esc(p.why||'')}</div>
+        <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:${col};width:22px;text-align:right">${sign}</div>
+      </div>${note}
+    </div>`;
+  };
+  const scoring = parts.filter(p=>p.pts!==0), neutral = parts.filter(p=>p.pts===0);
+
+  return `<details style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+    <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <span style="font-family:var(--disp);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--sage)">Edge breakdown <span style="opacity:.6">▸</span></span>
+      <span style="display:flex;align-items:center;gap:6px">${tierChip}<span style="font-family:var(--mono);font-size:15px;font-weight:700;color:${totCol}">${total>0?'+':''}${total}</span></span>
+    </summary>
+    ${standing}
+    <div style="margin-top:8px">
+      ${scoring.map(row).join('')}
+      ${neutral.length?`<div style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.6;text-align:left;margin-top:8px;padding-top:6px;border-top:1px solid var(--line)">NO VOTE (${neutral.length})</div>${neutral.map(row).join('')}`:''}
+    </div>
+    <div style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.7;line-height:1.5;margin-top:10px;text-align:left">
+      Context, not a verdict. Backtested over 28 slates this composite does not out-rank the model probability on its own — treat it as a checklist of what agrees and what doesn’t, and read the disagreements.
+    </div>
+  </details>`;
+}
+
 function batterPopupHtml(l){
   const scoreVal = Math.floor((l.p||0)*100);
   const scoreColor = l.p>=0.70?'var(--good)':l.p>=0.55?'var(--amber)':'var(--sage)';
@@ -5562,6 +5668,7 @@ function batterPopupHtml(l){
     ${badgesRow}
     ${streakRow}
     ${bstatsHtml?`<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">${bstatsHtml}${vsHtml}<div style="display:flex;flex-direction:column;align-items:center">${spRpLine(l)}${avgAbLine(l)}</div></div>`:''}
+    ${edgeBreakdownHtml(l)}
     ${pitcherBlock}
     ${gameInfoBlock}
     ${slipBtn}
