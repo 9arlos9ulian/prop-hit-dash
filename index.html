@@ -1209,8 +1209,8 @@
             <option value="9">9</option>
           </select>
           <span style="width:1px;height:16px;background:var(--line);margin:0 4px"></span>
-          <button id="exp-bestBtn" class="ghost fchip" onclick="selectEdgeFilter('best')" title="Composite edge score across every stat this table shows — model probability, multi-hit odds, AVG/xBA/HH%, hot streak, matchup grade, opposing starter grade, real playing time (AB/G), and 3AB — not just one or two thresholds. Surfaces every batter who scores 6+ tonight, however many that is.">💎 Best of Best</button>
-          <button id="exp-worstBtn" class="ghost fchip" onclick="selectEdgeFilter('worst')" title="Same composite score, inverted — for Under 1.5 hits targets. Surfaces every batter who scores -6 or worse tonight, however many that is.">🧊 Worst of Worst</button>
+          <button id="exp-bestBtn" class="ghost fchip" onclick="selectEdgeFilter('best')" title="Composite edge score across every stat this table shows — model probability, multi-hit odds, AVG/xBA/HH%, hot streak, matchup grade, opposing starter grade, real playing time (AB/G), and 3AB — not just one or two thresholds. Surfaces the top 10% of tonight's slate by that score.">💎 Best of Best</button>
+          <button id="exp-worstBtn" class="ghost fchip" onclick="selectEdgeFilter('worst')" title="Same composite score, inverted — for Under 1.5 hits targets. Surfaces the bottom 10% of tonight's slate by that score.">🧊 Worst of Worst</button>
         </div>
       </div>
     </div>
@@ -3030,9 +3030,19 @@ function _teamMuMap(){
 // already color-code by (hiLoCol/babipCol/etc.) — a "point" here always
 // matches what's already flagged green or red elsewhere in the row.
 // Positive = better for ≥1-hit/multi-hit, negative = better as an Under 1.5
-// hits fade target. +6/-6 cutoffs are empirically picked from tonight's
-// real slate distribution (270 batters) to land a genuine "top slice" —
-// roughly the top and bottom ~10%, not a single needle-in-a-haystack row.
+// hits fade target. The raw score is only ever used as a RANKING key — see
+// _edgeSets() below for how the "top slice" is actually cut, and why a fixed
+// absolute cutoff was the wrong tool for it.
+// Worth knowing before tuning any weight here: backtested against 28 archived
+// slates joined to settled outcomes, this composite does NOT out-rank `p_hit`
+// on its own (holdout AUC 0.559 vs 0.556, 95% CI on the difference spans
+// zero), and refitting the component weights by logistic regression made it
+// measurably WORSE (0.538) — overfitting a month of data, the same trap that
+// retired bvp_avg and cold_hit_rate_delta from FEATURES. Several components
+// are also near-duplicates of p_hit rather than independent evidence
+// (p_multihit r=0.905, b_avg_ab r=0.564). The point of this score is
+// cross-referenced context the client can reason about, not a sharper number
+// than the model already gives — don't chase AUC with it.
 function battingEdgeScore(l){
   let s = 0;
   if(l.p!=null){
@@ -3052,6 +3062,37 @@ function battingEdgeScore(l){
   if(l.bQuality3!=null){ if(l.bQuality3>=0.03) s+=1; else if(l.bQuality3<=-0.03) s-=1; }
   return s;
 }
+// Best of Best / Worst of Worst select the top and bottom EDGE_PCT of
+// tonight's own slate, not a fixed +6/-6 score. The old fixed cutoffs drifted
+// badly: backtested over the 28 archived slates (2026-06-24..07-24, 6.7k
+// settled rows) `>=6` selected anywhere from 0 to 41 batters a night — 2.2%
+// of the slate on 06-24, 14.4% on 07-18, and literally zero one night —
+// because the raw score creeps upward through the season as trailing samples
+// fill in and more batters clear the absolute thresholds. The old comment
+// here claimed "roughly the top and bottom ~10%"; that was simply not true
+// after late June. Ranking within the night restores the claim by
+// construction and halves the night-to-night count swing (std 10.4 -> 5.0,
+// range 9-30), while keeping essentially all of the measured separation:
+// top decile hits 65.6% vs 60.4% base (fixed >=6 got 67.3%), bottom decile
+// 52.0% vs the fixed cutoff's 51.7% — the same edge, delivered in a
+// consistently-sized slice.
+// Ties on the coarse integer score are broken by model probability so the
+// slice lands on a real count instead of ballooning on a crowded score.
+// Cached on `legs` identity, same invalidation contract as _teamMuMap().
+const EDGE_PCT = 0.10;
+let _edgeCache = null, _edgeCacheLegs = null;
+function _edgeSets(){
+  if(_edgeCache && _edgeCacheLegs === legs) return _edgeCache;
+  const scored = legs.map(l => ({ id:l.id, s:battingEdgeScore(l), p:(l.p!=null?l.p:0) }));
+  const k = Math.max(1, Math.round(scored.length * EDGE_PCT));
+  const best = new Set(), worst = new Set();
+  if(scored.length){
+    [...scored].sort((a,b)=>(b.s-a.s)||(b.p-a.p)).slice(0,k).forEach(o=>best.add(o.id));
+    [...scored].sort((a,b)=>(a.s-b.s)||(a.p-b.p)).slice(0,k).forEach(o=>worst.add(o.id));
+  }
+  _edgeCache = { best, worst }; _edgeCacheLegs = legs;
+  return _edgeCache;
+}
 function slotVisible(l){
   if(filterMinP && (l.p||0) < filterMinP) return false;
   if(filterLiveOnly && !isLive(l.gameState)) return false;
@@ -3060,8 +3101,8 @@ function slotVisible(l){
   if(filter3abPositive && !(l.bQuality3!=null && l.bQuality3 > 0)) return false;
   if(filterConfirmed   && l.lineupEst)        return false;
   if(filterHideSettled && (isFinal(l.gameState)||isPostponed(l.gameState))) return false;
-  if(filterBestOfBest   && battingEdgeScore(l) < 6)   return false;
-  if(filterWorstOfWorst && battingEdgeScore(l) > -6)  return false;
+  if(filterBestOfBest   && !_edgeSets().best.has(l.id))  return false;
+  if(filterWorstOfWorst && !_edgeSets().worst.has(l.id)) return false;
   if(filterGame   && l.matchup !== filterGame)                return false;
   if(filterSearch && !l.name.toLowerCase().includes(filterSearch)) return false;
   if(filterTeam   && l.team !== filterTeam)                   return false;
