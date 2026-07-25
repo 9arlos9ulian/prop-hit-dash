@@ -3052,7 +3052,7 @@ function _teamMuMap(){
 // that fired.
 function battingEdgeParts(l){
   const parts = [];
-  const add = (key,label,pts,val,why,note) => parts.push({key,label,pts,val,why,note});
+  const add = (key,label,pts,val,why,note,context) => parts.push({key,label,pts,val,why,note,context});
   const f3 = v => Number(v).toFixed(3).replace(/^0/,'');
   const pc = v => (Number(v)*100).toFixed(0)+'%';
 
@@ -3063,15 +3063,35 @@ function battingEdgeParts(l){
       pts===3?'≥70%':pts===2?'≥60%':pts===1?'≥55%':pts===-1?'≤45%':pts===-2?'≤38%':pts===-3?'≤28%':'45–55% neutral',
       'Weighted heaviest — it is the calibrated model, and already folds in AVG/xBA/HH%/platoon/park/pitcher quality.');
   }
-  if(l.pMultihit!=null) add('multi','Multi-hit model',l.pMultihit>=0.28?1:l.pMultihit<=0.15?-1:0,pc(l.pMultihit),
-    l.pMultihit>=0.28?'≥28%':l.pMultihit<=0.15?'≤15%':'15–28% neutral',
-    'Backtests at r=0.91 with P(hit) — mostly an echo of the score above, not independent evidence.');
+  // Multi-hit's vote was dropped 2026-07-25: it correlates r=0.905 with P(hit)
+  // on the archived slates, so it was casting a second ballot for the score
+  // directly above it rather than adding evidence. Removing it moved nothing
+  // (holdout AUC delta -0.001, CI spans zero; top-decile hit rate identical at
+  // 64.8%) — which is the point, it was redundant weight, not signal.
   if(l.bHitRate!=null) add('avg','Trailing AVG',l.bHitRate>=.300?1:l.bHitRate<=.230?-1:0,f3(l.bHitRate),
     l.bHitRate>=.300?'≥.300':l.bHitRate<=.230?'≤.230':'.230–.300 neutral');
   if(l.bXba!=null) add('xba','xBA',l.bXba>=.290?1:l.bXba<=.220?-1:0,f3(l.bXba),
     l.bXba>=.290?'≥.290':l.bXba<=.220?'≤.220':'.220–.290 neutral');
   if(l.bHH!=null) add('hh','Hard-hit %',l.bHH>=.50?1:l.bHH<=.30?-1:0,pc(l.bHH),
     l.bHH>=.50?'≥50%':l.bHH<=.30?'≤30%':'30–50% neutral');
+  // BABIP is carried as CONTEXT and deliberately scores 0. It is the most
+  // nearly-independent stat on the row (r=0.005 with actual hits, 0.18 with
+  // P(hit)), which is exactly why it looked like the best candidate to add as
+  // a vote — but the direction does not replicate. Controlling for the model,
+  // low-BABIP batters beat their predicted probability by +8.1pt vs +3.4pt for
+  // high-BABIP over the full archive (p=0.017), and then the gap REVERSES on a
+  // time-split holdout (-0.7pt); 4 of 5 threshold pairs flip sign, and
+  // per-night percentile bands collapse from +9.3pt to +0.6pt. Also worth
+  // knowing before anyone retunes the .250/.350 cutoffs used here and in the
+  // stat row above: this feed's trailing BABIP runs hot (median .326 vs the
+  // ~.295 league norm), so ".350 = running hot" is nearer the middle of the
+  // distribution than the label suggests and fires on ~37% of batters.
+  // Shown, not scored — the regression story is worth reading, not betting.
+  if(l.bBabip!=null && !isNaN(l.bBabip)) add('babip','BABIP',0,f3(l.bBabip),
+    l.bBabip>=.350?'running hot':l.bBabip<=.250?'running cold':'typical',
+    l.bBabip>=.350?'Balls in play falling in at a high rate — some of that is luck that tends to regress. Context only: the direction did not hold up out of sample, so it gets no vote.'
+    :l.bBabip<=.250?'Balls in play not falling — could be due a bounce-back. Context only: the direction did not hold up out of sample, so it gets no vote.'
+    :'Context only — never votes.', true);
 
   const sh = streakHits(l);
   if(sh>=0){
@@ -5543,7 +5563,16 @@ function edgeBreakdownHtml(l){
       </div>${note}
     </div>`;
   };
-  const scoring = parts.filter(p=>p.pts!==0), neutral = parts.filter(p=>p.pts===0);
+  // three groups, not two: a stat that scored, a stat that COULD have scored
+  // but landed in its neutral band, and a stat that never votes by design.
+  // Lumping the last two together would read as "BABIP was neutral tonight",
+  // which is a different and wrong claim.
+  const scoring = parts.filter(p=>p.pts!==0 && !p.context);
+  const neutral = parts.filter(p=>p.pts===0 && !p.context);
+  const context = parts.filter(p=>p.context);
+  const section = (label,rows) => rows.length
+    ? `<div style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.6;text-align:left;margin-top:8px;padding-top:6px;border-top:1px solid var(--line)">${label}</div>${rows.map(row).join('')}`
+    : '';
 
   return `<details style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
     <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -5553,7 +5582,8 @@ function edgeBreakdownHtml(l){
     ${standing}
     <div style="margin-top:8px">
       ${scoring.map(row).join('')}
-      ${neutral.length?`<div style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.6;text-align:left;margin-top:8px;padding-top:6px;border-top:1px solid var(--line)">NO VOTE (${neutral.length})</div>${neutral.map(row).join('')}`:''}
+      ${section(`NO VOTE (${neutral.length}) · in their neutral band`, neutral)}
+      ${section('CONTEXT · never votes', context)}
     </div>
     <div style="font-family:var(--mono);font-size:8px;color:var(--sage);opacity:.7;line-height:1.5;margin-top:10px;text-align:left">
       Context, not a verdict. Backtested over 28 slates this composite does not out-rank the model probability on its own — treat it as a checklist of what agrees and what doesn’t, and read the disagreements.
