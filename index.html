@@ -1192,6 +1192,7 @@
           <button id="exp-upcomingBtn" class="ghost fchip" onclick="filterUpcoming=!filterUpcoming;if(filterUpcoming)filterLiveOnly=false,document.getElementById('exp-liveBtn').classList.remove('amber');this.classList.toggle('amber',filterUpcoming);renderScoresAllBatters()">Upcoming</button>
           <button id="exp-hideSettledBtn" class="ghost fchip" onclick="filterHideSettled=!filterHideSettled;this.classList.toggle('amber',filterHideSettled);renderScoresAllBatters()" title="Hide batters whose game has ended">✓ Hide Final</button>
           <button id="exp-confirmedBtn" class="ghost fchip" onclick="filterConfirmed=!filterConfirmed;this.classList.toggle('amber',filterConfirmed);renderScoresAllBatters()" title="Hide estimated lineups">✓ Confirmed</button>
+          <button id="exp-hotBtn" class="ghost fchip" onclick="filterHotOnly=!filterHotOnly;this.classList.toggle('amber',filterHotOnly);renderScoresAllBatters()" title="Only show batters with 7+ hits in last 10 games">🔥 Hot</button>
         </div>
         <div class="poolbar-row" style="flex-wrap:wrap">
           <span class="fchip-lbl">Slot</span>
