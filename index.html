@@ -47,6 +47,7 @@
      the page reads modern rather than muddy next to the orange. */
   --bg:#000000; --bg2:#0A0A0B; --surf:#0C0C0D; --surf2:#17181A; --surf3:#212328;
   --line:#1C1F24; --line2:#2A2D33; --rule:#3B3F47;
+  --grph:29px;            /* height of the column-group band above a header */
   /* type — legacy's chalk white and sage grey */
   --ink:#FFFFFF; --ink2:#949AA3; --ink3:#6E747E; --ink4:#4A4F58;
   /* accent — legacy's hot orange. 6.8:1 on the black field, so unlike most
@@ -211,11 +212,28 @@ header{
 .sec-h h2{margin:0;font-size:var(--t-lg);font-weight:750;letter-spacing:-.035em;line-height:1}
 .sec-h p{margin:0;font-size:var(--t-xs);color:var(--ink3);flex:1;letter-spacing:.01em}
 .sec-h .lnk{font-size:var(--t-mi);color:var(--acc-ink);font-weight:750;letter-spacing:.12em;text-transform:uppercase}
+/* A section that is context rather than the subject says so at half the volume.
+   The shortlist owns the page; "Games" and "Since 08:31" support it. Without
+   this every heading shouted equally and Today had no reading order at all. */
+.sec.sub{margin-top:30px;padding-top:22px;border-top:1px solid var(--line)}
+.sec.sub .sec-h h2{font-size:var(--t-md);font-weight:700;color:var(--ink2)}
+.sec.lead .sec-h{margin-bottom:20px}
+/* group divider inside a section — quieter than an <h2>, louder than nothing */
+.grp-h{display:flex;align-items:center;gap:12px;margin:26px 0 10px}
+.grp-h .rule{flex:1;height:1px;background:var(--line)}
+.lbl.soft{font-family:var(--mono);letter-spacing:0;text-transform:none;font-weight:650;color:var(--ink4)}
+.note{margin:14px 0 0;font-size:var(--t-xs);color:var(--ink3);line-height:1.55}
 .card{background:var(--surf);border:1px solid var(--line);border-radius:4px}
 .empty{padding:48px 20px;text-align:center;color:var(--ink3);font-size:var(--t-sm);border:1px dashed var(--line2);border-radius:4px}
 
 /* ── truth banner ───────────────────────────────────────────────────── */
 .truth{border-left:3px solid var(--warn);background:var(--warn-dim);font-size:var(--t-sm);line-height:1.55}
+/* The padding/flex used to live only on `details.truth summary`, so a plain
+   `div.truth` (the Honesty tab's chart notes) got no padding at all and stacked
+   its icon above the text instead of beside it. Give the div form the same
+   inner geometry the summary form has. */
+div.truth{padding:13px 16px;display:flex;gap:12px;align-items:flex-start}
+div.truth > div{flex:1;min-width:0}
 details.truth{display:block}
 details.truth summary{list-style:none;cursor:pointer;padding:13px 16px;display:flex;gap:12px;align-items:flex-start}
 details.truth summary::-webkit-details-marker{display:none}
@@ -287,7 +305,22 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
   transition:background .1s;
 }
 .bcard:hover{background:var(--surf2)}
+/* ── the tail: a list, not more cards ────────────────────────────────
+   Same row anatomy, a third of the ink. The score drops below the section
+   heading's size on purpose — only the hero is allowed to outrank a title. */
+.bcard.lite{padding:9px 8px 9px 0;gap:14px}
+.bcard.lite .bname{font-size:var(--t-sm);font-weight:650}
+.bcard.lite .bmeta{font-size:var(--t-mi);margin-top:2px;color:var(--ink4)}
+.bcard.lite .pct{font-size:var(--t-bd);font-weight:650;color:var(--ink2)}
+.bcard.lite .pct span{font-size:var(--t-mi)}
+.bcard.lite .rank{font-size:var(--t-xs);color:var(--ink4)}
+.bcard.lite .meter{width:56px;height:2px}
+.bcard.lite .dia{transform:scale(.85)}
+/* the identity column: club badge over slate rank */
+.bid{display:grid;justify-items:center;gap:5px}
 .rank{font-family:var(--mono);font-size:var(--t-bd);font-weight:650;color:var(--ink4);text-align:center;letter-spacing:-.03em}
+.bid .rank{font-size:var(--t-xs);line-height:1}
+.bcard.lite .bid{gap:3px}
 .bmain{min-width:0}
 .bname{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-weight:700;font-size:var(--t-bd);letter-spacing:-.02em;line-height:1.2}
 .bmeta{font-size:var(--t-xs);color:var(--ink3);margin-top:4px;letter-spacing:.005em}
@@ -297,22 +330,18 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
    club mark is a weight bump plus its own hue; the row edge is the same hue
    at low alpha, enough to group a game at a glance without becoming stripes. */
 .tm{font-weight:750;letter-spacing:.02em}
+.bmeta .at{color:var(--ink4);font-weight:400;margin:0 1px}
 /* The club edge is a CHILD, not an inset box-shadow. A shadow is painted
    inside the padding box and ignores the border-radius the themes apply, so
    under Aurora it hung off the rounded corners as a stray coloured slash —
    which is exactly the "odd coloured border" it was reported as. A ::before
    inherits the radius and is clipped by the card's own overflow. */
-.blist .bcard,.gside{position:relative}
-.blist .bcard:not(.hero)::before,.gside::before{
+.blist .bcard{position:relative}
+.blist .bcard:not(.hero)::before{
   content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:inherit;
   background:var(--tc,transparent);opacity:.42;transition:opacity .15s,width .15s;pointer-events:none;
 }
 .blist .bcard:not(.hero):hover::before{opacity:.95;width:4px}
-/* on a game card the side's full height is mostly the batter chips, so a
-   full-length club rule reads as a stray line floating in whitespace. Clip it
-   to the team label it actually belongs to. */
-.gside::before{opacity:.75;top:12px;bottom:auto;height:32px;width:2px;border-radius:2px}
-.gteams .at{color:var(--ink4);font-weight:500;padding:0 1px}
 
 /* ── score tiers ────────────────────────────────────────────────────────
    One rule, applied everywhere a probability is printed, so the same number
@@ -331,12 +360,9 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .mini.t-hi b,.mini.t-mid b{color:inherit}
 /* the pitcher grade is on its own scale — it grades the ARM, so A is a hard
    night for the hitter. Kept visually distinct from the tier colours by being
-   a filled disc rather than plain text. */
-.grade[data-g="A"]{color:var(--grade-a);border-color:var(--grade-a)}
-.grade[data-g="B"]{color:var(--grade-b);border-color:var(--grade-b)}
-.grade[data-g="C"]{color:var(--grade-c);border-color:var(--grade-c)}
-.grade[data-g="D"]{color:var(--grade-d);border-color:var(--grade-d)}
-.grade[data-g="F"]{color:var(--grade-f);border-color:var(--grade-f)}
+   an outlined pill rather than plain text. (The 26px `.grade` box this used to
+   also style went with the game cards on 2026-07-26 — one grade treatment now,
+   everywhere it appears.) */
 .gr{font-family:var(--mono);font-size:9px;font-weight:750;padding:1px 4px;border-radius:2px;border:1px solid currentColor;opacity:.9}
 .gr[data-g="A"]{color:var(--grade-a)} .gr[data-g="B"]{color:var(--grade-b)}
 .gr[data-g="C"]{color:var(--grade-c)} .gr[data-g="D"]{color:var(--grade-d)}
@@ -417,7 +443,12 @@ html[data-theme="light"] .tag.hit{color:#fff}
    text columns ellipsis instead of stretching. */
 .tblwrap{overflow-x:auto}
 @media(min-width:1120px){ .tblwrap{overflow:visible} }
-table{border-collapse:collapse;width:100%;min-width:1040px;font-size:var(--t-sm);table-layout:fixed}
+table{border-collapse:collapse;width:100%;font-size:var(--t-sm);table-layout:fixed}
+/* Only the Batters table needs fourteen columns' worth of room. This used to
+   sit on `table` itself, so every table on the site inherited a 1040px floor —
+   including the six-column pitcher log inside a 560px drawer, which then
+   overflowed and dragged the whole panel sideways. */
+#tbl table{min-width:1040px}
 th{
   text-align:left;font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);
   font-weight:750;padding:10px 10px 10px 0;border-bottom:1px solid var(--rule);white-space:nowrap;
@@ -436,13 +467,90 @@ td.c,th.c{text-align:center;padding-left:6px;padding-right:6px}
 /* text columns truncate rather than push the numbers off the right edge —
    which is what was cutting columns off between 900 and 1120px */
 td.ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* The name cell holds a name AND up to two tags, and `text-overflow` on the
+   cell truncates whichever of them happens to be last — which is how "BOTTOM
+   5TH" came out as "BOTTOM 5…". Flexing lets the NAME be the thing that gives
+   way and keeps the tags whole. The flex goes on a WRAPPER, not the <td>: a
+   flex table-cell stops stretching to the row height, so its border-bottom
+   draws short and the cell reads as a stray box around the name. */
+td.nm{overflow:hidden}
+.nmw{display:flex;align-items:center;gap:7px;min-width:0}
+.nmw > b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.nmw .tag{flex:0 0 auto}
 th:last-child,td:last-child{padding-right:0}
+/* ── audit tables (Honesty tab) ───────────────────────────────────────
+   Five or six columns under `table-layout:fixed` split the panel into equal
+   224px slabs, so a three-digit pick count sat in the middle of a corridor —
+   and the right-most number ended up hard against the Aurora panel's border,
+   reading as a clipped column. Numbers get a fixed, compact cluster; the one
+   label column absorbs the slack; both ends of the row get real inset. */
+/* and once the numbers are compact, a full-bleed panel just moves the corridor
+   into the label column — so the panel itself stops at the width the content
+   needs instead of stretching to the section */
+.tblwrap.fit{max-width:840px}
+.tblwrap.fit th.r,.tblwrap.fit td.r{width:118px}
+.tblwrap.fit th:first-child,.tblwrap.fit td:first-child{padding-left:16px}
+.tblwrap.fit th:last-child,.tblwrap.fit td:last-child{padding-right:16px}
+.tblwrap.fit th.r:last-child,.tblwrap.fit td.r:last-child{padding-right:16px}
+/* the Calibration meter column is not numeric, so it needs its own width or it
+   splits the leftover space evenly with the label column */
+.tblwrap.fit th:last-child:not(.r){width:150px}
+.tblwrap.fit td:last-child .meter{max-width:100%}
+/* Aurora's panel rule sets `overflow:hidden` for corner clipping, which below
+   1120px beats the base `overflow-x:auto` — so a table wider than the phone
+   viewport was clipped with no way to scroll to the last column, and the label
+   column got squeezed to zero. Narrow screens drop the fixed cluster widths and
+   the decorative Calibration meter so the row fits instead of overflowing. */
+@media(max-width:820px){
+  .tblwrap.fit table{table-layout:auto}
+  .tblwrap.fit th.r,.tblwrap.fit td.r{width:auto;padding-left:6px;padding-right:10px}
+  .tblwrap.fit th:first-child,.tblwrap.fit td:first-child{padding-left:12px}
+  .tblwrap.fit th.r:last-child,.tblwrap.fit td.r:last-child{padding-right:12px}
+  /* :not(.r) so this only ever hits the Band table's meter, never a number */
+  .tblwrap.fit th:last-child:not(.r),.tblwrap.fit td:last-child:not(.r){display:none}
+}
 /* declared widths, in column order:
-   batter · tm · slot · score · form · matchup · hit% · xba · k% · pitcher · arm · pa/g · ★ */
-col.c-name{width:20%} col.c-tm{width:54px}  col.c-slot{width:54px} col.c-score{width:128px}
-col.c-form{width:72px} col.c-mu{width:82px} col.c-hit{width:70px} col.c-xba{width:70px}
-col.c-k{width:68px}    col.c-pit{width:15%} col.c-arm{width:66px} col.c-pa{width:66px}
+   # · batter · tm · slot · score · form · matchup · hit% · xba · k% · pitcher · arm · pa/g · ★ */
+col.c-rk{width:44px}
+col.c-name{width:19%} col.c-tm{width:48px}  col.c-slot{width:50px} col.c-score{width:124px}
+col.c-form{width:70px} col.c-mu{width:78px} col.c-hit{width:66px} col.c-xba{width:66px}
+col.c-k{width:64px}    col.c-pit{width:14%} col.c-arm{width:62px} col.c-pa{width:62px}
 col.c-star{width:40px}
+/* ── column groups ──────────────────────────────────────────────────────
+   A hairline at each group's first column, plus a band of group names above
+   the sortable header. Thirteen peer columns is not a table, it is a spill:
+   two of these numbers are the model's output and eleven are the evidence
+   behind it, and nothing in the old header said which was which. */
+th.g1,td.g1{border-left:1px solid var(--rule)}
+th.g1,td.g1{padding-left:12px}
+/* The band is the FIRST of two header rows, and the two have to pin as one
+   unit: leaving it `position:static` let the sortable row detach and pin alone,
+   which read as a glitch — the group names slid up under the site header while
+   a lone slab of column names hung below it. Its height is declared (not
+   padding-plus-whatever-the-font-does) because the row below offsets by it. */
+tr.grp th{
+  position:sticky;top:58px;z-index:3;background:var(--bg);
+  border-bottom:0;padding:0 0 3px;height:var(--grph);vertical-align:bottom;
+  font-size:9px;letter-spacing:.18em;color:var(--ink4);
+}
+tr.grp th:not(:empty){border-left:1px solid var(--rule);padding-left:12px}
+/* only the Batters table has a band above its column names; every other table
+   on the page pins its single header row straight to the site header */
+#tbl thead tr:not(.grp) th{top:calc(58px + var(--grph))}
+/* supporting stats read at supporting weight. Same numbers, same precision —
+   they simply stop competing with the score for first look. */
+td.dim{color:var(--ink3);font-size:12px}
+th.dim{color:var(--ink4)}
+td.rk,th.rk{color:var(--ink4);font-size:11.5px;padding-left:0;padding-right:4px}
+/* tier bands — the list's landmarks, at label weight, never row weight */
+tr.band td{
+  padding:22px 0 7px;border-bottom:1px solid var(--line);background:none;
+}
+tr.band:first-child td{padding-top:8px}
+tr.band td > *{vertical-align:middle}
+tr.band .rule{display:inline-block;width:min(46%,420px);height:1px;background:var(--line);margin:0 12px}
+tbody tr.band{cursor:default}
+tbody tr.band:hover{background:none}
 /* the score cell: number and meter on one line, so the column is as wide as
    its content instead of as wide as the widest of two stacked things */
 td.sc,th.sch{text-align:left;padding-left:8px}
@@ -451,20 +559,125 @@ td.sc .meter{width:52px;margin-left:8px}
 td.sc b{font-size:var(--t-bd)}
 
 /* ── games ──────────────────────────────────────────────────────────── */
-.games{display:grid;gap:0}
-@media(min-width:820px){ .games{grid-template-columns:1fr 1fr;gap:0 34px} }
-.game{padding:18px 0;border-bottom:1px solid var(--line);display:grid;gap:14px;background:none;border-radius:0}
-.ghead{display:flex;align-items:baseline;gap:11px}
-.gteams{font-weight:750;font-size:var(--t-md);letter-spacing:-.03em}
-.gtime{font-size:var(--t-mi);color:var(--ink3);font-family:var(--mono);letter-spacing:.06em}
-.gscore{margin-left:auto;font-family:var(--mono);font-size:var(--t-md);font-weight:700;letter-spacing:-.03em}
-.gsides{display:grid;gap:10px}
-.gside{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:start;padding:11px 0 0 10px;border-top:1px solid var(--line)}
-.gteam{font-family:var(--mono);font-size:var(--t-sm);font-weight:750;letter-spacing:-.02em}
-.gvs{font-size:var(--t-xs);color:var(--ink3);line-height:1.4}
-.gvs b{color:var(--ink);font-weight:650}
-.grade{width:26px;height:26px;display:grid;place-items:center;border-radius:2px;font-family:var(--mono);font-size:var(--t-sm);font-weight:750;border:1px solid var(--line2);color:var(--ink2)}
-.gbatters{display:flex;gap:6px;flex-wrap:wrap}
+/* ── the Today games strip — one line per game ────────────────────────
+   Fifteen full game cards inline was the biggest block on Today and the least
+   important thing on it. One row each, and the full cards stay on Games. */
+.gstrip{display:grid;gap:0;border-top:1px solid var(--line)}
+/* The group heading sits INSIDE the strip, so it gets a tighter top margin
+   than a standalone .grp-h between sections would want. */
+.grp-h.gsgrp{margin:16px 0 4px}
+.grp-h.gsgrp:first-child{margin-top:10px}
+/* 176px, not 132: the widest cell here is a live game — "10:35 AM · BOT 10TH ·
+   2–2" — and gswhen is nowrap, so a short track does not wrap it, it slides it
+   under the first team badge. */
+.gsrow{display:grid;grid-template-columns:176px 1fr;gap:12px;align-items:center;
+  padding:6px 0;border-bottom:1px solid var(--line)}
+/* Settled games are history — kept for reference, not competing for the eye
+   with the games you can still do something about. */
+.gsrow.done{opacity:.5}
+.gsrow.done:hover{opacity:1}
+.gswhen{display:flex;align-items:center;gap:7px;white-space:nowrap}
+.gstime{font-family:var(--mono);font-size:var(--t-xs);color:var(--ink3);letter-spacing:-.02em}
+.gsscore{font-size:var(--t-xs);color:var(--ink2);font-weight:650}
+.gssides{display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center;min-width:0}
+.gsat{font-size:var(--t-mi);color:var(--ink4);padding:0 2px}
+.gsside{display:flex;align-items:center;gap:9px;min-width:0;padding:5px 9px;border-radius:8px;
+  background:none;text-align:left;transition:background .12s}
+.gsside:hover{background:var(--surf2)}
+.gsavg{font-size:var(--t-xs);font-weight:650;flex:0 0 auto}
+.gsbest{font-size:var(--t-mi);color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.gsbest b{color:var(--ink2);font-weight:650}
+/* One dot per bat in tonight's top fifth. A count alone reads as another
+   statistic; the dots are countable at a glance and differ ROW TO ROW, which
+   is the whole point — the averages barely do. */
+.gshot{display:flex;align-items:center;gap:2px;flex:0 0 auto}
+.gshot i{width:4px;height:4px;border-radius:50%;background:var(--tier-hi);display:block}
+.gshot .num{font-size:var(--t-mi);color:var(--tier-hi);font-weight:650;margin-left:2px}
+/* 64px and inline, not full-bleed on a second row: the bar is here to make two
+   averages a point apart look a point apart, and a 500px-wide version of that
+   shouts louder than the shortlist above it. */
+.gsbar{display:block;flex:0 0 64px;height:3px;background:var(--surf3);position:relative;overflow:hidden}
+.gsbar i{position:absolute;left:0;top:0;bottom:0;background:var(--ink4)}
+.gsbar.t-hi i{background:var(--tier-hi)} .gsbar.t-mid i{background:var(--tier-mid)} .gsbar.t-lo i{background:var(--tier-lo)}
+/* fifteen glowing live pills would make the supporting section the loudest
+   thing on Today. Same information, stated at the volume the section deserves;
+   the full-strength tag still lives on the Games tab. */
+.gstrip .tag{font-size:var(--t-mi);padding:1px 6px}
+.gstrip .tag.live{background:none;box-shadow:none;border-color:color-mix(in srgb,var(--bad) 40%,transparent);opacity:.75}
+@media(max-width:640px){
+  .gsrow{grid-template-columns:1fr;gap:6px;padding:11px 0}
+  .gssides{grid-template-columns:1fr}
+  .gsat{display:none}
+}
+/* ── lineups — the Teams tab ───────────────────────────────────────────
+   One card per LINEUP, never per matchup: the two sides of a game are laid out
+   as two independent cards that may not even be adjacent, because nothing in
+   the model relates them. See the comment above lineups() for why. */
+.lus{display:grid;gap:0}
+@media(min-width:900px){ .lus{grid-template-columns:1fr 1fr;gap:0 34px} }
+.lu{position:relative;padding:17px 0 18px 12px;border-bottom:1px solid var(--line);display:grid;gap:12px}
+/* the club rule, clipped to the identity line it belongs to — the card's full
+   height is mostly the batting order, and a rule down all of it reads as a
+   stray line rather than as this team's colour. */
+.lu::before{content:'';position:absolute;left:0;top:19px;height:30px;width:2px;border-radius:2px;
+  background:var(--tc,transparent);opacity:.8;pointer-events:none}
+.lu-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.lu-rk{font-family:var(--mono);font-size:var(--t-mi);font-weight:750;color:var(--ink4);letter-spacing:.02em}
+.lu-tm{font-weight:750;font-size:var(--t-md);letter-spacing:-.03em;color:var(--tc,var(--ink))}
+.lu-opp{font-size:var(--t-xs);color:var(--ink3)}
+.lu-opp .at{color:var(--ink4)}
+.lu-when{margin-left:auto;display:flex;align-items:center;gap:7px}
+.lu-time{font-family:var(--mono);font-size:var(--t-mi);color:var(--ink3);letter-spacing:.06em}
+.lu-gs{font-family:var(--mono);font-size:var(--t-mi);font-weight:700;color:var(--ink2)}
+.lu-top{display:flex;align-items:flex-start;gap:14px}
+.lu-avg{font-family:var(--mono);font-size:var(--t-xl);font-weight:750;letter-spacing:-.055em;line-height:.9}
+.lu-avg span{font-size:var(--t-bd);color:var(--ink3);letter-spacing:0}
+.lu-side{flex:1;min-width:0;font-size:var(--t-xs);color:var(--ink3);line-height:1.5}
+.lu-side b{color:var(--ink2);font-weight:650}
+.lu-side .meter{width:100%;margin:7px 0 0}
+.lu-arm{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:var(--t-xs);color:var(--ink3);
+  padding:9px 11px;background:var(--surf2);border-radius:3px}
+.lu-arm b{color:var(--ink);font-weight:650}
+/* the picker wraps to its own line on a narrow card — left-aligned with the
+   rest of the row rather than pushed right, where it read as a stray control */
+.lu-arm .psel{margin-top:0}
+.lu-arm .gr{font-size:10px;padding:2px 5px}
+/* the collective read — five numbers that are true of the NINE, not of a bat */
+.lu-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:0;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.lu-cell{padding:9px 10px 9px 0;min-width:0}
+.lu-cv{font-family:var(--mono);font-size:var(--t-sm);font-weight:700;margin-top:4px;letter-spacing:-.025em;white-space:nowrap}
+.lu-cv.up{color:var(--tier-hi)} .lu-cv.down{color:var(--bad)}
+/* the batting order, in batting order — a lineup read top to bottom is the
+   one ordering a team card owes you; ranking the nine by score would be the
+   Batters table again with fewer rows. */
+.ord{display:grid;gap:0}
+.ord button{display:grid;grid-template-columns:24px minmax(0,1fr) 52px 42px;align-items:center;gap:10px;
+  padding:5px 7px 5px 0;border-radius:3px;text-align:left;font-size:var(--t-xs);width:100%}
+.ord button:hover{background:var(--surf2)}
+.ordn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink3)}
+.ordn b{color:var(--ink);font-weight:650}
+.obar{height:4px;border-radius:2px;background:var(--surf3);overflow:hidden}
+.obar i{display:block;height:100%;border-radius:2px;background:var(--ink4)}
+.ord .t-hi .obar i{background:var(--tier-hi)}
+.ord .t-mid .obar i{background:var(--tier-mid)}
+.ord .t-lo .obar i{background:var(--tier-lo)}
+.ordp{font-family:var(--mono);font-size:var(--t-sm);font-weight:750;text-align:right;letter-spacing:-.03em}
+/* A hypothetical score must never be mistaken for a real one, so a what-if
+   number leaves the tier scale and goes accent — the colour then means "this
+   is not tonight's number" rather than "this is a good number".
+   A LIVE-arm score is real, though, so it keeps its tier colour; painting it
+   red (as the old chips did) put a red 72% next to a green bar and made the
+   row argue with itself. That the arm is live is said once, loudly, on the
+   card's arm line — it does not need saying nine more times. */
+.ord button.alt .ordp{color:var(--acc-txt)}
+.ord button.alt.livearm .ordp{color:var(--tier-c,inherit)}
+.lu-foot{font-size:var(--t-mi);color:var(--ink4);line-height:1.55}
+.lu-foot b{color:var(--ink3);font-weight:650}
+@media(max-width:560px){
+  .lu-stats{grid-template-columns:repeat(3,1fr)}
+  .lu-cell{border-bottom:0}
+}
 .mini{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:2px;background:var(--surf2);border:1px solid var(--line);font-size:var(--t-xs)}
 .mini:hover{border-color:var(--acc-txt)}
 /* a hypothetical score must never be mistaken for the real one — dashed. a
@@ -503,7 +716,28 @@ td.sc b{font-size:var(--t-bd)}
    a team colour. Inset to the header's own padding it reads as a marker. */
 .dhead::before{content:'';position:absolute;left:20px;width:54px;top:0;height:3px;background:var(--tc,transparent);border-radius:0 0 2px 2px}
 @media(max-width:600px){ .dhead::before{left:15px} }
-.dbody{overflow-y:auto;padding:20px;flex:1;overscroll-behavior:contain}
+.dbody{overflow-y:auto;overflow-x:hidden;padding:20px;flex:1;overscroll-behavior:contain}
+/* ── the drawer is not the page ──────────────────────────────────────────
+   Two page-level table rules are actively wrong inside a 560px panel, and both
+   are declared under a min-width media query or a theme selector, so they need
+   beating on specificity rather than order:
+   · the wrap goes `overflow:visible` on a wide viewport so the page can own the
+     sticky header — in here that just lets a table spill out of the panel;
+   · `th` sticks at top:58px, an offset that exists to clear the site header,
+     which the drawer's own scroll box does not have.
+   The overflow-x:hidden above is the backstop: whatever a future panel puts in
+   here, it can no longer drag the drawer sideways. */
+.dbody .tblwrap,
+html[data-theme="aurora"] .dbody .tblwrap{overflow-x:auto;overflow-y:hidden}
+.dbody th{position:static;top:auto}
+/* `table-layout:fixed` exists for the Batters table, where declared widths are
+   the only thing keeping thirteen columns from collapsing. Here it split six
+   columns into equal sixths, which is too narrow for a date and far too wide
+   for a one-digit K — so the dates wrapped onto two lines while the numbers
+   floated in empty cells. Auto layout gives each column what it needs. */
+.dbody table{table-layout:auto}
+.dbody td,.dbody th{white-space:nowrap}
+.dbody td:last-child,.dbody th:last-child{padding-right:12px}
 .dtitle{font-size:var(--t-lg);font-weight:750;letter-spacing:-.035em;line-height:1.1}
 .dsub{font-size:var(--t-xs);color:var(--ink3);margin-top:5px}
 .dnav{display:flex;gap:2px;margin-left:auto}
@@ -582,7 +816,7 @@ footer a:hover{color:var(--acc-txt);border-bottom-color:var(--acc-line)}
 .nav button, .tabbar button, .seg button,
 .lbl, .slab, th,
 .sec-h h2, .sec-h .lnk, .dtitle,
-.bname, .gteams,
+.bname, .lu-tm,
 .evlab, .toast{ font-family:var(--disp) }
 /* Saira sets tighter than the system grotesk it replaces, so the display
    sizes give back some of the negative tracking they were carrying. */
@@ -619,17 +853,80 @@ footer a:hover{color:var(--acc-txt);border-bottom-color:var(--acc-line)}
 td.c .dia{vertical-align:middle}
 .bcard.hero .dia::before{border-color:var(--acc-line)}
 .bcard.hero .dia i{color:var(--ink2)}
-/* a ball, faintly, behind the one row that matters most. It lives INSIDE the
-   hero card and the card clips it, so it can be larger than the row without
-   spilling onto the page. */
-.bcard.hero{position:relative;overflow:hidden}
-.seammark{
-  position:absolute;right:-34px;top:50%;transform:translateY(-50%);
-  width:230px;height:230px;pointer-events:none;color:var(--ink);opacity:.06;z-index:0;
+/* ── club badges ────────────────────────────────────────────────────────
+   Two forms, thirty colours. The outline is an SVG STROKE, not a border and
+   not an inset shadow: a shadow is painted on the element's rectangle and only
+   then clipped, so the home plate's two diagonal edges came out with no ring
+   at all while the flat top and sides kept theirs. A stroke follows the actual
+   path at uniform width. Both forms share one square box so they align in a
+   column and swap freely, and the stroke scales with the badge for free. */
+.bdg{
+  display:inline-grid;place-items:center;width:28px;height:28px;flex:0 0 28px;
+  vertical-align:middle;
 }
-.bcard.hero > :not(.seammark){position:relative;z-index:1}
-.seammark svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.2}
-@media(max-width:600px){ .seammark{width:150px;height:150px;right:-30px;opacity:.05} }
+.bdg > *{grid-area:1/1}                       /* shape and code, same cell */
+.bdgs{
+  width:100%;height:100%;
+  fill:color-mix(in srgb,var(--bc) 26%,transparent);
+  stroke:color-mix(in srgb,var(--bc) 80%,transparent);
+  stroke-width:5.5;stroke-linejoin:round;
+}
+.bdg i{
+  font-family:var(--mono);font-size:9.5px;font-weight:750;font-style:normal;
+  letter-spacing:-.04em;color:var(--bt);line-height:1;
+}
+/* the pointed bottom takes area away from under the code, so the National
+   League form lifts it off the geometric centre and onto the optical one */
+.bdg.nl i{transform:translateY(-2px)}
+.bdg.bg-sm{width:22px;height:22px;flex:0 0 22px}
+.bdg.bg-sm i{font-size:8px}
+.bdg.bg-sm.nl i{transform:translateY(-1.5px)}
+/* the hero's badge is the one place the club mark is allowed to be an object
+   rather than a label, so it carries the real brand colour at full strength */
+.bcard.hero .bdg{width:38px;height:38px;flex:0 0 38px}
+.bcard.hero .bdgs{
+  fill:color-mix(in srgb,var(--bc) 40%,transparent);
+  stroke:color-mix(in srgb,var(--bc) 92%,transparent);
+}
+.bcard.hero .bdg i{font-size:12px}
+.bcard.hero .bdg.nl i{transform:translateY(-3px)}
+
+/* ── the watermark ──────────────────────────────────────────────────────
+   The same badge blown up and bled off the right edge, clipped by the card.
+   Deliberately a shape and a hue only — no numbers, no text to read — so it
+   groups rows by club without adding anything to the reading load. */
+.bcard{position:relative;overflow:hidden}
+.bcard > :not(.tmark){position:relative;z-index:1}
+.tmark{
+  position:absolute;right:-26px;top:50%;transform:translateY(-50%);
+  width:104px;height:104px;pointer-events:none;z-index:0;display:grid;place-items:center;
+  background:color-mix(in srgb,var(--bc) 60%,transparent);opacity:.07;
+}
+.tmark i{
+  font-family:var(--mono);font-style:normal;font-size:30px;font-weight:750;
+  letter-spacing:-.06em;color:var(--bg);line-height:1;
+}
+/* the watermark can stay a clipped box — it is a filled silhouette with no
+   outline, which is the one case clip-path handles correctly. Shoulders at 63%
+   to match the badge path above, so the two read as the same mark. */
+.tmark.al{border-radius:50%}
+.tmark.nl{clip-path:polygon(50% 100%,0 63%,0 0,100% 0,100% 63%);align-content:center;padding-bottom:22px}
+/* On the hero the watermark loses its letters and most of its width. Behind a
+   60px score, a legible three-letter code is a second thing to read in the
+   same place as the loudest number on the page — the club is already stated by
+   the badge, the shape and the hue, so the text here only competed. */
+.bcard.hero .tmark{width:200px;height:200px;right:-84px;opacity:.09}
+.bcard.hero .tmark i{display:none}
+/* the tail rows are meant to recede — a watermark there would undo that */
+.bcard.lite .tmark{display:none}
+/* On a phone the row is barely wider than the watermark, so the code lands on
+   top of the meta line and becomes something to read. Shape and hue only —
+   the badge in the identity column is already carrying the letters. */
+@media(max-width:600px){
+  .bcard.hero .tmark{width:150px;height:150px;right:-60px}
+  .tmark{width:76px;height:76px;right:-24px;opacity:.06}
+  .tmark i{display:none}
+}
 
 /* ── phone ──────────────────────────────────────────────────────────────
    Scenario A (05:30, coffee, phone) is the most common and was the worst
@@ -777,6 +1074,17 @@ html[data-theme="aurora"] .bcard{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
   transition:transform .3s var(--spring),box-shadow .3s,background .3s;
 }
+/* the tail keeps the glass idiom but at a fraction of the lift, so the eye
+   reads it as one block of rows instead of six more competing cards */
+html[data-theme="aurora"] .bcard.lite{
+  border-radius:10px;margin-bottom:2px;
+  background:linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,.006));
+  box-shadow:none;
+}
+html[data-theme="aurora"] .bcard.lite:hover{transform:none;box-shadow:inset 0 0 0 1px var(--acc-line)}
+html[data-theme="aurora"] .bcard.lite::after{display:none}
+html[data-theme="aurora"] .gsrow{border-bottom-color:var(--line)}
+html[data-theme="aurora"] .gstrip{border-top-color:var(--line)}
 html[data-theme="aurora"] .bcard.stagger{
   animation:riseIn .55s var(--spring) backwards;
   animation-delay:calc(var(--i,0) * 34ms);
@@ -872,8 +1180,10 @@ html[data-theme="aurora"] .sgrid{
    base stylesheet's overflow-x:auto. Round the header cells instead. */
 @media(min-width:1120px){
   html[data-theme="aurora"] .tblwrap{overflow:visible}
-  html[data-theme="aurora"] th:first-child{border-top-left-radius:var(--rg)}
-  html[data-theme="aurora"] th:last-child{border-top-right-radius:var(--rg)}
+  /* the corners belong to the FIRST header row — scoped that way because the
+     Batters table has two, and rounding both drew a notch mid-header */
+  html[data-theme="aurora"] thead tr:first-child th:first-child{border-top-left-radius:var(--rg)}
+  html[data-theme="aurora"] thead tr:first-child th:last-child{border-top-right-radius:var(--rg)}
 }
 html[data-theme="aurora"] .ev{border-top:1px solid var(--line)}
 html[data-theme="aurora"] .evrow,
@@ -881,22 +1191,30 @@ html[data-theme="aurora"] .scell{border-color:var(--line)}
 html[data-theme="aurora"] .evrow{padding-left:14px;padding-right:14px;transition:background .2s}
 html[data-theme="aurora"] .evrow:hover{background:var(--surf2)}
 html[data-theme="aurora"] .scell{padding-left:14px}
+/* A pinned header has to be OPAQUE. This was rgba(8,10,20,.82) + a blur, on the
+   theory that the glass treatment used on the real chrome would work here too —
+   it does not: `backdrop-filter` on a table-cell inside the animated aurora
+   backdrop never captures anything, so the .82 was just 18% transparency with no
+   blur behind it and the rows scrolled visibly THROUGH the column names. Solid,
+   at the same tone the translucent version was aiming for. */
 html[data-theme="aurora"] th{
-  background:rgba(8,10,20,.82);backdrop-filter:blur(18px);
-  border-bottom:1px solid var(--line2);padding-left:14px;
+  background:#080a14;border-bottom:1px solid var(--line2);padding-left:14px;
 }
+/* ...and this rule must not reach the group band, which wants no rule beneath
+   it — the band and the column names are one header, not two stacked slabs. */
+html[data-theme="aurora"] tr.grp th{border-bottom:0}
 html[data-theme="aurora"] td{border-color:var(--line);padding-left:14px}
 html[data-theme="aurora"] tbody tr{transition:background .18s}
 html[data-theme="aurora"] tbody tr:hover{background:var(--surf2)}
-html[data-theme="aurora"] .game{
+html[data-theme="aurora"] .lu{
   border:1px solid var(--line);border-radius:var(--rg);background:var(--surf);
-  padding:16px;margin-bottom:12px;transition:box-shadow .3s,transform .3s var(--spring);
+  padding:16px 16px 16px 18px;margin-bottom:12px;transition:box-shadow .3s,transform .3s var(--spring);
 }
-html[data-theme="aurora"] .game:hover{transform:translateY(-2px);box-shadow:0 14px 36px -18px rgba(77,232,255,.5)}
-html[data-theme="aurora"] .gside{border-top-color:var(--line)}
+html[data-theme="aurora"] .lu:hover{transform:translateY(-2px);box-shadow:0 14px 36px -18px rgba(77,232,255,.5)}
+html[data-theme="aurora"] .lu::before{left:7px;top:22px}
+html[data-theme="aurora"] .lu-arm{border-radius:10px}
 html[data-theme="aurora"] .mini{border-radius:999px;background:var(--surf2);border-color:var(--line);transition:all .2s var(--spring)}
 html[data-theme="aurora"] .mini:hover{background:var(--acc-dim);border-color:var(--acc-line);transform:translateY(-1px)}
-html[data-theme="aurora"] .grade{border-radius:10px;background:var(--surf2);border-color:var(--line2)}
 html[data-theme="aurora"] .field,
 html[data-theme="aurora"] .seg{border-radius:999px;background:var(--surf);backdrop-filter:blur(12px);border-color:var(--line)}
 html[data-theme="aurora"] .seg button{border-right-color:var(--line);transition:all .25s var(--spring)}
@@ -953,6 +1271,9 @@ html[data-theme="aurora"] .toast{
 html[data-theme="aurora"] .meter.t-hi i {background:linear-gradient(90deg,color-mix(in srgb,var(--tier-hi) 55%,var(--violet)),var(--tier-hi))}
 html[data-theme="aurora"] .meter.t-mid i{background:linear-gradient(90deg,color-mix(in srgb,var(--tier-mid) 55%,var(--violet)),var(--tier-mid))}
 html[data-theme="aurora"] .meter.t-lo i {background:linear-gradient(90deg,var(--violet),var(--tier-lo))}
+html[data-theme="aurora"] .gsbar.t-hi i {background:linear-gradient(90deg,color-mix(in srgb,var(--tier-hi) 55%,var(--violet)),var(--tier-hi))}
+html[data-theme="aurora"] .gsbar.t-mid i{background:linear-gradient(90deg,color-mix(in srgb,var(--tier-mid) 55%,var(--violet)),var(--tier-mid))}
+html[data-theme="aurora"] .gsbar.t-lo i {background:linear-gradient(90deg,var(--violet),var(--tier-lo))}
 html[data-theme="aurora"] .mini.t-hi {background:var(--tier-hi-dim);border-color:var(--tier-hi-line);color:var(--tier-hi)}
 html[data-theme="aurora"] .mini.t-mid{background:var(--tier-mid-dim);border-color:var(--tier-mid-line);color:var(--tier-mid)}
 html[data-theme="aurora"] .mini.t-lo {background:var(--tier-lo-dim);border-color:var(--tier-lo-line);color:var(--ink2)}
@@ -1013,6 +1334,20 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const pct  = (v,d=0) => v==null||isNaN(v) ? '—' : (v*100).toFixed(d)+'%';
 const num  = (v,d=2) => v==null||isNaN(v) ? '—' : Number(v).toFixed(d);
 const clamp= (v,a,b) => Math.max(a,Math.min(b,v));
+/** MLB's inningHalf reads "Top"/"Bottom"/"Middle"/"End"; the live badges are
+    tiny, so print the scoreboard abbreviations instead of the long word. */
+const halfAbbr = h => ({top:'TOP',bottom:'BOT',middle:'MID',end:'END'})[String(h??'').toLowerCase()] || String(h??'').toUpperCase();
+/** Start times arrive as display strings ("1:05 PM"), and compared as strings
+    "1:05 PM" sorts before "10:35 AM" — which is how an afternoon game ended up
+    at the top of a slate ordered by first pitch. Compare minutes instead. An
+    unparseable time sorts last rather than to midnight. */
+function startMin(s){
+  const m = /^(\d{1,2}):(\d{2})\s*([AP]M)?/i.exec(String(s||'').trim());
+  if(!m) return 1e9;
+  const mer = m[3]||'';
+  const h = mer ? (+m[1]%12) + (/pm/i.test(mer)?12:0) : +m[1];   // bare 13:05 is already 24h
+  return h*60 + +m[2];
+}
 /** The legacy dashboard's three-tier read on a probability, thresholds and
     all (.70 / .55). Every printed score wears it, so the same number is the
     same colour wherever it appears. */
@@ -1035,7 +1370,8 @@ function icon(p,cls=''){ return `<svg class="${cls}" viewBox="0 0 24 24" aria-hi
 const ICONS = {
   today:'<path d="M4 7h16M4 12h10M4 17h7"/>',
   batters:'<circle cx="12" cy="7" r="3"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/>',
-  games:'<circle cx="12" cy="12" r="8.5"/><path d="M6 6.5c3 2.5 3 8.5 0 11M18 6.5c-3 2.5-3 8.5 0 11"/>',
+  // a roster, not a ball: the tab is nine bats read top to bottom
+  teams:'<path d="M5 4.5h14v9c0 3.3-3 5.3-7 6.5-4-1.2-7-3.2-7-6.5z"/><path d="M8.5 9h7M8.5 12.5h4.5"/>',
   watch:'<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/>',
   honesty:'<path d="M4 19V5M4 15l5-4 4 3 7-6"/>',
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.6"/>',
@@ -1106,16 +1442,61 @@ function teamCSS(){
   const BG_LIGHT = relLum([233/255,235/255,239/255]);    // --bg, Dugout light
   const line = bg => Object.entries(TEAM_HEX)
     .map(([t,hex])=>`--tc-${t}:${readable(hex,bg,4.5)}`).join(';');
-  return `:root{${line(BG_DARK)}}\nhtml[data-theme="light"]{${line(BG_LIGHT)}}`;
+  // --tb-* is the club's ACTUAL brand hex, untouched by the contrast search.
+  // A badge fill is a shape, not text, so it does not owe 4.5:1 — and forcing
+  // the navies up to text contrast is what would make every badge look alike.
+  const brand = Object.entries(TEAM_HEX).map(([t,hex])=>`--tb-${t}:${hex}`).join(';');
+  return `:root{${line(BG_DARK)};${brand}}\nhtml[data-theme="light"]{${line(BG_LIGHT)}}`;
 }
 /** Fall back to the normal ink colour for anything not in the map (a new club
     code, or a relocated one) rather than rendering an invisible element. */
 const tc = (t, fallback='var(--ink2)') => `var(--tc-${String(t||'').toUpperCase()},${fallback})`;
+const tb = (t, fallback='var(--ink4)') => `var(--tb-${String(t||'').toUpperCase()},${fallback})`;
 const teamSpan = (t, cls='tm') => `<span class="${cls}" style="color:${tc(t)}">${esc(t)}</span>`;
 /** "ATH @ MIN" → both clubs in their own colour. */
 function matchupHTML(m){
   const parts = String(m||'').split('@').map(s=>s.trim());
   return parts.length===2 ? `${teamSpan(parts[0])} <span class="at">@</span> ${teamSpan(parts[1])}` : esc(m);
+}
+
+/* ── club badges ──────────────────────────────────────────────────────────
+   Thirty real club marks are neither shippable (they are somebody else's
+   trademarks) nor honest in a tool that has no licence to them, so this is a
+   SYSTEM instead of thirty drawings: one badge form per league, filled with
+   the club's own brand colour, carrying its code.
+
+   The league split is what makes it work as identification rather than
+   decoration. Colour alone is a single channel, and thirty hues include pairs
+   no one can tell apart at 26px (CIN/STL/PHI are all the same red, LAD/CHC/NYY
+   all the same navy) — so a Cardinals shield and a Reds roundel differ in
+   SHAPE first and hue second, and league is information a baseball reader
+   already holds anyway. */
+const AL = new Set(['BAL','BOS','NYY','TB','TOR','CWS','CLE','DET','KC','MIN','HOU','LAA','ATH','SEA','TEX']);
+const badgeVars = t => `--bc:${tb(t)};--bt:${tc(t)}`;
+/* Inset 3 units so a 5.5-wide stroke, centred on the path, still lands inside
+   the 100-unit box instead of being cut in half by the viewBox edge. */
+const BDG_SHAPE = {
+  al:'<circle cx="50" cy="50" r="47"/>',
+  nl:'<path d="M3 3H97V63L50 97 3 63Z"/>'      // home plate, point down
+};
+/** `cls` sizes it: '' is the row badge, 'bg-sm' the table/strip one. */
+function teamBadge(t, cls=''){
+  const T = String(t||'').toUpperCase();
+  if(!T) return '';
+  const lg = AL.has(T) ? 'al' : 'nl';
+  return `<span class="bdg ${lg} ${cls}" style="${badgeVars(T)}" role="img"
+    aria-label="${esc(T)}" title="${esc(T)} · ${AL.has(T)?'American':'National'} League"
+    ><svg class="bdgs" viewBox="0 0 100 100" aria-hidden="true">${BDG_SHAPE[lg]}</svg><i>${esc(T)}</i></span>`;
+}
+/** The same badge blown up as a watermark behind a row, so the club reads from
+    the shape of the card before you get to any text. Replaces the baseball that
+    used to sit behind the hero — a ball is true of all 270 rows and therefore
+    identifies none of them, which is exactly the wrong thing to spend the one
+    background layer on. */
+function teamMark(t, cls=''){
+  const T = String(t||'').toUpperCase();
+  if(!T) return '';
+  return `<span class="tmark ${AL.has(T)?'al':'nl'} ${cls}" style="${badgeVars(T)}" aria-hidden="true"><i>${esc(T)}</i></span>`;
 }
 
 /** fetch with a hard timeout — a hung statsapi call must never hang the UI. */
@@ -1395,35 +1776,94 @@ function verdict(b, ev, st){
 /* ══════════════════════════════════════════════════════════════════════
    4 · calibration — measured, not claimed
    ══════════════════════════════════════════════════════════════════════ */
+/* The FEATURES 21 -> 14 cut and retrain on this date collapsed the low tail of
+   the score distribution: before it, every slate's floor was ~0.28-0.34 and
+   ~35% of picks scored under 55%; from 07-25 on the floor is ~0.47-0.50 and
+   only ~7% land under 55%. So the settled record spans TWO model generations,
+   and the bands below ~45 are the record of a model that can no longer produce
+   a score in them. They stay in the table — this is the Honesty tab — but they
+   are not the current model's calibration and must not be drawn as if they
+   were. Bump this when a change alters the emitted range again. */
+const MODEL_ERA = '2026-07-25';
+/* The band range the reliability curve is drawn over: everything the current
+   model actually emits, with headroom on both sides. Not a "good scores only"
+   filter — the worst-calibrated band in the whole record (75, -12pt) is inside
+   it, and tonight's floor of ~0.47 would fall outside a 60-cut. */
+const CAL_LO = .45, CAL_HI = .80;
 async function calibration(){
   return load('cal', async () => {
     const {body} = await getAny(['./picks_log.csv','/picks_log.csv'],{timeout:25000});
     const rows = parseCSV(body);
-    const bands=new Map(), tags=new Map(), days=new Map();
-    let n=0, brier=0, sumP=0, hits=0;
+    /* One row per (game_pk, batter), keeping the latest date.
+       A rained-out game is rescheduled keeping its game_pk, so the slate logs
+       the same batter twice — once on the postponed date, once on the makeup
+       date. settle.py keys outcomes by (game_pk, batter), correctly, so BOTH
+       rows carry the makeup game's real result: the outcomes agree and nothing
+       is mis-settled. But counting both double-weights those games and lets the
+       staler forecast vote twice, and the early row's features are as of the
+       rainout (a month behind, for the 06-25 → 07-23 pair). The later date is
+       always the date the game was actually played. 226 of 28,567 settled rows
+       — 0.8% — as of 2026-07-26, across 17 postponed games. */
+    const once=new Map();
     for(const r of rows){
+      const k=r.game_pk+'|'+r.batter, prev=once.get(k);
+      if(!prev || String(r.date) > String(prev.date)) once.set(k, r);
+    }
+    const bands=new Map(), tags=new Map(), days=new Map();
+    let n=0, brier=0, sumP=0, hits=0, eraN=0;
+    /* The headline row measures the range the current model scores in, not the
+       whole file. Below CAL_LO the record belongs to the pre-MODEL_ERA model
+       (see above), and its bands run +13 to +25pt off — folding them in moved
+       the overall gap to +3.7pt and made the serving model look badly
+       miscalibrated on picks it cannot produce. Scoped, it is -0.2pt. The full
+       -record numbers are still printed under the grid; nothing is hidden.
+       Not scoped by DATE, which would be the literal reading of "the current
+       model": that subset is empty until the first post-retrain settle. */
+    let ln=0, lbrier=0, lsumP=0, lhits=0, lfirst='';
+    for(const r of once.values()){
       const p=N(r.p_hit), a=r.actual_hit;
       if(p==null || (a!=='0'&&a!=='1')) continue;
       const y=+a; n++; brier+=(p-y)**2; sumP+=p; hits+=y;
-      const bk=Math.min(.75,Math.max(.2,Math.floor(p*20)/20));
-      const B=bands.get(bk)||{n:0,h:0,p:0}; B.n++; B.h+=y; B.p+=p; bands.set(bk,B);
+      const era = String(r.date) >= MODEL_ERA; if(era) eraN++;
+      if(p>=CAL_LO && p<CAL_HI){                // == the bands marked `live`
+        ln++; lbrier+=(p-y)**2; lsumP+=p; lhits+=y;
+        if(!lfirst || String(r.date)<lfirst) lfirst=String(r.date);
+      }
+      /* Clamped at CAL_HI, not at .75: the old .75 ceiling folded every score
+         above 80% into the "75%–80%" row, so 17 picks that the model called
+         81.8% (and that landed 52.9%) were displayed as if it had said 76% and
+         dragged that band 0.8pt worse than it is. They get their own row. */
+      const bk=Math.min(CAL_HI,Math.max(.2,Math.floor(p*20)/20));
+      const B=bands.get(bk)||{n:0,h:0,p:0,nEra:0}; B.n++; B.h+=y; B.p+=p; if(era) B.nEra++; bands.set(bk,B);
       if(r.lean_tag){ const T=tags.get(r.lean_tag)||{n:0,h:0,p:0}; T.n++; T.h+=y; T.p+=p; tags.set(r.lean_tag,T); }
       const D=days.get(r.date)||{n:0,h:0,p:0}; D.n++; D.h+=y; D.p+=p; days.set(r.date,D);
     }
     return {
-      n, brier:brier/n, baseRate:hits/n, meanP:sumP/n,
-      bands:[...bands.entries()].sort((a,b)=>a[0]-b[0]).map(([k,v])=>({band:k,...v,act:v.h/v.n,pred:v.p/v.n})),
+      // headline = live range; `all` keeps the unscoped record for the footnote
+      n:ln, brier:lbrier/ln, baseRate:lhits/ln, meanP:lsumP/ln, since:lfirst,
+      all:{n, brier:brier/n, baseRate:hits/n, meanP:sumP/n},
+      era:MODEL_ERA, eraN, lo:CAL_LO, hi:CAL_HI,
+      /* `live` = a band the CURRENT model can still land a score in; charted and
+         counted in the headline. `pos` says which side a dead band fell off:
+         'lo' is the pre-MODEL_ERA floor, 'hi' is the handful of >=80% scores no
+         slate has produced since 07-18. Both stay in the table. */
+      bands:[...bands.entries()].sort((a,b)=>a[0]-b[0]).map(([k,v])=>({band:k,...v,act:v.h/v.n,pred:v.p/v.n,
+        pos: k+.05<=CAL_LO ? 'lo' : k>=CAL_HI ? 'hi' : 'in', live: k+.05>CAL_LO && k<CAL_HI})),
       tags:[...tags.entries()].map(([k,v])=>({tag:k,...v,act:v.h/v.n,pred:v.p/v.n})).sort((a,b)=>b.act-a.act),
       days:[...days.entries()].sort((a,b)=>b[0].localeCompare(a[0])).map(([k,v])=>({date:k,...v,act:v.h/v.n,pred:v.p/v.n}))
     };
   });
 }
 /** What a score in this band has actually done historically. The single most
-    mission-critical number on the page: it audits the score in front of you. */
+    mission-critical number on the page: it audits the score in front of you.
+    Returns null for a band the current model cannot produce — reachable by
+    viewing an archived slate from before MODEL_ERA, where a 0.31 would
+    otherwise be "audited" against a band no live score ever enters. */
 function bandFor(cal,p){
   if(!cal||p==null) return null;
   const k=Math.min(.75,Math.max(.2,Math.floor(p*20)/20));
-  return cal.bands.find(b=>b.band===k) || null;
+  const b = cal.bands.find(b=>b.band===k);
+  return b && b.live ? b : null;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1434,6 +1874,7 @@ const S = {                                   // app state
   live:{}, bullpen:null, odds:null, pitcherLog:null,
   filters:{q:'',team:'',game:'',slot:'',lineup:'',sort:'p',dir:-1},
   stars:store.get('stars',[]), snap:null, drawerIdx:-1, drawerList:[],
+  lsort:store.get('lsort','strength'),      // how the Teams tab orders its lineups
   date:'', dates:[],    // '' = tonight's live slate; else a slates/<date>.csv archive
   // which alternate arm each side is being previewed against, keyed
   // `${gamePk}|${battingTeam}`. Deliberately not persisted — a what-if is a
@@ -1535,7 +1976,7 @@ async function loadLive(){
         state:g.status?.detailedState||'', abstract:g.status?.abstractGameState||'',
         away:g.teams?.away?.score, home:g.teams?.home?.score,
         awayAbbr:g.teams?.away?.team?.abbreviation, homeAbbr:g.teams?.home?.team?.abbreviation,
-        inning:g.linescore?.currentInningOrdinal, half:g.linescore?.inningHalf,
+        inning:g.linescore?.currentInningOrdinal, half:halfAbbr(g.linescore?.inningHalf),
         outs:g.linescore?.outs,
         pitcherId:g.linescore?.defense?.pitcher?.id!=null ? String(g.linescore.defense.pitcher.id) : null,
         pitcherName:g.linescore?.defense?.pitcher?.fullName || ''
@@ -1625,53 +2066,61 @@ function rankOf(b){
   if(!S._rank){ S._rank=new Map(); [...S.batters].sort((x,y)=>y.p-x.p).forEach((x,i)=>S._rank.set(key(x),i+1)); }
   return S._rank.get(key(b));
 }
-/** `hero` gets a categorically different treatment, not a bigger card: accent
-    rule, gradient wash, 60px score. One thing on the page is loudest. */
-function batterCard(b, rank, hero, idx){
+/** Three weights, not two. `hero` gets a categorically different treatment —
+    accent rule, gradient wash, 60px score; one thing on the page is loudest.
+    `lite` is the other end: the tail of a shortlist is a LIST, so it drops the
+    evidence chips, the form strip and the pitcher grade and keeps only what a
+    scan needs — name, side, score. Ten identical full-weight cards is what
+    made Today read as one flat wall of information. */
+function batterCard(b, rank, hero, idx, lite){
   const ev = evidence(b,S.st);
   const narrow = window.innerWidth < 600;
-  const top = ev.signal.filter(e=>e.s>=2).slice(0, hero ? (narrow?2:3) : 2);
+  // One chip per phone row, two on a wide one. A chip that wraps onto its own
+  // line costs a whole row of height, which is how nine top-tier cards became
+  // three thumb-scrolls; the rest of the evidence is one tap away in the drawer.
+  const top = lite ? [] : ev.signal.filter(e=>e.s>=2).slice(0, hero ? (narrow?2:3) : (narrow?1:2));
   // 'est' is already stated by the PROJECTED tag on the name line — repeating
   // it as a chip costs a whole row on a phone and says nothing new. It stays
   // in the drawer's Context list, where it explains the consequence.
-  const flags = ev.context.filter(e=>e.warn && e.k!=='est').slice(0,1);
+  const flags = lite ? [] : ev.context.filter(e=>e.warn && e.k!=='est').slice(0,1);
   const r = rankOf(b);
   const p = pct(b.p,1).replace('%','');
+  // The identity column always carries a rank now, so "#5 of 270" beside the
+  // score would repeat the 5 already on the row. Keep it only on the hero,
+  // whose big stylised 1 does not read as a number and where "of 270" is the
+  // part actually worth saying.
+  const showRank = r && hero;
   // --i drives the staggered entrance in the Aurora theme. Capped at 14 so a
   // 270-row list does not end with a nine-second cascade.
   const pos = rank ?? idx ?? 0;
   const stagger = Math.min(pos, 14);
-  return `<div class="brow${hero?' hero':''}"><button class="bcard${hero?' hero':''}${pos<20?' stagger':''}" data-k="${key(b)}" style="--i:${stagger};--tc:${tc(b.team,'var(--line2)')}">
-    ${hero?SEAM_MARK:''}
-    <span class="rank num">${rank!=null?rank:''}${hero?'<b>RANK</b>':''}</span>
+  const cls = hero ? ' hero' : lite ? ' lite' : '';
+  // The club badge and the rank are one identity column: the badge answers
+  // "whose player is this" from the shape, the rank answers "where does he
+  // stand". Two answers, one glance, one column — which is why the matchup no
+  // longer has to mark the batter's own side.
+  return `<div class="brow${cls}"><button class="bcard${cls}${pos<20?' stagger':''}" data-k="${key(b)}" style="--i:${stagger};--tc:${tc(b.team,'var(--line2)')}">
+    ${teamMark(b.team)}
+    <span class="bid">${teamBadge(b.team, lite?'bg-sm':'')}<span class="rank num">${rank!=null?rank:(r?'#'+r:'')}${hero?'<b>RANK</b>':''}</span></span>
     <span class="bmain">
-      <span class="bname">${esc(b.name)} ${lineupTag(b)} ${stateTag(b)}</span>
-      <span class="bmeta"><span class="num tm" style="color:${tc(b.team)}">${esc(b.team)}</span> · ${matchupHTML(b.matchup)} · ${slotDiamond(b.slot)} · vs ${esc(b.pit||'TBD')} ${gradePill(b.pGrade)}</span>
-      <span class="bwhy">${top.map(chipFor).join('')}${flags.map(chipFor).join('')}${stripHTML(b.last10)}</span>
+      <span class="bname">${esc(b.name)} ${lite?'':lineupTag(b)} ${stateTag(b)}</span>
+      <span class="bmeta">${matchupHTML(b.matchup)} · ${slotDiamond(b.slot)} · vs ${esc(b.pit||'TBD')}${lite||narrow?'':` ${gradePill(b.pGrade)}`}</span>
+      ${lite?'':`<span class="bwhy">${top.map(chipFor).join('')}${flags.map(chipFor).join('')}${stripHTML(b.last10)}</span>`}
     </span>
     <span class="bscore">
       <span class="pct ${tcls(b.p)}">${p}<span>%</span></span>
       ${meter(b)}
-      <span class="slaterank">${r?`#${r} of ${S.batters.length}`:''}</span>
+      ${showRank?`<span class="slaterank">#${r} of ${S.batters.length}</span>`:''}
     </span>
   </button>${starBtn(b)}</div>`;
 }
-/** A ball, faint, behind the top row. Rendered as markup rather than a CSS
-    background image so it can use currentColor and follow every theme. */
-const SEAM_MARK = `<span class="seammark" aria-hidden="true"><svg viewBox="0 0 100 100">
-  <circle cx="50" cy="50" r="45"/>
-  <path d="M21 13c13 15 13 59 0 74M79 13c-13 15-13 59 0 74"/>
-  <path d="M27 22l6-3M25 31l6-2M24 41l6-1M24 50h6M24 59l6 1M25 68l6 2M27 78l6 3
-           M73 22l-6-3M75 31l-6-2M76 41l-6-1M76 50h-6M76 59l-6 1M75 68l-6 2M73 78l-6 3" stroke-width="1.6"/>
-</svg></span>`;
-
 /* ══════════════════════════════════════════════════════════════════════
    7 · views
    ══════════════════════════════════════════════════════════════════════ */
 const VIEWS = [
   {id:'today',   label:'Today',    icon:'today'},
   {id:'batters', label:'Batters',  icon:'batters'},
-  {id:'games',   label:'Games',    icon:'games'},
+  {id:'teams',   label:'Teams',    icon:'teams'},
   {id:'watch',   label:'Watch',    icon:'watch'},
   {id:'honesty', label:'Honesty',  icon:'honesty'}
 ];
@@ -1728,7 +2177,8 @@ function viewToday(){
         tags are only <b class="num">${spread}</b> points apart in reality.</span>
         <button class="truthx" id="truthx" title="Hide this for a month — it stays on the Honesty tab"
           aria-label="Dismiss this note">×</button></summary>
-      <div class="more">Across ${cal.n.toLocaleString()} settled picks the model's
+      <!-- all.n, not n: the tag stats below it are over the unscoped record -->
+      <div class="more">Across ${cal.all.n.toLocaleString()} settled picks the model's
         <span class="num">STRONG</span> matchups landed <b class="num">${pct(strong?.act,1)}</b> and
         <span class="num">AVOID</span> landed <b class="num">${pct(avoid?.act,1)}</b>. Every tier has come in
         above its predicted rate, so the score is honest about direction but conservative about level.
@@ -1742,12 +2192,12 @@ function viewToday(){
   if(S.snap && S.snap.moves.length){
     const t=new Date(S.snap.at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
     const mv=S.snap.moves.slice(0,8);
-    sinceHTML=`<section class="sec">
+    sinceHTML=`<section class="sec sub">
       <div class="sec-h"><h2>Since ${t}</h2><p>What changed while you were away</p></div>
       <div class="blist">${mv.map(m=>{
         if(m.kind==='gone') return `<div class="bcard" style="cursor:default"><span class="rank">—</span>
           <span class="bmain"><span class="bname">${esc(m.name)}</span>
-          <span class="bmeta">${esc(m.team)} · no longer in a projected lineup</span></span>
+          <span class="bmeta">${teamSpan(m.team)} · no longer in a projected lineup</span></span>
           <span class="bscore"><span class="chip down">dropped</span></span></div>`;
         const b=m.b, dp=m.dp||0;
         const bits=[];
@@ -1756,7 +2206,7 @@ function viewToday(){
         if(m.kind==='new') bits.push(`<span class="chip up">newly added</span>`);
         return `<button class="bcard" data-k="${key(b)}"><span class="rank num">${dp?((dp>0?'+':'')+(dp*100).toFixed(1)):'·'}</span>
           <span class="bmain"><span class="bname">${esc(b.name)} ${stateTag(b)}</span>
-          <span class="bmeta">${esc(b.team)} · ${esc(b.matchup)} · vs ${esc(b.pit||'TBD')}</span>
+          <span class="bmeta">${teamSpan(b.team)} · ${matchupHTML(b.matchup)} · vs ${esc(b.pit||'TBD')}</span>
           <span class="bwhy">${bits.join('')}</span></span>
           <span class="bscore"><span class="pct ${tcls(b.p)}">${pct(b.p,1)}</span>${meter(b)}</span></button>`;
       }).join('')}</div>
@@ -1765,21 +2215,138 @@ function viewToday(){
 
   const bandNote = b => { const bd=bandFor(S.cal,b?.p); return bd&&bd.n>60 ? `<span class="muted">history: this band has landed <span class="num">${pct(bd.act,1)}</span> over ${bd.n.toLocaleString()} picks</span>` : ''; };
 
+  /* Three weights inside one shortlist, because ten equally-loud cards give the
+     eye nowhere to land: the top name, then the handful still genuinely in the
+     conversation with it, then the tail as a scannable list. The cut at 4 is a
+     display choice, not a claim about the scores — the note under the tail says
+     so, and the gap between #1 and #10 is usually a couple of points. */
+  const lead = short.slice(0,4), tail = short.slice(4);
+
   return `${ribbon()}${truth}
-  <section class="sec">
+  <section class="sec lead">
     <div class="sec-h"><h2>${S.date?'Shortlist':"Tonight's shortlist"}</h2><p>Highest calibrated hit probability on the slate</p>
       <button class="lnk" data-go="batters">All ${S.batters.length} →</button></div>
-    <div class="blist">${short.map((b,i)=>batterCard(b,i+1,i===0)).join('')}</div>
-    <div style="margin-top:10px;font-size:12px" class="muted">
+    <div class="blist">${lead.map((b,i)=>batterCard(b,i+1,i===0)).join('')}</div>
+    ${tail.length?`<div class="grp-h"><span class="lbl">Also on the shortlist</span><span class="rule"></span>
+      <span class="lbl soft">${pct(tail[tail.length-1].p,1).replace('%','')}–${pct(tail[0].p,1)}</span></div>
+    <div class="blist tail">${tail.map((b,i)=>batterCard(b,i+lead.length+1,false,null,true)).join('')}</div>`:''}
+    <p class="note">
       ${bandNote(short[0])} · Ranking is by the model score alone; open any batter for the evidence behind it.
-    </div>
+    </p>
   </section>
   ${sinceHTML}
-  <section class="sec">
-    <div class="sec-h"><h2>Games</h2><p>${new Set(S.batters.map(b=>b.gamePk)).size} on the card</p>
-      <button class="lnk" data-go="games">Detail →</button></div>
-    <div class="games">${gameCards(true)}</div>
+  <section class="sec sub">
+    <div class="sec-h"><h2>Where the bats are</h2><p>${gameStripCount()}</p>
+      <button class="lnk" data-go="teams">Lineups →</button></div>
+    ${gameStrip()}
   </section>`;
+}
+
+/** Today's games are CONTEXT, not the subject — the full cards belong on the
+    Teams tab, one tap away. Fifteen of them inline was the single largest block
+    on the page and the least important thing on it, so here each game is one
+    line: who is playing, when, and each side's average score with its best bat.
+    Reuses the same per-game grouping lineups() does, deliberately without the bullpen
+    what-if machinery, which only makes sense at full detail.
+
+    Rebuilt 2026-07-26. The old version was fifteen time-ordered rows of bare
+    percentages spanning 57–68 — a range the eye cannot rank — with the games
+    already OVER sitting at the top, because they started earliest. So the
+    section had no answer to "what am I looking at this for". It has one now:
+    **which games still have bats worth watching.** Three changes carry that:
+      · grouped by whether you can still act on it — still to come, in progress,
+        final — instead of a flat clock ordering, and the settled ones are
+        de-emphasised at the bottom where they belong;
+      · every average drawn against tonight's own spread of lineup averages,
+        the same trick meter()/luMeter() use, so 57 and 68 stop looking alike;
+      · a count of each side's bats in the slate's top fifth, which is the
+        thing that actually separates one game from another — two lineups can
+        average 63% with one of them holding three of tonight's best names.
+    Within a group the order is still first pitch, since a schedule read in
+    any other order is not a schedule. */
+function gameStripData(){
+  const byGame=new Map();
+  for(const b of S.batters){ if(!byGame.has(b.gamePk)) byGame.set(b.gamePk,[]); byGame.get(b.gamePk).push(b); }
+  // Top fifth of tonight's field. A fixed cutoff would call every bat "hot" on
+  // a friendly slate and none on a hard one; this is always the same fraction.
+  const ps=S.batters.map(b=>b.p).filter(p=>p!=null&&!isNaN(p)).sort((a,b)=>a-b);
+  const hotCut = ps.length ? ps[Math.floor(ps.length*0.8)] : Infinity;
+  const games=[...byGame.entries()].map(([pk,bs])=>{
+    const g=S.live[pk]||{};
+    const state=String(g.state||bs[0].gameState||'');
+    const live = g.abstract==='Live' || /progress/i.test(state);
+    const fin  = !live && (/final|game over/i.test(state) || (g.away!=null&&g.home!=null));
+    // "AWAY @ HOME" — the same parse lineups() does, so the away side is drawn
+    // on the left the way every scoreboard in the sport draws it.
+    const order=String(bs[0].matchup||'').split('@').map(s=>s.trim());
+    const teams=[...new Set(bs.map(b=>b.team))]
+      .sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+    const sides=teams.map(t=>{
+      const tb=bs.filter(b=>b.team===t);
+      return {team:t, n:tb.length,
+        avg: tb.reduce((s,b)=>s+b.p,0)/tb.length,
+        best: [...tb].sort((x,y)=>y.p-x.p)[0],
+        hot: tb.filter(b=>b.p>=hotCut).length};
+    });
+    return {pk, g, live, fin, start:bs[0].startTime||'', sides,
+            grp: fin?2:live?1:0, hot:sides.reduce((s,x)=>s+x.hot,0)};
+  });
+  games.sort((a,b)=> a.grp-b.grp || startMin(a.start)-startMin(b.start));
+  return games;
+}
+/** The section's own subtitle. "15 on the card" was a fact about the schedule;
+    what a reader wants first is how much of tonight is still ahead of them. */
+function gameStripCount(){
+  const gs=gameStripData(), n=gs.length;
+  const pre=gs.filter(x=>x.grp===0).length, live=gs.filter(x=>x.grp===1).length;
+  const bits=[];
+  if(pre)  bits.push(`${pre} still to come`);
+  if(live) bits.push(`${live} in progress`);
+  if(n-pre-live) bits.push(`${n-pre-live} final`);
+  return bits.join(' · ') || `${n} on the card`;
+}
+const GS_GROUP = ['Still to come','In progress','Final'];
+function gameStrip(){
+  const games=gameStripData();
+  if(!games.length) return '';
+  // One scale across every side on the slate, so a bar means the same thing in
+  // the first row as in the last. Ends padded slightly: a full-width bar on the
+  // best lineup and an empty one on the worst overstates a 10-point spread.
+  const avgs=games.flatMap(x=>x.sides.map(s=>s.avg)).filter(v=>v!=null&&!isNaN(v));
+  const lo=Math.min(...avgs), hi=Math.max(...avgs), span=(hi-lo)||1;
+  const bar = v => clamp(.12+.88*((v-lo)/span), 0, 1)*100;
+
+  let out='', grp=-1;
+  for(const x of games){
+    if(x.grp!==grp){
+      grp=x.grp;
+      const n=games.filter(y=>y.grp===grp).length;
+      out+=`<div class="grp-h gsgrp"><span class="lbl">${GS_GROUP[grp]}</span><span class="rule"></span>
+        <span class="lbl soft">${n}</span></div>`;
+    }
+    const g=x.g;
+    const sides=x.sides.map((s,i)=>`<button class="gsside" data-k="${key(s.best)}"
+        title="${esc(s.best.name)} — ${esc(s.team)}'s highest score in this game. Lineup averages ${pct(s.avg,1)} over ${s.n} bats.">
+        ${teamBadge(s.team,'bg-sm')}
+        <span class="gsavg num ${tcls(s.avg)}">${pct(s.avg,0)}</span>
+        <span class="gsbar ${tcls(s.avg)}"><i style="width:${bar(s.avg).toFixed(1)}%"></i></span>
+        <span class="gsbest">${esc(s.best.name.split(' ').slice(-1)[0])} <b class="num">${pct(s.best.p,0)}</b></span>
+        ${s.hot?`<span class="gshot" title="${s.hot} of ${esc(s.team)}'s bats are in tonight's top fifth">${
+          '<i></i>'.repeat(Math.min(s.hot,5))}<span class="num">${s.hot}</span></span>`:''}
+      </button>${i===0?'<span class="gsat">@</span>':''}`).join('');
+    const scoreTxt = (g.away!=null&&g.home!=null) ? `${g.away}–${g.home}` : '';
+    out+=`<div class="gsrow${x.fin?' done':''}">
+      <span class="gswhen">
+        <span class="gstime">${esc(x.start)}</span>
+        ${x.live?`<span class="tag live">${esc(((g.half||'')+' '+(g.inning||'')).trim())||'live'}</span>`:''}
+        ${scoreTxt?`<span class="gsscore num">${esc(scoreTxt)}</span>`:''}
+      </span>
+      <span class="gssides">${sides}</span>
+    </div>`;
+  }
+  return `<div class="gstrip">${out}</div>
+    <p class="note">Bars place each lineup's average against the ${games.length*2} lineups on tonight's slate
+      (${pct(lo,0)}–${pct(hi,0)}); the dots count bats in the slate's top fifth. Tap a side for its best bat.</p>`;
 }
 
 /* ── Batters ───────────────────────────────────────────────────────── */
@@ -1804,19 +2371,53 @@ function filtered(){
   });
   return list;
 }
+/* ── the score tiers, as list furniture ───────────────────────────────────
+   270 rows in one undifferentiated scroll gives the eye no landmarks, so the
+   list is banded by the SAME tiers the score colours already use (tierOf) —
+   the bands are not new information, they are the existing colour coding made
+   findable. Only meaningful when the list is ordered by score: banding a
+   name-sorted list would cut it into stripes that mean nothing. */
+const TIER_LABEL = {hi:'70% and up', mid:'55 – 70%', lo:'Under 55%'};
+function tierBands(list, sortedByScore){
+  if(!sortedByScore) return null;
+  const out=[]; let cur=null;
+  list.forEach((b,i)=>{
+    const t=tierOf(b.p);
+    if(t!==cur){ out.push({at:i, tier:t, n:0}); cur=t; }
+    out[out.length-1].n++;
+  });
+  return out.length>1 ? out : null;      // one band is the same as no bands
+}
+
 function viewBatters(){
   const f=S.filters, list=filtered();
   const teams=[...new Set(S.batters.map(b=>b.team))].sort();
   const games=[...new Map(S.batters.map(b=>[b.gamePk,b.matchup])).entries()];
+  /* Four groups, in reading order: WHO the batter is, what the MODEL says,
+     what the BATTER has been doing, and what he is up against. The columns
+     were always in this order; what was missing was any sign of it — thirteen
+     identically-weighted numbers where two of them are the model's output and
+     the rest are supporting evidence. The group a column belongs to now sets
+     both its heading band and its ink. */
   const cols=[
-    ['name','Batter',''],['team','Tm','c'],['slot','Slot','c'],['p','Score','sch'],['base','Form','r'],
-    ['delta','Matchup','r'],['bHit','Hit%','r'],['bXba','xBA','r'],['bK','K%','r'],
-    ['pit','Pitcher',''],['pRating','Arm','r'],['bPA','PA/g','r'],['','','c']
+    ['','#','c rk'],
+    ['name','Batter',''],['team','Tm','c'],['slot','Slot','c'],
+    ['p','Score','sch g1'],['base','Form','r'],['delta','Matchup','r'],
+    ['bHit','Hit%','r g1 dim'],['bXba','xBA','r dim'],['bK','K%','r dim'],
+    ['pit','Pitcher','g1'],['pRating','Arm','r dim'],['bPA','PA/g','r dim'],
+    ['','','c']
   ];
+  // group header band — colspans must total the 14 columns above
+  const groups=[[1,''],[3,'Who'],[3,'Model score'],[3,'Batter form'],[3,'The arm'],[1,'']];
   // one <col> per column, in the same order — the widths live in the
   // stylesheet so the table can be table-layout:fixed (see .tblwrap)
-  const colgroup = ['name','tm','slot','score','form','mu','hit','xba','k','pit','arm','pa','star']
+  const colgroup = ['rk','name','tm','slot','score','form','mu','hit','xba','k','pit','arm','pa','star']
     .map(c=>`<col class="c-${c}">`).join('');
+  const bands = tierBands(list, f.sort==='p');
+  const bandRow = (bd,span) => `<tr class="band"><td colspan="${span}">
+    <span class="lbl">${TIER_LABEL[bd.tier]||''}</span>
+    <span class="rule"></span><span class="lbl soft">${bd.n} ${bd.n===1?'batter':'batters'}</span></td></tr>`;
+  const bandAt = i => bands ? bands.filter(bd=>bd.at===i) : [];
   return `${ribbon()}
   <div class="filters">
     <label class="field">${icon(ICONS.search)}<input id="fq" placeholder="Batter, team, pitcher" value="${esc(f.q)}" aria-label="Search"></label>
@@ -1831,28 +2432,36 @@ function viewBatters(){
     <span class="muted" style="font-size:12.5px">${list.length} shown</span>
   </div>
   <div class="tblwrap" style="display:none" id="tbl">
-    <table><colgroup>${colgroup}</colgroup><thead><tr>${cols.map(([k,l,a])=> k===''
-      ? `<th class="${a}" aria-label="Watchlist"></th>`      // star column — nothing to sort by
+    <table><colgroup>${colgroup}</colgroup><thead>
+      <tr class="grp">${groups.map(([span,label])=>`<th colspan="${span}">${label}</th>`).join('')}</tr>
+      <tr>${cols.map(([k,l,a])=> k===''
+      ? `<th class="${a}" ${l?'':'aria-label="Watchlist"'}>${l}</th>`   // rank + star: nothing to sort by
       : `<th class="sortable ${a}" data-sort="${k}" ${f.sort===k?`aria-sort="${f.dir<0?'descending':'ascending'}"`:''}>${l}</th>`).join('')}</tr></thead>
-    <tbody>${list.map(b=>{
+    <tbody>${list.map((b,i)=>{
       const d=b.delta;
-      return `<tr data-k="${key(b)}">
-        <td class="ell"><b>${esc(b.name)}</b> ${b.confirmed?'':'<span class="tag est">est</span>'} ${stateTag(b)}</td>
-        <td class="c num tm" style="color:${tc(b.team)}">${esc(b.team)}</td>
+      return bandAt(i).map(bd=>bandRow(bd,cols.length)).join('')+`<tr data-k="${key(b)}">
+        <td class="c rk num">${rankOf(b)??''}</td>
+        <td class="nm"><span class="nmw"><b>${esc(b.name)}</b>${b.confirmed?'':'<span class="tag est">est</span>'}${stateTag(b)}</span></td>
+        <td class="c">${teamBadge(b.team,'bg-sm')}</td>
         <td class="c">${b.slot?slotDiamond(b.slot):'—'}</td>
-        <td class="sc"><b class="num ${tcls(b.p)}">${pct(b.p,1)}</b>${meter(b)}</td>
+        <td class="sc g1"><b class="num ${tcls(b.p)}">${pct(b.p,1)}</b>${meter(b)}</td>
         <td class="r num">${pct(b.base,1)}</td>
         <td class="r num" style="color:${d>0?'var(--tier-hi)':d<0?'var(--bad)':'var(--ink3)'}">${d==null?'—':(d>0?'+':'')+(d*100).toFixed(1)}</td>
-        <td class="r num">${pct(b.bHit,1)}</td>
-        <td class="r num">${num(b.bXba,3)}</td>
-        <td class="r num">${pct(b.bK,1)}</td>
-        <td class="ell">${esc(b.pit||'TBD')} ${gradePill(b.pGrade||'?')}</td>
-        <td class="r num">${b.pRating??'—'}</td>
-        <td class="r num">${num(b.bPA,2)}</td>
+        <td class="r num g1 dim">${pct(b.bHit,1)}</td>
+        <td class="r num dim">${num(b.bXba,3)}</td>
+        <td class="r num dim">${pct(b.bK,1)}</td>
+        <td class="ell g1">${esc(b.pit||'TBD')} ${gradePill(b.pGrade||'?')}</td>
+        <td class="r num dim">${b.pRating??'—'}</td>
+        <td class="r num dim">${num(b.bPA,2)}</td>
         <td class="r">${starBtn(b,'tstar')}</td>
       </tr>`;}).join('')}</tbody></table>
   </div>
-  <div class="blist" id="cards">${list.map((b,i)=>batterCard(b,null,false,i)).join('')}</div>`;
+  <div class="blist" id="cards">${list.map((b,i)=>
+    bandAt(i).map(bd=>`<div class="grp-h"><span class="lbl">${TIER_LABEL[bd.tier]||''}</span>
+      <span class="rule"></span><span class="lbl soft">${bd.n}</span></div>`).join('')
+    // Full weight for the top tier, lite for everything below it — the same
+    // "the tail is a list" move Today's shortlist makes, applied to all 270.
+    + batterCard(b,null,false,i, bands ? tierOf(b.p)!=='hi' : false)).join('')}</div>`;
 }
 
 /* ── Games ─────────────────────────────────────────────────────────── */
@@ -1913,72 +2522,182 @@ function setPreview(pk, team, pid){
   render();
 }
 
-function gameCards(compact){
+/* ── the lineup, not the matchup ─────────────────────────────────────────
+   This tab used to draw one card per GAME: two lineups facing each other
+   across a divider, the way a scoreboard draws them. That framing asserts an
+   interaction the model does not contain. Nothing scored here is batter
+   against batter — the two sides of a game share a park and a first pitch and
+   nothing else, and each side's number comes entirely from ITS nine bats
+   against the ONE arm in front of them. Drawn as opponents, the two halves
+   invited a comparison that means nothing.
+   So the unit is the LINEUP: thirty of them on a full slate, each ranked
+   against the other twenty-nine rather than against the club it happens to be
+   playing, and each read as a collective — how the nine are hitting, what the
+   matchup does to them, how many of them are genuinely live tonight. The
+   opponent stays as one line of context: where the game is and who else is in
+   it, not a wall to face. */
+
+/** One entry per (game_pk, team) — never per team alone, which would collide
+    on a doubleheader. Carries the collective read on the nine plus whichever
+    arm the side is being previewed against. */
+function lineups(){
   const byGame=new Map();
   for(const b of S.batters){ if(!byGame.has(b.gamePk)) byGame.set(b.gamePk,[]); byGame.get(b.gamePk).push(b); }
-  const games=[...byGame.entries()];
-  games.sort((a,b)=>(a[1][0].startTime||'').localeCompare(b[1][0].startTime||''));
-  return games.map(([pk,bs])=>{
-    const g=S.live[pk]||{}, any=bs[0];
+  const out=[];
+  for(const [pk,bs] of byGame){
     const teams=[...new Set(bs.map(b=>b.team))];
-    const sides=teams.map(t=>{
+    for(const t of teams){
       const tb=bs.filter(b=>b.team===t).sort((a,b)=>(a.slot||99)-(b.slot||99));
-      const arm=tb[0];
-      const cands = compact ? null : bullpenFor(pk, t, teams);
-      const alt = cands ? armFor(pk, t, cands) : null;
-      const avgOf = f => tb.reduce((s,b)=>s+f(b),0)/tb.length;
-      const avg = avgOf(b=>pFor(b,alt)), baseAvg = avgOf(b=>b.p);
-      const top=[...tb].sort((a,b)=>pFor(b,alt)-pFor(a,alt)).slice(0,compact?3:9);
-      const conf=tb.every(b=>b.confirmed);
-      const dAvg = alt ? avg-baseAvg : 0;
-      // Only a MANUAL pick marks an option selected — a live swap leaves the
-      // picker on its default, whose label then says the swap is automatic.
-      const manualPid = alt && !alt.live ? alt.pid : null;
-      const picker = cands ? `<select class="psel" data-pk="${pk}" data-team="${esc(t)}"
-          aria-label="Preview ${esc(t)} against a different arm"
-          title="Score this lineup against another arm on the ${esc(teams.find(x=>x!==t)||'')} roster">
-          <option value="">${alt&&alt.live?'Auto · whoever is pitching':'Probable starter'}</option>${armOptions(cands, manualPid)}</select>` : '';
-      return `<div class="gside" style="--tc:${tc(t,'var(--line2)')}">
-        <div><span class="gteam" style="color:${tc(t,'var(--ink)')}">${esc(t)}</span>
-          <div class="num" style="font-size:10.5px;color:var(--ink3)"><span class="${tcls(avg)}">${pct(avg,0)}</span> avg${
-            alt?` <span class="delta ${dAvg>=0?'up':'down'}">${dAvg>=0?'+':''}${(dAvg*100).toFixed(1)}</span>`:''}</div></div>
-        <div class="gvs">vs <b>${esc(alt?alt.name:(arm.pit||'TBD'))}</b> ${
-            alt ? (alt.hand?`(${alt.hand})`:'') : (arm.pitHand?`(${arm.pitHand})`:'')}
-          ${(alt?alt.p_era:arm.pEra)!=null?`<span class="num">${num(alt?alt.p_era:arm.pEra,2)} ERA</span>`:''}
-          ${alt ? `<span class="tag ${alt.live?'live':'est'}" title="${
-                     alt.live ? `On the mound now in relief — the probable was ${esc(arm.pit||'TBD')}`
-                              : 'A hypothetical — not necessarily who is actually pitching'}${
-                     alt.n_games?` · ${alt.n_games} games in the trailing window`:''}">${alt.live?'live arm':'what-if'}</span>`
-                 : (conf?'':'<span class="tag est">projected</span>')}
-          ${picker}
-          <div class="gbatters" style="margin-top:6px">${top.map(b=>{
-            const pv=pFor(b,alt);
-            return `<button class="mini ${tcls(pv)}${alt?(alt.live?' alt livearm':' alt'):''}" data-k="${key(b)}">${esc(b.name.split(' ').slice(-1)[0])} <b>${pct(pv,0)}</b></button>`;}).join('')}</div>
-          ${alt?`<div class="muted" style="font-size:10.5px;margin-top:6px">${
-            alt.live ? `${esc(alt.name)} is pitching now, so these are this lineup against him rather than against ${esc(arm.pit||'the probable starter')}
-                        — still the same "if this arm went the whole way" simplification the pregame number makes.`
-                     : `Scores above are this lineup against ${esc(alt.name)}.`}
-            Open a batter for the full evidence, which is still built against ${esc(arm.pit||'the probable starter')}.</div>`:''}
-        </div>
-        ${alt ? `<div class="grade" style="opacity:.45" title="The 0–100 pitcher grade isn't computed for what-if arms — only the model inputs are">–</div>`
-              : `<div class="grade" ${GRADES.has(String(arm.pGrade||'').toUpperCase())?`data-g="${esc(String(arm.pGrade).toUpperCase())}"`:''}
-                   title="Pitcher grade — grades the arm, so A is the toughest matchup for the batter">${esc(arm.pGrade||'?')}</div>`}
-      </div>`;
-    }).join('');
-    const scoreTxt = (g.away!=null&&g.home!=null) ? `${g.awayAbbr||''} ${g.away} – ${g.home} ${g.homeAbbr||''}` : '';
-    return `<div class="game">
-      <div class="ghead">
-        <span class="gteams">${matchupHTML(any.matchup)}</span>
-        <span class="gtime">${esc(any.startTime||'')}</span>
-        ${g.abstract==='Live'?`<span class="tag live">${esc((g.half||'')+' '+(g.inning||''))}</span>`:''}
-        ${scoreTxt?`<span class="gscore">${esc(scoreTxt)}</span>`:''}
-      </div>
-      <div class="gsides">${sides}</div>
-      ${!compact&&any.park!=null?`<div class="muted" style="font-size:11.5px">Park factor <span class="num">${num(any.park,2)}</span> · ${bs.length} batters scored</div>`:''}
-    </div>`;
-  }).join('');
+      const cands=bullpenFor(pk,t,teams), alt=cands?armFor(pk,t,cands):null;
+      // Nulls are skipped rather than counted as zero — a lineup with one
+      // missing trailing K% is not a lineup that strikes out less.
+      const mean=f=>{ const v=tb.map(f).filter(x=>x!=null&&!isNaN(x));
+                      return v.length ? v.reduce((s,x)=>s+x,0)/v.length : null; };
+      const avg=mean(b=>pFor(b,alt));
+      const sides=String(tb[0].matchup||'').split('@').map(s=>s.trim());   // "AWAY @ HOME"
+      out.push({
+        pk, team:t, opp:teams.find(x=>x!==t)||'', home:sides.length===2 && sides[1]===t,
+        bs:tb, cands, alt, arm:tb[0], live:S.live[pk]||{},
+        avg, swing: alt ? avg-mean(b=>b.p) : 0,
+        base:mean(b=>b.base), delta:mean(b=>b.delta), hit:mean(b=>b.bHit), k:mean(b=>b.bK),
+        strong: tb.filter(b=>tierOf(pFor(b,alt))==='hi').length,
+        best: [...tb].sort((a,b)=>pFor(b,alt)-pFor(a,alt))[0],
+        conf: tb.every(b=>b.confirmed), start:tb[0].startTime||'', park:tb[0].park
+      });
+    }
+  }
+  return out;
 }
-function viewGames(){ return `${ribbon()}<div class="games">${gameCards(false)}</div>`; }
+const LU_SORTS = [{id:'strength',label:'Strength'},{id:'time',label:'First pitch'},{id:'team',label:'Team'}];
+function sortLineups(ls, how){
+  const by = {
+    strength: (a,b)=> (b.avg??0)-(a.avg??0),
+    /* Sorting by time is the one ordering that puts the two sides of a game
+       next to each other — and there it means something real, because it is
+       the same first pitch, not a head-to-head. */
+    time: (a,b)=> startMin(a.start)-startMin(b.start)
+               || String(a.pk).localeCompare(String(b.pk))
+               || (a.home?1:-1),                                  // away side first, as written
+    team: (a,b)=> a.team.localeCompare(b.team)
+  };
+  return [...ls].sort(by[how] || by.strength);
+}
+/** The lineup average placed against the other lineups, the same way meter()
+    places a batter against the other batters. A 61% average says nothing until
+    you know the thirty of them run 52–68. */
+function luMeter(v, s){
+  if(v==null) return '';
+  const span=(s.max-s.min)||1;
+  const w=clamp((v-s.min)/span,0,1)*100, med=clamp((s.med-s.min)/span,0,1)*100;
+  return `<span class="meter ${tcls(v)}" role="img"
+    aria-label="${pct(v,1)} average, median lineup ${pct(s.med,1)}"><i style="width:${w.toFixed(1)}%"></i><b style="left:${med.toFixed(1)}%"></b></span>`;
+}
+
+function lineupCard(lu, rank, n, scale){
+  const {alt, arm, bs} = lu;
+  const g = lu.live;
+  const statCell = (label,val,cls='') => `<div class="lu-cell"><div class="lbl">${label}</div><div class="lu-cv ${cls}">${val}</div></div>`;
+  // Only a MANUAL pick marks an option selected — a live swap leaves the
+  // picker on its default, whose label then says the swap is automatic.
+  const manualPid = alt && !alt.live ? alt.pid : null;
+  const picker = lu.cands ? `<select class="psel" data-pk="${lu.pk}" data-team="${esc(lu.team)}"
+      aria-label="Preview ${esc(lu.team)} against a different arm"
+      title="Score this lineup against another arm on the ${esc(lu.opp)} roster">
+      <option value="">${alt&&alt.live?'Auto · whoever is pitching':'Probable starter'}</option>${armOptions(lu.cands, manualPid)}</select>` : '';
+  const era = alt ? alt.p_era : arm.pEra;
+  const st = S.st.p;
+  const order = bs.map(b=>{
+    const pv = pFor(b,alt);
+    const w = st ? clamp((pv-st.min)/((st.max-st.min)||1),0,1)*100 : 0;
+    return `<button class="${tcls(pv)}${alt?(alt.live?' alt livearm':' alt'):''}" data-k="${key(b)}"
+        title="${esc(b.name)} — open the full evidence">
+      ${slotDiamond(b.slot)}
+      <span class="ordn"><b>${esc(b.name)}</b>${b.confirmed?'':' <span class="tag est">est</span>'}${b.hasHit?' <span class="tag hit">hit ✓</span>':''}</span>
+      <span class="obar"><i style="width:${w.toFixed(1)}%"></i></span>
+      <span class="ordp">${pct(pv,0)}</span>
+    </button>`;
+  }).join('');
+  const scoreTxt = (g.away!=null&&g.home!=null) ? `${g.awayAbbr||''} ${g.away}–${g.home} ${g.homeAbbr||''}` : '';
+  const dl = lu.delta;
+  return `<article class="lu" style="--tc:${tc(lu.team,'var(--line2)')}">
+    <div class="lu-h">
+      ${teamBadge(lu.team)}
+      <span class="lu-tm">${esc(lu.team)}</span>
+      <span class="lu-opp">${lu.home?'vs':'<span class="at">@</span>'} ${teamSpan(lu.opp)}</span>
+      <span class="lu-when">
+        ${g.abstract==='Live'?`<span class="tag live">${esc(((g.half||'')+' '+(g.inning||'')).trim())}</span>`:''}
+        ${scoreTxt?`<span class="lu-gs">${esc(scoreTxt)}</span>`:''}
+        <span class="lu-time">${esc(lu.start)}</span>
+      </span>
+    </div>
+
+    <div class="lu-top">
+      <div class="lu-avg ${tcls(lu.avg)}">${pct(lu.avg,0).replace('%','')}<span>%</span></div>
+      <div class="lu-side">
+        <b>#${rank} of ${n}</b> lineups tonight, by the average score of the ${bs.length} bats.
+        Best bat <b>${esc(lu.best.name)} ${pct(pFor(lu.best,alt),0)}</b>.${
+          alt?` <span class="delta ${lu.swing>=0?'up':'down'}">${lu.swing>=0?'+':''}${(lu.swing*100).toFixed(1)}</span> against this arm.`:''}
+        ${luMeter(lu.avg, scale)}
+      </div>
+    </div>
+
+    <div class="lu-arm">
+      facing <b>${esc(alt?alt.name:(arm.pit||'TBD'))}</b>
+      ${(alt?alt.hand:arm.pitHand)?`(${esc(alt?alt.hand:arm.pitHand)})`:''}
+      ${alt ? `<span class="gr" title="The 0–100 pitcher grade isn't computed for what-if arms — only the model inputs are">–</span>`
+            : gradePill(arm.pGrade)}
+      ${era!=null?`<span class="num">${num(era,2)} ERA</span>`:''}
+      ${alt ? `<span class="tag ${alt.live?'live':'est'}" title="${
+                 alt.live ? `On the mound now in relief — the probable was ${esc(arm.pit||'TBD')}`
+                          : 'A hypothetical — not necessarily who is actually pitching'}${
+                 alt.n_games?` · ${alt.n_games} games in the trailing window`:''}">${alt.live?'live arm':'what-if'}</span>`
+             : (lu.conf?'<span class="tag conf">confirmed</span>':'<span class="tag est">projected</span>')}
+      ${picker}
+    </div>
+
+    <div class="lu-stats">
+      ${statCell('Form base', pct(lu.base,0), '')}
+      ${statCell('Matchup', dl==null?'—':`${dl>0?'+':''}${(dl*100).toFixed(1)}`, dl>0?'up':dl<0?'down':'')}
+      ${statCell('70%+ bats', `${lu.strong}<span style="color:var(--ink4)">/${bs.length}</span>`)}
+      ${statCell('Hit rate', pct(lu.hit,1))}
+      ${statCell('K rate', pct(lu.k,1))}
+    </div>
+
+    <div class="ord">${order}</div>
+
+    <div class="lu-foot">
+      ${lu.park!=null?`Park <b>${num(lu.park,2)}</b> · `:''}${lu.conf?'lineup confirmed':`${bs.filter(b=>b.confirmed).length} of ${bs.length} confirmed`}
+      ${alt?` · these are the nine against ${esc(alt.name)}; open a batter for the full evidence, which is still built against ${esc(arm.pit||'the probable starter')}.`
+           :' · open a batter for the evidence behind his score.'}
+    </div>
+  </article>`;
+}
+
+function viewTeams(){
+  const ls = lineups();
+  if(!ls.length) return `${ribbon()}<div class="empty">No lineups on this slate yet.</div>`;
+  const ranked=[...ls].sort((a,b)=>(b.avg??0)-(a.avg??0));
+  const rankOfLu=new Map(ranked.map((l,i)=>[l.pk+'|'+l.team, i+1]));
+  const avgs=ranked.map(l=>l.avg).filter(v=>v!=null).sort((a,b)=>a-b);
+  const scale={min:avgs[0], max:avgs[avgs.length-1], med:avgs[Math.floor(avgs.length/2)]};
+  const shown=sortLineups(ls, S.lsort);
+  return `${ribbon()}
+  <div class="sec-h" style="margin-bottom:14px">
+    <h2>Lineups</h2>
+    <p>${ls.length} lineups across ${new Set(ls.map(l=>l.pk)).size} games. Each one is an offense
+      and the single arm in front of it — ranked against every other lineup on the slate, not against
+      the club it happens to be playing.</p>
+  </div>
+  <div class="filters">
+    <div class="seg" role="group" aria-label="Order the lineups">
+      ${LU_SORTS.map(s=>`<button data-lsort="${s.id}" aria-pressed="${S.lsort===s.id}">${s.label}</button>`).join('')}
+    </div>
+    <span class="muted" style="font-size:12.5px">strongest tonight: ${esc(ranked[0].team)} at
+      <span class="num ${tcls(ranked[0].avg)}">${pct(ranked[0].avg,0)}</span> · slate spread
+      <span class="num">${pct(scale.min,0)}–${pct(scale.max,0)}</span></span>
+  </div>
+  <div class="lus">${shown.map(l=>lineupCard(l, rankOfLu.get(l.pk+'|'+l.team), ls.length, scale)).join('')}</div>`;
+}
 
 /* ── Watch ─────────────────────────────────────────────────────────── */
 function viewWatch(){
@@ -1997,66 +2716,99 @@ function viewWatch(){
 
 /* ── Honesty ───────────────────────────────────────────────────────── */
 function reliabilitySVG(cal){
-  const W=560,H=300,P=38;
-  const x=v=>P+(v-.2)/(.6)*(W-P-14), y=v=>H-P-(v-.2)/(.6)*(H-P-14);
-  const pts=cal.bands.filter(b=>b.n>=40);
+  const W=560,H=300,P=38, SPAN=CAL_HI-CAL_LO;
+  const x=v=>P+(v-CAL_LO)/SPAN*(W-P-14), y=v=>H-P-(v-CAL_LO)/SPAN*(H-P-14);
+  /* Drawn over the current model's range only — see MODEL_ERA. The pre-07-25
+     bands used to hook this curve 15pt off the line at the bottom-left, which
+     read as "the model is badly calibrated" when it was a different model. */
+  const pts=cal.bands.filter(b=>b.live && b.n>=40);
   const path=pts.map((b,i)=>`${i?'L':'M'}${x(b.pred).toFixed(1)},${y(b.act).toFixed(1)}`).join('');
-  const ticks=[.2,.3,.4,.5,.6,.7,.8];
+  const ticks=[.45,.5,.55,.6,.65,.7,.75,.8];
   // the .8 label sits exactly where the y-axis caption goes — grid it, don't label it
-  const labelled=[.2,.3,.4,.5,.6,.7];
+  const labelled=[.45,.5,.55,.6,.65,.7,.75];
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Reliability curve: predicted versus actual hit rate">
     ${ticks.map(t=>`<line class="grid" x1="${x(t)}" y1="${P-8}" x2="${x(t)}" y2="${H-P}"/>
                     <line class="grid" x1="${P}" y1="${y(t)}" x2="${W-14}" y2="${y(t)}"/>`).join('')}
-    <line class="ideal" x1="${x(.2)}" y1="${y(.2)}" x2="${x(.8)}" y2="${y(.8)}"/>
+    <line class="ideal" x1="${x(CAL_LO)}" y1="${y(CAL_LO)}" x2="${x(CAL_HI)}" y2="${y(CAL_HI)}"/>
     <path class="curve" pathLength="1" d="${path}"/>
     ${pts.map(b=>`<circle class="pt" cx="${x(b.pred)}" cy="${y(b.act)}" r="${clamp(Math.sqrt(b.n)/9,3,9).toFixed(1)}"><title>predicted ${pct(b.pred,1)} → actual ${pct(b.act,1)} (n=${b.n})</title></circle>`).join('')}
     ${labelled.map(t=>`<text x="${x(t)}" y="${H-P+15}" text-anchor="middle">${(t*100)|0}</text>
                     <text x="${P-8}" y="${y(t)+3}" text-anchor="end">${(t*100)|0}</text>`).join('')}
     <text x="${W/2}" y="${H-6}" text-anchor="middle">predicted %</text>
     <text x="0" y="${P-22}" text-anchor="start">actual %</text>
-    <text x="${x(.70)}" y="${y(.755)}" fill="var(--ink3)">perfect</text>
+    <!-- bottom-left of the line: the curve starts at ~55, so this corner is empty -->
+    <text x="${x(.472)}" y="${y(.503)}" fill="var(--ink3)">perfect</text>
   </svg>`;
 }
 function viewHonesty(){
   const cal=S.cal;
   if(!cal) return `<div class="empty">Loading the settled-picks record…</div>`;
-  const worst=[...cal.bands].filter(b=>b.n>=100).sort((a,b)=>Math.abs(b.act-b.pred)-Math.abs(a.act-a.pred))[0];
+  // worst band WITHIN the range the current model can produce — the old
+  // bottom-left hook is a previous generation's and would always win here.
+  const worst=[...cal.bands].filter(b=>b.live && b.n>=100).sort((a,b)=>Math.abs(b.act-b.pred)-Math.abs(a.act-a.pred))[0];
+  const sum=f=>cal.bands.filter(f).reduce((s,b)=>s+b.n,0);
+  const deadLo=sum(b=>b.pos==='lo'), deadHi=sum(b=>b.pos==='hi');
   const recent=cal.days.slice(0,14);
+  const eraNote = `<div class="truth" style="margin-top:12px">${icon(ICONS.info)}<div>The record spans two
+    model generations. The <b>${esc(cal.era)}</b> retrain (FEATURES 21 → 14) lifted the score floor from
+    ~30% to ~47%, so the <b class="num">${deadLo.toLocaleString()}</b> picks below the 45 band came from a model
+    that can no longer produce a score there — they stay in the table below but are not charted.
+    ${deadHi?`The <b class="num">${deadHi.toLocaleString()}</b> picks above 80% are off the top of the scale the
+    same way — no slate has produced one since 2026-07-18 — but the 75–80 band below them is
+    <b>not</b> retired: the current model still scores there, and it is the worst-calibrated band on the page.`:''}
+    The current model has <b class="num">${cal.eraN.toLocaleString()}</b> settled picks of its own so far;
+    until that number is in the thousands, treat the curve as the previous generation's,
+    measured over the range both share.</div></div>`;
   return `${ribbon()}
   <section class="sec">
-    <div class="sec-h"><h2>Is the number honest?</h2><p>The one hard rule of this project — measured on ${cal.n.toLocaleString()} settled picks</p></div>
+    <div class="sec-h"><h2>Is the number honest?</h2><p>The one hard rule of this project — measured on the ${cal.n.toLocaleString()} settled picks inside the range the current model scores in</p></div>
     <div class="sgrid">
-      <div class="scell"><div class="slab">Settled picks</div><div class="sval">${cal.n.toLocaleString()}</div><div class="ssub">since ${esc(cal.days[cal.days.length-1]?.date||'')}</div></div>
+      <div class="scell"><div class="slab">Settled picks</div><div class="sval">${cal.n.toLocaleString()}</div><div class="ssub">${pct(cal.lo,0)}+, since ${esc(cal.since||'')}</div></div>
       <div class="scell"><div class="slab">Brier</div><div class="sval">${num(cal.brier,4)}</div><div class="ssub">lower is better</div></div>
       <div class="scell"><div class="slab">Mean predicted</div><div class="sval">${pct(cal.meanP,1)}</div><div class="ssub">what it claimed</div></div>
       <div class="scell"><div class="slab">Actual rate</div><div class="sval">${pct(cal.baseRate,1)}</div><div class="ssub">what happened</div></div>
       <div class="scell"><div class="slab">Overall gap</div><div class="sval" style="color:${Math.abs(cal.baseRate-cal.meanP)>.02?'var(--bad)':'var(--acc)'}">${((cal.baseRate-cal.meanP)*100>0?'+':'')+((cal.baseRate-cal.meanP)*100).toFixed(1)}pt</div><div class="ssub">actual − predicted</div></div>
     </div>
+    <p class="muted" style="font-size:12.5px;margin-top:8px">Scoped to scores of ${pct(cal.lo,0)} and up, because
+      below that the record belongs to the pre-${esc(cal.era)} model and the current one cannot land there.
+      Unscoped, the same file reads <b class="num">${cal.all.n.toLocaleString()}</b> picks,
+      Brier <b class="num">${num(cal.all.brier,4)}</b>, predicted <b class="num">${pct(cal.all.meanP,1)}</b>
+      vs actual <b class="num">${pct(cal.all.baseRate,1)}</b> — a
+      <b class="num">${((cal.all.baseRate-cal.all.meanP)*100>0?'+':'')+((cal.all.baseRate-cal.all.meanP)*100).toFixed(1)}pt</b>
+      gap that is almost entirely the retired low bands.</p>
   </section>
   <section class="sec">
-    <div class="sec-h"><h2>Reliability</h2><p>A well-calibrated model sits on the dashed line. Circle size is sample size.</p></div>
+    <div class="sec-h"><h2>Reliability</h2><p>A well-calibrated model sits on the dashed line. Circle size is sample size. Drawn over ${pct(CAL_LO,0)}–${pct(CAL_HI,0)} — the range the current model actually scores in.</p></div>
     <div style="padding:2px 0 0">${reliabilitySVG(cal)}
-      ${worst?`<div class="truth" style="margin-top:12px">${icon(ICONS.info)}<div>Worst-calibrated band: the model said
+      ${worst?`<div class="truth" style="margin-top:12px">${icon(ICONS.info)}<div>Worst-calibrated band in this range: the model said
       <b class="num">${pct(worst.pred,1)}</b> and those picks landed <b class="num">${pct(worst.act,1)}</b>
       (${worst.n.toLocaleString()} picks, ${((worst.act-worst.pred)*100>0?'+':'')+((worst.act-worst.pred)*100).toFixed(1)}pt off).
-      Scores near the bottom of the range are the least trustworthy part of the model.</div></div>`:''}
+      ${worst.band>=.70 ? 'The very top of the range is the thinnest sample and the least trustworthy part of the model — a high score is still the best score on the board, but it overstates itself.'
+                        : 'Scores near the bottom of the range are the least trustworthy part of the model.'}</div></div>`:''}
+      ${eraNote}
     </div>
   </section>
   <section class="sec">
-    <div class="sec-h"><h2>Score bands</h2><p>What a score in each band has actually done</p></div>
-    <div class="tblwrap"><table><thead><tr><th>Band</th><th class="r">Picks</th><th class="r">Predicted</th><th class="r">Actual</th><th class="r">Gap</th><th>Calibration</th></tr></thead>
+    <div class="sec-h"><h2>Score bands</h2><p>What a score in each band has actually done — every band, including the ones off either end of the current model's range</p></div>
+    <div class="tblwrap fit"><table><thead><tr><th>Band</th><th class="r">Picks</th><th class="r">Predicted</th><th class="r">Actual</th><th class="r">Gap</th><th>Calibration</th></tr></thead>
     <tbody>${cal.bands.map(b=>{
       const gap=(b.act-b.pred)*100, w=clamp(Math.abs(gap)/12,0,1)*100;
-      return `<tr style="cursor:default"><td class="num">${pct(b.band,0)}–${pct(b.band+.05,0)}</td>
+      // Dead bands stay — this is the Honesty tab — but dimmed and labelled with
+      // WHICH end they fell off, so their gap isn't read as the current model's.
+      const label = b.pos==='lo' ? ['retired',"Below the current model's floor — pre-"+cal.era+" picks only"]
+                  : b.pos==='hi' ? ['off-scale','Above 80% — no slate has produced one since 2026-07-18']
+                  : null;
+      return `<tr style="cursor:default${b.live?'':';opacity:.5'}"><td class="num">${b.pos==='hi'?pct(b.band,0)+'+':pct(b.band,0)+'–'+pct(b.band+.05,0)}
+          ${label?`<span class="tag" title="${esc(label[1])}">${label[0]}</span>`:''}</td>
         <td class="r num">${b.n.toLocaleString()}</td><td class="r num">${pct(b.pred,1)}</td>
         <td class="r num"><b>${pct(b.act,1)}</b></td>
-        <td class="r num" style="color:${Math.abs(gap)>4?'var(--bad)':'var(--ink2)'}">${gap>0?'+':''}${gap.toFixed(1)}</td>
-        <td><span class="meter" style="width:100px"><i style="width:${w}%;background:${Math.abs(gap)>4?'var(--bad)':'var(--s3)'}"></i></span></td></tr>`;
+        <td class="r num" style="color:${b.live&&Math.abs(gap)>4?'var(--bad)':'var(--ink2)'}">${gap>0?'+':''}${gap.toFixed(1)}</td>
+        <td><span class="meter" style="width:100px"><i style="width:${w}%;background:${b.live&&Math.abs(gap)>4?'var(--bad)':'var(--s3)'}"></i></span></td></tr>`;
     }).join('')}</tbody></table></div>
   </section>
   <section class="sec">
     <div class="sec-h"><h2>Matchup tags</h2><p>The team-side STRONG / LEAN / NEUTRAL / AVOID label, audited</p></div>
-    <div class="tblwrap"><table><thead><tr><th>Tag</th><th class="r">Picks</th><th class="r">Predicted</th><th class="r">Actual</th><th class="r">Gap</th></tr></thead>
+    <div class="tblwrap fit"><table><thead><tr><th>Tag</th><th class="r">Picks</th><th class="r">Predicted</th><th class="r">Actual</th><th class="r">Gap</th></tr></thead>
     <tbody>${cal.tags.map(t=>`<tr style="cursor:default"><td><span class="tag">${esc(t.tag)}</span></td>
       <td class="r num">${t.n.toLocaleString()}</td><td class="r num">${pct(t.pred,1)}</td>
       <td class="r num"><b>${pct(t.act,1)}</b></td>
@@ -2065,7 +2817,7 @@ function viewHonesty(){
   </section>
   <section class="sec">
     <div class="sec-h"><h2>Last 14 days</h2><p>Daily predicted vs actual</p></div>
-    <div class="tblwrap"><table><thead><tr><th>Date</th><th class="r">Picks</th><th class="r">Predicted</th><th class="r">Actual</th><th class="r">Gap</th></tr></thead>
+    <div class="tblwrap fit"><table><thead><tr><th>Date</th><th class="r">Picks</th><th class="r">Predicted</th><th class="r">Actual</th><th class="r">Gap</th></tr></thead>
     <tbody>${recent.map(d=>{const gap=(d.act-d.pred)*100;return `<tr style="cursor:default"><td class="num">${esc(d.date)}</td>
       <td class="r num">${d.n}</td><td class="r num">${pct(d.pred,1)}</td><td class="r num"><b>${pct(d.act,1)}</b></td>
       <td class="r num" style="color:${Math.abs(gap)>8?'var(--bad)':'var(--ink2)'}">${gap>0?'+':''}${gap.toFixed(1)}</td></tr>`;}).join('')}</tbody></table></div>
@@ -2151,7 +2903,8 @@ function renderDrawer(){
         </div>
       </div>
       ${bd&&bd.n>60?`<div class="vcheck">Historically, scores in this band landed <b>${pct(bd.act,1)}</b> across
-        <b>${bd.n.toLocaleString()}</b> settled picks — ${Math.abs(bd.act-bd.pred)*100<2?'closely matching':'running '+((bd.act-bd.pred)>0?'above':'below')+' '} the predicted <b>${pct(bd.pred,1)}</b>.</div>`:''}
+        <b>${bd.n.toLocaleString()}</b> settled picks — ${Math.abs(bd.act-bd.pred)*100<2?'closely matching':'running '+((bd.act-bd.pred)>0?'above':'below')+' '} the predicted <b>${pct(bd.pred,1)}</b>.${
+        bd.nEra<200?` Almost all of that record predates the <b>${esc(S.cal.era)}</b> retrain.`:''}</div>`:''}
       ${waterfall(b)}
     </div>
 
@@ -2310,7 +3063,7 @@ function render(){
     m.innerHTML = dateBar() + (
                   S.view==='today'   ? viewToday()
                 : S.view==='batters' ? viewBatters()
-                : S.view==='games'   ? viewGames()
+                : S.view==='teams'   ? viewTeams()
                 : S.view==='watch'   ? viewWatch()
                 : viewHonesty());
   }catch(e){
@@ -2359,13 +3112,20 @@ function wireView(){
   const bind=(id,k)=>{ const el=$(id); if(el) el.addEventListener('change',()=>{ S.filters[k]=el.value; render(); }); };
   bind('#fteam','team'); bind('#fgame','game'); bind('#fslot','slot');
   $$('[data-lu]').forEach(el=>el.addEventListener('click',()=>{ S.filters.lineup=el.dataset.lu; render(); }));
+  $$('[data-lsort]').forEach(el=>el.addEventListener('click',()=>{
+    S.lsort=el.dataset.lsort; store.set('lsort',S.lsort); render();
+  }));
   $$('th.sortable').forEach(th=>th.addEventListener('click',()=>{
     const k=th.dataset.sort;
     if(S.filters.sort===k) S.filters.dir*=-1; else { S.filters.sort=k; S.filters.dir=-1; }
     render();
   }));
 }
-function go(v){ if(!VIEWS.some(x=>x.id===v)) return; S.view=v; location.hash=v; window.scrollTo(0,0); render(); }
+/** #games was the tab's name until 2026-07-26 and is in whatever bookmarks and
+    shared links already exist, so it keeps resolving. */
+const VIEW_ALIAS = {games:'teams'};
+const resolveView = v => VIEW_ALIAS[v] || v;
+function go(v){ v=resolveView(v); if(!VIEWS.some(x=>x.id===v)) return; S.view=v; location.hash=v; window.scrollTo(0,0); render(); }
 
 /* theme — Dugout (auto/light/dark), the legacy dashboard's own palette, plus
    Aurora. The ids `light`/`dark` are load-bearing: applyTheme('auto') writes
@@ -2396,7 +3156,7 @@ $('#btnStar').onclick=()=>go('watch');
 $('#dsel').onchange=e=>goDate(e.target.value);
 $('#btnReload').onclick=async()=>{ delete once.cal; toast('Reloading…'); await boot(true); };
 window.addEventListener('resize',applyResponsiveTable);
-window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(h&&h!==S.view) go(h); });
+window.addEventListener('hashchange',()=>{ const h=resolveView(location.hash.slice(1)); if(h&&h!==S.view) go(h); });
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape' && !$('#drawer').hidden) return closeDrawer();
   if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
@@ -2415,7 +3175,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) schedule
    ══════════════════════════════════════════════════════════════════════ */
 async function boot(force){
   if(force){ for(const k in once) delete once[k]; }
-  const h=location.hash.slice(1); if(VIEWS.some(v=>v.id===h)) S.view=h;
+  const h=resolveView(location.hash.slice(1)); if(VIEWS.some(v=>v.id===h)) S.view=h;
   try{
     await loadSlate();
   }catch(e){
@@ -2428,7 +3188,7 @@ async function boot(force){
   loadDates().then(renderDateSel);
   loadLive().then(()=>{ render(); scheduleLive(); });
   loadJSON('pitcher_recent_games.json').then(d=>{ S.pitcherLog=d; if(!$('#drawer').hidden) renderDrawer(); });
-  loadJSON('bullpen_preview.json').then(d=>{ S.bullpen=d; if(S.view==='games') render(); });
+  loadJSON('bullpen_preview.json').then(d=>{ S.bullpen=d; if(S.view==='teams') render(); });
   calibration().then(c=>{ S.cal=c; render(); }).catch(()=>{ /* mirror may not ship picks_log */ });
 }
 boot();
