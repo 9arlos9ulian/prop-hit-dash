@@ -80,6 +80,24 @@ header{
 .brand small{font-weight:700;color:var(--ink3);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;padding-left:4px}
 @media(max-width:700px){ .brand small{display:none} }
 .hspace{flex:1}
+/* slate-date picker — sits with the header icons, so it matches their weight
+   rather than the in-page .field controls */
+.dsel{
+  height:34px;max-width:172px;padding:0 6px;border-radius:3px;
+  background:var(--surf2);border:1px solid var(--line);color:var(--ink2);
+  font:inherit;font-size:var(--t-xs);font-weight:700;letter-spacing:.04em;cursor:pointer;
+}
+.dsel:hover{color:var(--ink)}
+.dsel.past{color:var(--acc-txt);border-color:var(--acc-txt)}
+@media(max-width:420px){ .dsel{max-width:112px} }
+/* viewing an archived day — a standing reminder that this is not tonight */
+.datebar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-bottom:14px;padding:9px 13px;border-radius:4px;
+  background:var(--surf2);border:1px solid var(--line2);font-size:var(--t-xs);color:var(--ink2);
+}
+.datebar b{color:var(--ink)}
+.datebar .lnk{margin-left:auto}
 .iconbtn{width:34px;height:34px;display:grid;place-items:center;border-radius:3px;color:var(--ink2)}
 .iconbtn:hover{background:var(--surf2);color:var(--ink)}
 .iconbtn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -155,6 +173,34 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 
 /* ── list rows — hairline separated, no boxes ───────────────────────── */
 .blist{display:flex;flex-direction:column}
+/* The star rides over the row's right edge rather than inside the card,
+   because .bcard is itself a <button>. The gutter it needs lives on the ROW,
+   not on the card's padding — Aurora restyles .bcard padding at higher
+   specificity, which silently ate the gap and put the star over the score. */
+.brow{position:relative;padding-right:36px}
+.star{
+  position:absolute;right:0;top:50%;transform:translateY(-50%);
+  width:34px;height:34px;display:grid;place-items:center;border-radius:3px;
+  color:var(--ink4);opacity:.55;transition:opacity .15s,color .15s,background .15s;
+}
+.star svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linejoin:round}
+.star:hover{opacity:1;color:var(--acc-txt);background:var(--surf2)}
+.star.on{opacity:1;color:var(--acc-txt)}
+.star.on svg{fill:var(--acc-txt)}
+.star:focus-visible{opacity:1;outline:2px solid var(--acc-txt);outline-offset:-2px}
+/* Deliberately always visible rather than revealed on hover: this is the main
+   way to build a watchlist, and an affordance you have to discover by hovering
+   is not a simpler path than opening the drawer was. */
+.star:not(.on){opacity:.3}
+.brow:hover .star:not(.on),tr:hover .tstar:not(.on){opacity:.7}
+.tstar{position:static;transform:none;width:26px;height:26px}
+.tstar svg{width:14px;height:14px}
+/* on a phone the hero card is tall enough that a vertically-centred star reads
+   as floating; pin it to the top corner where it belongs to the row */
+@media(max-width:600px){
+  .brow{padding-right:30px}
+  .star{top:14px;transform:none;width:30px;height:30px}
+}
 .bcard{
   display:grid;grid-template-columns:38px 1fr auto;gap:18px;align-items:center;
   padding:15px 8px 15px 0;border-bottom:1px solid var(--line);
@@ -166,6 +212,17 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .bmain{min-width:0}
 .bname{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-weight:700;font-size:var(--t-bd);letter-spacing:-.02em;line-height:1.2}
 .bmeta{font-size:var(--t-xs);color:var(--ink3);margin-top:4px;letter-spacing:.005em}
+/* ── team colour ─────────────────────────────────────────────────────
+   Colour is used to identify a club, never to say anything about the score —
+   nothing here competes with the accent that means "high probability". The
+   club mark is a weight bump plus its own hue; the row edge is the same hue
+   at low alpha, enough to group a game at a glance without becoming stripes. */
+.tm{font-weight:750;letter-spacing:.02em}
+.bcard{box-shadow:inset 2px 0 0 -0.5px transparent;transition:box-shadow .15s}
+.blist .bcard{box-shadow:inset 2px 0 0 -0.5px color-mix(in srgb,var(--tc,transparent) 42%,transparent)}
+.blist .bcard:hover{box-shadow:inset 3px 0 0 -0.5px var(--tc,transparent)}
+.gside{box-shadow:inset 2px 0 0 -0.5px color-mix(in srgb,var(--tc,transparent) 55%,transparent)}
+.gteams .at{color:var(--ink4);font-weight:500;padding:0 1px}
 .bwhy{margin-top:9px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 .bscore{text-align:right;display:grid;gap:5px;justify-items:end}
 .pct{font-family:var(--mono);font-size:var(--t-lg);font-weight:700;letter-spacing:-.045em;line-height:1}
@@ -201,6 +258,10 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .tag{
   font-family:var(--mono);font-size:9px;letter-spacing:.14em;font-weight:700;text-transform:uppercase;
   padding:3px 6px;border-radius:2px;border:1px solid var(--line2);color:var(--ink3);
+  /* never let a tag wrap: Aurora gives .tag a backdrop-filter, and a wrapped
+     inline creates one blur box per fragment — the second fragment's box
+     smears over the line above it (seen on mobile with a long what-if tag) */
+  white-space:nowrap;
 }
 .tag.est{border-color:var(--warn);color:var(--warn)}
 .tag.conf{border-color:var(--line2);color:var(--ink3)}
@@ -261,12 +322,27 @@ th:last-child,td:last-child{padding-right:0}
 .gbatters{display:flex;gap:6px;flex-wrap:wrap}
 .mini{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:2px;background:var(--surf2);border:1px solid var(--line);font-size:var(--t-xs)}
 .mini:hover{border-color:var(--acc-txt)}
+/* a hypothetical score must never be mistaken for the real one — dashed. a
+   live-swapped score is real (that arm IS out there), so it reads as live
+   instead, matching the .tag.live colour used by the game ticker */
+.mini.alt{border-style:dashed;border-color:var(--acc-txt);color:var(--acc-txt)}
+.mini.alt.livearm{border-style:solid;border-color:var(--bad);color:var(--bad)}
+.psel{
+  display:block;margin-top:6px;max-width:230px;height:26px;padding:0 5px;border-radius:2px;
+  background:var(--surf2);border:1px solid var(--line);color:var(--ink2);
+  font:inherit;font-size:var(--t-xs);cursor:pointer;
+}
+.psel:hover{color:var(--ink);border-color:var(--line2)}
+.delta.up{color:var(--acc-txt)} .delta.down{color:var(--bad)}
 .mini b{font-family:var(--mono);font-weight:750;font-size:var(--t-xs);letter-spacing:-.02em}
 
 /* ── drawer ─────────────────────────────────────────────────────────── */
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.68);z-index:90;opacity:0;pointer-events:none;transition:opacity .18s}
 .scrim.on{opacity:1;pointer-events:auto}
 .drawer{position:fixed;z-index:100;background:var(--bg);display:flex;flex-direction:column;transition:transform .24s cubic-bezier(.32,.72,0,1)}
+/* display:flex above outranks the UA's [hidden] rule, so a closed drawer was
+   only pushed off-screen — still in the a11y tree and still tab-focusable */
+.drawer[hidden]{display:none}
 @media(max-width:759px){
   .drawer{left:0;right:0;bottom:0;top:38px;border-top:2px solid var(--acc);transform:translateY(101%)}
   .drawer.on{transform:translateY(0)}
@@ -657,6 +733,7 @@ html[data-theme="aurora"] #main{animation:viewIn .38s var(--spring)}
     <div class="brand"><em>◍</em> Mochi <small>calibrated hit indicator</small></div>
     <nav class="nav" id="nav" aria-label="Views"></nav>
     <div class="hspace"></div>
+    <select class="dsel" id="dsel" aria-label="Slate date" hidden></select>
     <button class="iconbtn" id="btnStar" title="Watchlist" aria-label="Watchlist">
       <svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/></svg></button>
     <button class="iconbtn" id="btnTheme" title="Theme" aria-label="Toggle theme">
@@ -705,6 +782,81 @@ const ICONS = {
   search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>',
   chev:'<path d="M9 6l6 6-6 6"/>'
 };
+
+/* ══════════════════════════════════════════════════════════════════════
+   0b · team colours
+   Each club's identity colour, picked for recognisability rather than for
+   contrast — several are near-black navies or browns that would be illegible
+   as text. So these are never used raw: teamCSS() clamps each one's LIGHTNESS
+   into a readable band per theme while leaving hue and saturation alone, which
+   is what carries the recognition. A club whose identity is essentially black
+   (CWS, SD) is represented by its secondary instead.
+   ══════════════════════════════════════════════════════════════════════ */
+const TEAM_HEX = {
+  ATH:'#00594C', ATL:'#CE1141', AZ:'#A71930', BAL:'#DF4601', BOS:'#BD3039',
+  CHC:'#0E3386', CIN:'#C6011F', CLE:'#E31937', COL:'#5B3E9B', CWS:'#8C9BA6',
+  DET:'#1B3F6E', HOU:'#EB6E1F', KC:'#004687',  LAA:'#BA0021', LAD:'#005A9C',
+  MIA:'#00A3E0', MIL:'#B6922E', MIN:'#D31145', NYM:'#FF5910', NYY:'#0F3E96',
+  PHI:'#E81828', PIT:'#FDB827', SD:'#C9A227',  SEA:'#0C7A72', SF:'#FD5A1E',
+  STL:'#C41E3A', TB:'#3D7DC4',  TEX:'#C0111F', TOR:'#134A8E', WSH:'#AB0003'
+};
+function hexToHsl(hex){
+  const n = parseInt(hex.slice(1),16), r=(n>>16&255)/255, g=(n>>8&255)/255, b=(n&255)/255;
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), l=(mx+mn)/2, d=mx-mn;
+  if(!d) return [0,0,l*100];
+  const s = d/(1-Math.abs(2*l-1));
+  const h = mx===r ? 60*(((g-b)/d)%6) : mx===g ? 60*((b-r)/d+2) : 60*((r-g)/d+4);
+  return [(h+360)%360, s*100, l*100];
+}
+function hslToRgb(h,s,l){
+  s/=100; l/=100;
+  const k=n=>(n+h/30)%12, a=s*Math.min(l,1-l);
+  const f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));
+  return [f(0),f(8),f(4)];
+}
+const relLum = ([r,g,b]) => {
+  const ch=v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);
+  return .2126*ch(r)+.7152*ch(g)+.0722*ch(b);
+};
+const contrast = (l1,l2) => (Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05);
+/** Lightness that clears `target` contrast against `bgLum`, searched rather
+    than assumed. A fixed lightness band does not work: at the same L a yellow
+    is far brighter than a navy, so PIT and SD came out at 2.6:1 on white while
+    the navies were fine. Walks lightness away from the background until the
+    ratio clears, then stops — the least distortion of the real colour that is
+    still readable. */
+function readable(hex, bgLum, target){
+  const [h,s,l0] = hexToHsl(hex);
+  const lumAt = L => relLum(hslToRgb(h,s,L));
+  const dark = bgLum < .5;                       // light text on dark bg, or vice versa
+  let best = clamp(l0, 8, 92);
+  for(let step=0; step<=84; step++){
+    const L = clamp(dark ? l0+step : l0-step, 8, 92);
+    best = L;
+    if(contrast(lumAt(L), bgLum) >= target) break;
+    if(L<=8 || L>=92) break;
+  }
+  return `hsl(${h.toFixed(0)} ${s.toFixed(0)}% ${best.toFixed(0)}%)`;
+}
+/** One custom property per club, twice: a light-on-dark value and a
+    dark-on-light one. Emitting CSS (rather than colouring at render time)
+    means the theme toggle re-colours everything for free — nothing re-renders. */
+function teamCSS(){
+  const BG_DARK = relLum([8/255,9/255,10/255]);    // --bg, dark + aurora
+  const BG_LIGHT = relLum([1,1,1]);                // --bg, light
+  const line = bg => Object.entries(TEAM_HEX)
+    .map(([t,hex])=>`--tc-${t}:${readable(hex,bg,4.5)}`).join(';');
+  return `:root{${line(BG_DARK)}}\nhtml[data-theme="light"]{${line(BG_LIGHT)}}`;
+}
+/** Fall back to the normal ink colour for anything not in the map (a new club
+    code, or a relocated one) rather than rendering an invisible element. */
+const tc = (t, fallback='var(--ink2)') => `var(--tc-${String(t||'').toUpperCase()},${fallback})`;
+const teamSpan = (t, cls='tm') => `<span class="${cls}" style="color:${tc(t)}">${esc(t)}</span>`;
+/** "ATH @ MIN" → both clubs in their own colour. */
+function matchupHTML(m){
+  const parts = String(m||'').split('@').map(s=>s.trim());
+  return parts.length===2 ? `${teamSpan(parts[0])} <span class="at">@</span> ${teamSpan(parts[1])}` : esc(m);
+}
 
 /** fetch with a hard timeout — a hung statsapi call must never hang the UI. */
 async function get(url,{timeout=9000,json=false,text=false}={}){
@@ -869,9 +1021,9 @@ function evidence(b, st){
     if(b.pWhip!=null) line.push(`${num(b.pWhip,2)} WHIP`);
     if(b.pH9!=null) line.push(`${num(b.pH9,1)} H/9`);
     const rank = p==null ? ''
-      : p<=.05 ? ", among the weakest arms on tonight's card"
-      : p>=.95 ? ", among the toughest arms on tonight's card"
-      : `, stronger than ${Math.round(p*100)}% of tonight's arms`;
+      : p<=.05 ? ", among the weakest arms on this card"
+      : p>=.95 ? ", among the toughest arms on this card"
+      : `, stronger than ${Math.round(p*100)}% of the arms on this card`;
     // The model grades arms on CSW / K-BB / hard-hit allowed, not on ERA. When
     // those two views disagree, say so — a "beatable arm" chip next to a 2.50
     // ERA otherwise just looks broken.
@@ -942,7 +1094,7 @@ function evidence(b, st){
   // platoon — computed for display, measured at −0.0001 AUC and cut from FEATURES on 2026-07-25
   if(b.splitDiff!=null && Math.abs(b.splitDiff)>.01 && b.vsL!=null && b.vsR!=null){
     add({ k:'platoon', dir:0, s:0, label:'Platoon split', ctx:true,
-          text:`${pct(b.vsL,1)} vs LHP · ${pct(b.vsR,1)} vs RHP — faces a ${b.pitHand}HP tonight`,
+          text:`${pct(b.vsL,1)} vs LHP · ${pct(b.vsR,1)} vs RHP — faces a ${b.pitHand}HP in this game`,
           val:(b.splitDiff>0?'+':'')+(b.splitDiff*100).toFixed(1)+'pt',
           note:'Tested and cut from the model on 2026-07-25 (no measurable lift). Shown for your read, not the score.' });
   }
@@ -971,7 +1123,7 @@ function verdict(b, ev, st){
   const up   = ev.signal.filter(e=>e.dir>0 && e.s>=2)[0];
   const down = ev.signal.filter(e=>e.dir<0 && e.s>=2)[0];
   const r = rankOf(b);
-  const where = r ? `<b>#${r}</b> of ${S.batters.length} on tonight's slate` : '';
+  const where = r ? `<b>#${r}</b> of ${S.batters.length} on this slate` : '';
   const lo = e => phraseOf(e).toLowerCase();
   const lead = up && down ? `${lo(up)} carries it, ${lo(down)} holds it back`
              : up ? `carried by ${lo(up)}`
@@ -1021,18 +1173,63 @@ const S = {                                   // app state
   view:'today', batters:[], st:null, cal:null, modified:null,
   live:{}, bullpen:null, odds:null, pitcherLog:null,
   filters:{q:'',team:'',game:'',slot:'',lineup:'',sort:'p',dir:-1},
-  stars:store.get('stars',[]), snap:null, drawerIdx:-1, drawerList:[]
+  stars:store.get('stars',[]), snap:null, drawerIdx:-1, drawerList:[],
+  date:'', dates:[],    // '' = tonight's live slate; else a slates/<date>.csv archive
+  // which alternate arm each side is being previewed against, keyed
+  // `${gamePk}|${battingTeam}`. Deliberately not persisted — a what-if is a
+  // "poke around right now" action, not a saved preference.
+  preview:{}
 };
+const TODAY = () => new Date().toLocaleDateString('en-CA');   // local, not UTC
 
 async function loadSlate(){
-  const {body,modified} = await getAny(
-    ON_SERVER ? ['/csv','./tonight_p_hit.csv'] : ['./tonight_p_hit.csv'], {timeout:20000});
+  // Tonight is the live file; any other date comes from the slates/ archive.
+  // Dual paths because the same page is served by Flask and by GH Pages —
+  // the mirror ships the identical CSVs as static files (push_to_dash()).
+  const paths = S.date
+    ? (ON_SERVER ? ['/slate/'+S.date, './slates/'+S.date+'.csv'] : ['./slates/'+S.date+'.csv'])
+    : (ON_SERVER ? ['/csv','./tonight_p_hit.csv'] : ['./tonight_p_hit.csv']);
+  const {body,modified} = await getAny(paths, {timeout:20000});
   const rows = parseCSV(body).filter(r=>r.name && r.p_hit);
+  if(!rows.length) throw new Error('no rows in that slate');
   S.batters = rows.map(toBatter);
   S.st = slateStats(S.batters);
   S._rank = null;
   S.modified = modified;
-  snapshotDiff();
+  // The snapshot is a per-day "what changed since this morning" baseline for
+  // the LIVE slate. Running it on an archive would diff a finished day against
+  // today's baseline and — worse — overwrite that baseline with archived rows.
+  if(!S.date) snapshotDiff();
+  else S.snap = null;
+}
+/** Archive dates for the picker. /slates locally; on the mirror the static
+    slates_index.json manifest push_to_dash() ships, since GitHub Pages can't
+    list a directory. Absent manifest → no picker, never an error. */
+async function loadDates(){
+  try{
+    const {body} = await getAny(
+      ON_SERVER ? ['/slates','./slates_index.json'] : ['./slates_index.json'],
+      {json:true,timeout:8000});
+    S.dates = Array.isArray(body) ? [...body].sort().reverse() : [];
+  }catch(e){ S.dates = []; }
+}
+/** Switch the whole board to another date (or back to tonight with ''). */
+async function goDate(d){
+  if(d === S.date) return;
+  const prev = S.date;
+  S.date = d;
+  try{
+    await loadSlate();
+  }catch(e){
+    S.date = prev;
+    toast(/404/.test(e.message) ? `No archived slate for ${d}` : `Couldn't load ${d}`);
+    renderDateSel();
+    return;
+  }
+  S.live = {}; clearTimeout(liveTimer);
+  S.preview = {};        // what-ifs belong to the slate they were opened on
+  render();
+  if(!S.date) loadLive().then(()=>{ render(); scheduleLive(); });
 }
 /** "Since this morning" — the day's highest-value moment is lineup
     confirmation at ~12:00 PT. Nothing server-side records it, so we keep a
@@ -1065,9 +1262,13 @@ const loadJSON = f => load('j'+f, async()=>{ try{ return (await get('./'+f,{json
 /** Live scores — one call for the whole slate, refreshed only while a game
     is in progress and the tab is visible. */
 async function loadLive(){
+  if(S.date) return;                 // an archived day has nothing live to poll
   const d = new Date(), date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   try{
-    const {body} = await get(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${date}&hydrate=linescore`,{json:true,timeout:8000});
+    // linescore(defense) carries who is ACTUALLY on the mound right now — the
+    // input to the live pitcher swap. It rides along on the one schedule call
+    // the ticker already makes, so the swap costs no extra request.
+    const {body} = await get(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${date}&hydrate=linescore(defense)`,{json:true,timeout:8000});
     const m={};
     (body.dates?.[0]?.games||[]).forEach(g=>{
       m[g.gamePk] = {
@@ -1075,7 +1276,9 @@ async function loadLive(){
         away:g.teams?.away?.score, home:g.teams?.home?.score,
         awayAbbr:g.teams?.away?.team?.abbreviation, homeAbbr:g.teams?.home?.team?.abbreviation,
         inning:g.linescore?.currentInningOrdinal, half:g.linescore?.inningHalf,
-        outs:g.linescore?.outs
+        outs:g.linescore?.outs,
+        pitcherId:g.linescore?.defense?.pitcher?.id!=null ? String(g.linescore.defense.pitcher.id) : null,
+        pitcherName:g.linescore?.defense?.pitcher?.fullName || ''
       };
     });
     S.live = m;
@@ -1084,6 +1287,7 @@ async function loadLive(){
 let liveTimer=null;
 function scheduleLive(){
   clearTimeout(liveTimer);
+  if(S.date) return;
   const anyLive = Object.values(S.live).some(g=>g.abstract==='Live') ||
                   S.batters.some(b=>(b.gameState||'').includes('Progress'));
   if(!anyLive) return;
@@ -1093,6 +1297,30 @@ function scheduleLive(){
 /* ══════════════════════════════════════════════════════════════════════
    6 · shared fragments
    ══════════════════════════════════════════════════════════════════════ */
+/* ── watchlist ───────────────────────────────────────────────────────────
+   Watch is this dashboard's answer to a bet slip: the set of batters you have
+   decided to follow tonight. Starring used to require opening the drawer,
+   which is a lot of taps to build a list of eight. Every row carries its own
+   star now; the drawer's button stays for when you're already in there. */
+const isStarred = b => S.stars.includes(key(b));
+function toggleStar(k, name){
+  const on = S.stars.includes(k);
+  S.stars = on ? S.stars.filter(x=>x!==k) : S.stars.concat(k);
+  store.set('stars', S.stars);
+  toast(on ? `Removed ${name||'batter'}` : `Watching ${name||'batter'} · ${S.stars.length} on the list`);
+  render();
+  if(!$('#drawer').hidden) renderDrawer();
+}
+/** The star itself. Never nested inside .bcard — that element is a <button>,
+    and a button inside a button is invalid and behaves unpredictably. It sits
+    as a sibling, absolutely positioned over the row's right edge. */
+function starBtn(b, cls=''){
+  const on = isStarred(b);
+  return `<button class="star${on?' on':''} ${cls}" data-star="${key(b)}" data-name="${esc(b.name)}"
+    aria-pressed="${on}" aria-label="${on?'Remove':'Add'} ${esc(b.name)} ${on?'from':'to'} watchlist"
+    title="${on?'On your watchlist':'Add to watchlist'}">${icon(ICONS.watch)}</button>`;
+}
+
 function meter(b){
   const s=S.st.p; if(!s) return '';
   const span=(s.max-s.min)||1;
@@ -1146,11 +1374,11 @@ function batterCard(b, rank, hero, idx){
   // 270-row list does not end with a nine-second cascade.
   const pos = rank ?? idx ?? 0;
   const stagger = Math.min(pos, 14);
-  return `<button class="bcard${hero?' hero':''}${pos<20?' stagger':''}" data-k="${key(b)}" style="--i:${stagger}">
+  return `<div class="brow${hero?' hero':''}"><button class="bcard${hero?' hero':''}${pos<20?' stagger':''}" data-k="${key(b)}" style="--i:${stagger};--tc:${tc(b.team,'var(--line2)')}">
     <span class="rank num">${rank!=null?rank:''}${hero?'<b>RANK</b>':''}</span>
     <span class="bmain">
       <span class="bname">${esc(b.name)} ${lineupTag(b)} ${stateTag(b)}</span>
-      <span class="bmeta"><span class="num">${esc(b.team)}</span> · ${esc(b.matchup)} · ${b.slot?`bats ${b.slot}`:'slot TBD'} · vs ${esc(b.pit||'TBD')}${b.pGrade?` (${esc(b.pGrade)})`:''}</span>
+      <span class="bmeta"><span class="num tm" style="color:${tc(b.team)}">${esc(b.team)}</span> · ${matchupHTML(b.matchup)} · ${b.slot?`bats ${b.slot}`:'slot TBD'} · vs ${esc(b.pit||'TBD')}${b.pGrade?` (${esc(b.pGrade)})`:''}</span>
       <span class="bwhy">${top.map(chipFor).join('')}${flags.map(chipFor).join('')}${stripHTML(b.last10)}</span>
     </span>
     <span class="bscore">
@@ -1158,7 +1386,7 @@ function batterCard(b, rank, hero, idx){
       ${meter(b)}
       <span class="slaterank">${r?`#${r} of ${S.batters.length}`:''}</span>
     </span>
-  </button>`;
+  </button>${starBtn(b)}</div>`;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1186,8 +1414,9 @@ function ribbon(){
     ${cell('Confirmed', `${conf}<small> / ${bs.length}</small>`)}
     ${S.st.p?cell('Median', `${pct(S.st.p.med,0).replace('%','')}<small>%</small>`):''}
     ${S.st.p?cell('Range', `${pct(S.st.p.min,0).replace('%','')}–${pct(S.st.p.max,0).replace('%','')}<small>%</small>`):''}
-    ${ago!=null?cell('Scored', `${ago<60?ago+'<small>m</small>':Math.round(ago/60)+'<small>h</small>'} ago`, stale?'warn':''):''}
-    ${over?cell('Status','FINAL','warn'):''}
+    ${S.date ? cell('Slate', dateLabel(S.date).replace(' · preview','<small> preview</small>'))
+             : (ago!=null?cell('Scored', `${ago<60?ago+'<small>m</small>':Math.round(ago/60)+'<small>h</small>'} ago`, stale?'warn':''):'')}
+    ${over&&!S.date?cell('Status','FINAL','warn'):''}
   </div>`;
 }
 
@@ -1244,7 +1473,7 @@ function viewToday(){
 
   return `${ribbon()}${truth}
   <section class="sec">
-    <div class="sec-h"><h2>Tonight's shortlist</h2><p>Highest calibrated hit probability on the slate</p>
+    <div class="sec-h"><h2>${S.date?'Shortlist':"Tonight's shortlist"}</h2><p>Highest calibrated hit probability on the slate</p>
       <button class="lnk" data-go="batters">All ${S.batters.length} →</button></div>
     <div class="blist">${short.map((b,i)=>batterCard(b,i+1,i===0)).join('')}</div>
     <div style="margin-top:10px;font-size:12px" class="muted">
@@ -1288,7 +1517,7 @@ function viewBatters(){
   const cols=[
     ['name','Batter',''],['team','Tm',''],['slot','Slot','r'],['p','Score','r'],['base','Form','r'],
     ['delta','Matchup','r'],['bHit','Hit%','r'],['bXba','xBA','r'],['bK','K%','r'],
-    ['pit','Pitcher',''],['pRating','Arm','r'],['bPA','PA/g','r']
+    ['pit','Pitcher',''],['pRating','Arm','r'],['bPA','PA/g','r'],['','','r']
   ];
   return `${ribbon()}
   <div class="filters">
@@ -1304,13 +1533,14 @@ function viewBatters(){
     <span class="muted" style="font-size:12.5px">${list.length} shown</span>
   </div>
   <div class="tblwrap" style="display:none" id="tbl">
-    <table><thead><tr>${cols.map(([k,l,a])=>
-      `<th class="sortable ${a}" data-sort="${k}" ${f.sort===k?`aria-sort="${f.dir<0?'descending':'ascending'}"`:''}>${l}</th>`).join('')}</tr></thead>
+    <table><thead><tr>${cols.map(([k,l,a])=> k===''
+      ? `<th class="${a}" aria-label="Watchlist"></th>`      // star column — nothing to sort by
+      : `<th class="sortable ${a}" data-sort="${k}" ${f.sort===k?`aria-sort="${f.dir<0?'descending':'ascending'}"`:''}>${l}</th>`).join('')}</tr></thead>
     <tbody>${list.map(b=>{
       const d=b.delta;
       return `<tr data-k="${key(b)}">
         <td><b>${esc(b.name)}</b> ${b.confirmed?'':'<span class="tag est">est</span>'} ${stateTag(b)}</td>
-        <td class="num">${esc(b.team)}</td>
+        <td class="num tm" style="color:${tc(b.team)}">${esc(b.team)}</td>
         <td class="r num">${b.slot??'—'}</td>
         <td class="r"><b class="num">${pct(b.p,1)}</b> ${meter(b)}</td>
         <td class="r num">${pct(b.base,1)}</td>
@@ -1321,12 +1551,70 @@ function viewBatters(){
         <td>${esc(b.pit||'TBD')} <span class="tag">${esc(b.pGrade||'?')}</span></td>
         <td class="r num">${b.pRating??'—'}</td>
         <td class="r num">${num(b.bPA,2)}</td>
+        <td class="r">${starBtn(b,'tstar')}</td>
       </tr>`;}).join('')}</tbody></table>
   </div>
   <div class="blist" id="cards">${list.map((b,i)=>batterCard(b,null,false,i)).join('')}</div>`;
 }
 
 /* ── Games ─────────────────────────────────────────────────────────── */
+/* ── bullpen preview — "who else could be on that mound?" ────────────────
+   live_slate.py's build_bullpen_preview() scores every batter against every
+   plausible arm on the opposing roster ahead of time, because the model
+   (HistGBM + isotonic) only exists in that process and can never run in the
+   browser. Shape: {gamePk: {pitchingTeam: {pitcherId: {…stats, batters:
+   {batterId: p_hit}}}}} — so a swap is a lookup, not a re-score.
+   Tonight only: the file is rebuilt each slate run and keyed by tonight's
+   game_pks, so it is not offered while an archive date is loaded. */
+const previewKey = (pk,team) => pk+'|'+team;
+/** Candidate arms for the side batting for `team` — i.e. the OPPOSING roster. */
+function bullpenFor(pk, battingTeam, teams){
+  if(S.date || !S.bullpen) return null;
+  const opp = teams.find(t=>t!==battingTeam);
+  const cands = opp ? S.bullpen[String(pk)]?.[opp] : null;
+  return cands && Object.keys(cands).length ? cands : null;
+}
+/** Which arm this side's scores should be shown against, and why.
+    A manual pick is an explicit choice and always wins over the live swap. */
+function armFor(pk, team, cands){
+  const pid = S.preview[previewKey(pk,team)];
+  if(pid && cands?.[pid]) return {pid, live:false, ...cands[pid]};
+
+  // Live auto-swap: the pitcher actually on the mound, from the same schedule
+  // call the ticker uses. Looked up in the OPPONENT's candidate map, which is
+  // what keeps this correct without knowing who is batting — at any moment
+  // only one team has a pitcher on the mound, so the other side simply misses
+  // and stays on its probable starter.
+  const g = S.live[pk] || {};
+  const lp = g.abstract==='Live' ? g.pitcherId : null;         // pregame has no
+  // "current" pitcher to differ from, and after Final the last arm of the night
+  // is not what the day should be remembered by.
+  const starter = String(S.batters.find(b=>b.gamePk===pk && b.team===team)?.pitId||'');
+  if(lp && cands?.[lp] && lp !== starter) return {pid:lp, live:true, ...cands[lp]};
+  return null;
+}
+/** This batter's score against whichever arm the side is previewing, or his
+    real one. A candidate with no entry for a batter (roster churn between the
+    slate run and now) falls back rather than showing a blank. */
+function pFor(b, arm){
+  const alt = arm?.batters?.[String(b.batterId)];
+  return alt==null ? b.p : alt;
+}
+const ROLE_ORDER = {SP:0, RP:1, '':2};
+function armOptions(cands, sel){
+  // SP before RP so an early-inning starter swap is the easy pick, then by
+  // sample size; an unlabelled role has no trailing games to classify from.
+  return Object.entries(cands)
+    .sort((a,b)=>(ROLE_ORDER[a[1].role??''] - ROLE_ORDER[b[1].role??'']) || ((b[1].n_games||0)-(a[1].n_games||0)))
+    .map(([pid,c])=>`<option value="${pid}" ${sel===pid?'selected':''}>${c.role?`(${c.role}) `:''}${esc(c.name)} · ${c.n_games||0}G${(c.n_games||0)<8?' ⚠':''}</option>`)
+    .join('');
+}
+function setPreview(pk, team, pid){
+  const k = previewKey(pk,team);
+  if(pid) S.preview[k]=pid; else delete S.preview[k];
+  render();
+}
+
 function gameCards(compact){
   const byGame=new Map();
   for(const b of S.batters){ if(!byGame.has(b.gamePk)) byGame.set(b.gamePk,[]); byGame.get(b.gamePk).push(b); }
@@ -1338,24 +1626,49 @@ function gameCards(compact){
     const sides=teams.map(t=>{
       const tb=bs.filter(b=>b.team===t).sort((a,b)=>(a.slot||99)-(b.slot||99));
       const arm=tb[0];
-      const avg=tb.reduce((s,b)=>s+b.p,0)/tb.length;
-      const top=[...tb].sort((a,b)=>b.p-a.p).slice(0,compact?3:9);
+      const cands = compact ? null : bullpenFor(pk, t, teams);
+      const alt = cands ? armFor(pk, t, cands) : null;
+      const avgOf = f => tb.reduce((s,b)=>s+f(b),0)/tb.length;
+      const avg = avgOf(b=>pFor(b,alt)), baseAvg = avgOf(b=>b.p);
+      const top=[...tb].sort((a,b)=>pFor(b,alt)-pFor(a,alt)).slice(0,compact?3:9);
       const conf=tb.every(b=>b.confirmed);
-      return `<div class="gside">
-        <div><span class="gteam">${esc(t)}</span><div class="num" style="font-size:10.5px;color:var(--ink3)">${pct(avg,0)} avg</div></div>
-        <div class="gvs">vs <b>${esc(arm.pit||'TBD')}</b> ${arm.pitHand?`(${arm.pitHand})`:''}
-          ${arm.pEra!=null?`<span class="num">${num(arm.pEra,2)} ERA</span>`:''}
-          ${conf?'':'<span class="tag est">projected</span>'}
+      const dAvg = alt ? avg-baseAvg : 0;
+      // Only a MANUAL pick marks an option selected — a live swap leaves the
+      // picker on its default, whose label then says the swap is automatic.
+      const manualPid = alt && !alt.live ? alt.pid : null;
+      const picker = cands ? `<select class="psel" data-pk="${pk}" data-team="${esc(t)}"
+          aria-label="Preview ${esc(t)} against a different arm"
+          title="Score this lineup against another arm on the ${esc(teams.find(x=>x!==t)||'')} roster">
+          <option value="">${alt&&alt.live?'Auto · whoever is pitching':'Probable starter'}</option>${armOptions(cands, manualPid)}</select>` : '';
+      return `<div class="gside" style="--tc:${tc(t,'var(--line2)')}">
+        <div><span class="gteam" style="color:${tc(t,'var(--ink)')}">${esc(t)}</span>
+          <div class="num" style="font-size:10.5px;color:var(--ink3)">${pct(avg,0)} avg${
+            alt?` <span class="delta ${dAvg>=0?'up':'down'}">${dAvg>=0?'+':''}${(dAvg*100).toFixed(1)}</span>`:''}</div></div>
+        <div class="gvs">vs <b>${esc(alt?alt.name:(arm.pit||'TBD'))}</b> ${
+            alt ? (alt.hand?`(${alt.hand})`:'') : (arm.pitHand?`(${arm.pitHand})`:'')}
+          ${(alt?alt.p_era:arm.pEra)!=null?`<span class="num">${num(alt?alt.p_era:arm.pEra,2)} ERA</span>`:''}
+          ${alt ? `<span class="tag ${alt.live?'live':'est'}" title="${
+                     alt.live ? `On the mound now in relief — the probable was ${esc(arm.pit||'TBD')}`
+                              : 'A hypothetical — not necessarily who is actually pitching'}${
+                     alt.n_games?` · ${alt.n_games} games in the trailing window`:''}">${alt.live?'live arm':'what-if'}</span>`
+                 : (conf?'':'<span class="tag est">projected</span>')}
+          ${picker}
           <div class="gbatters" style="margin-top:6px">${top.map(b=>
-            `<button class="mini" data-k="${key(b)}">${esc(b.name.split(' ').slice(-1)[0])} <b>${pct(b.p,0)}</b></button>`).join('')}</div>
+            `<button class="mini${alt?(alt.live?' alt livearm':' alt'):''}" data-k="${key(b)}">${esc(b.name.split(' ').slice(-1)[0])} <b>${pct(pFor(b,alt),0)}</b></button>`).join('')}</div>
+          ${alt?`<div class="muted" style="font-size:10.5px;margin-top:6px">${
+            alt.live ? `${esc(alt.name)} is pitching now, so these are this lineup against him rather than against ${esc(arm.pit||'the probable starter')}
+                        — still the same "if this arm went the whole way" simplification the pregame number makes.`
+                     : `Scores above are this lineup against ${esc(alt.name)}.`}
+            Open a batter for the full evidence, which is still built against ${esc(arm.pit||'the probable starter')}.</div>`:''}
         </div>
-        <div class="grade" title="Pitcher grade">${esc(arm.pGrade||'?')}</div>
+        ${alt ? `<div class="grade" style="opacity:.45" title="The 0–100 pitcher grade isn't computed for what-if arms — only the model inputs are">–</div>`
+              : `<div class="grade" title="Pitcher grade">${esc(arm.pGrade||'?')}</div>`}
       </div>`;
     }).join('');
     const scoreTxt = (g.away!=null&&g.home!=null) ? `${g.awayAbbr||''} ${g.away} – ${g.home} ${g.homeAbbr||''}` : '';
     return `<div class="game">
       <div class="ghead">
-        <span class="gteams">${esc(any.matchup)}</span>
+        <span class="gteams">${matchupHTML(any.matchup)}</span>
         <span class="gtime">${esc(any.startTime||'')}</span>
         ${g.abstract==='Live'?`<span class="tag live">${esc((g.half||'')+' '+(g.inning||''))}</span>`:''}
         ${scoreTxt?`<span class="gscore">${esc(scoreTxt)}</span>`:''}
@@ -1371,7 +1684,8 @@ function viewGames(){ return `${ribbon()}<div class="games">${gameCards(false)}<
 function viewWatch(){
   const list=S.batters.filter(b=>S.stars.includes(key(b))).sort((a,b)=>b.p-a.p);
   if(!list.length) return `${ribbon()}<div class="empty">
-    Nothing on the watchlist yet.<br><span style="font-size:12.5px">Open any batter and press <b>Watch</b> to follow them through the night.</span></div>`;
+    Nothing on the watchlist yet.<br><span style="font-size:12.5px">Tap the ☆ on any batter — in the shortlist, the table, or the drawer — to follow them through the night.
+    <button class="lnk" data-go="today" style="display:block;margin:10px auto 0">Back to tonight's shortlist →</button></span></div>`;
   const done=list.filter(b=>b.hasHit).length;
   const settledStates=list.filter(b=>/final|game over/i.test(S.live[b.gamePk]?.state||b.gameState||'')).length;
   return `${ribbon()}
@@ -1475,17 +1789,26 @@ function waterfall(b){
   </div>
   <p class="muted" style="font-size:12px;margin:8px 0 0">Form is what he has been doing regardless of opponent; matchup is everything about tonight — this pitcher, this park, this lineup slot.</p>`;
 }
+/** closeDrawer defers `hidden` until the slide-out finishes. Re-opening inside
+    that window used to leave the old timer running, so it fired on an
+    already-open drawer: visually open, `hidden === true`. Everything that asks
+    "is the drawer open?" — Escape, the arrow-key stepper, renderDrawer's
+    refresh guard — then believed it was closed and stopped working. Cancel the
+    pending close instead. */
+let drawerTimer = null;
 function openDrawer(k, list){
   const idx=(list||S.batters).findIndex(b=>key(b)===k);
   S.drawerList = list||S.batters; S.drawerIdx = idx;
   renderDrawer();
+  clearTimeout(drawerTimer);
   const d=$('#drawer'); d.hidden=false; requestAnimationFrame(()=>{ d.classList.add('on'); $('#scrim').classList.add('on'); });
   document.body.style.overflow='hidden';
 }
 function closeDrawer(){
   const d=$('#drawer'); d.classList.remove('on'); $('#scrim').classList.remove('on');
   document.body.style.overflow='';
-  setTimeout(()=>{ d.hidden=true; },220);
+  clearTimeout(drawerTimer);
+  drawerTimer = setTimeout(()=>{ d.hidden=true; },220);
 }
 function stepDrawer(n){
   const i=S.drawerIdx+n; if(i<0||i>=S.drawerList.length) return;
@@ -1507,10 +1830,10 @@ function renderDrawer(){
     <span class="evnum">${esc(e.val??'')}</span></div>`;
 
   $('#drawer').innerHTML=`
-  <div class="dhead">
+  <div class="dhead" style="--tc:${tc(b.team,'var(--line2)')};box-shadow:inset 0 3px 0 -0.5px var(--tc)">
     <div style="min-width:0">
       <div class="dtitle" id="dtitle">${esc(b.name)}</div>
-      <div class="dsub">${esc(b.team)} · ${esc(b.matchup)} · ${esc(b.startTime||'')} ${b.slot?`· bats ${b.slot}`:''} ${lineupTag(b)} ${stateTag(b)}</div>
+      <div class="dsub">${teamSpan(b.team)} · ${matchupHTML(b.matchup)} · ${esc(b.startTime||'')} ${b.slot?`· bats ${b.slot}`:''} ${lineupTag(b)} ${stateTag(b)}</div>
     </div>
     <div class="dnav">
       <button class="iconbtn" id="dprev" ${S.drawerIdx<=0?'disabled style="opacity:.3;transform:rotate(180deg)"':'style="transform:rotate(180deg)"'} aria-label="Previous batter">${icon(ICONS.chev)}</button>
@@ -1523,7 +1846,7 @@ function renderDrawer(){
       <div class="vtop">
         <div class="vbig">${pct(b.p,1).replace('%','')}<span>%</span></div>
         <div class="vside">
-          Chance of <b>at least one hit</b> tonight — ${v.where}.<br>
+          Chance of <b>at least one hit</b> ${S.date?'that day':'tonight'} — ${v.where}.<br>
           <span class="muted">${esc(v.lead.charAt(0).toUpperCase()+v.lead.slice(1))}.</span>
         </div>
       </div>
@@ -1585,7 +1908,7 @@ function renderDrawer(){
 
     <div style="display:flex;gap:8px;margin:20px 0 30px">
       <button class="field" id="dstar" style="flex:1;justify-content:center;font-weight:560;${starred?'background:var(--acc);border-color:var(--acc);color:var(--acc-on)':''}">
-        ${starred?'★ On your watchlist':'☆ Watch tonight'}
+        ${starred?'★ On your watchlist':'☆ Add to watchlist'}
       </button>
     </div>
   </div>`;
@@ -1594,26 +1917,61 @@ function renderDrawer(){
   $('#dclose').onclick=closeDrawer;
   $('#dprev').onclick=()=>stepDrawer(-1);
   $('#dnext').onclick=()=>stepDrawer(1);
-  $('#dstar').onclick=()=>{
-    const k=key(b);
-    S.stars = starred ? S.stars.filter(x=>x!==k) : S.stars.concat(k);
-    store.set('stars',S.stars); renderDrawer(); toast(starred?'Removed from watchlist':'Added to watchlist');
-    if(S.view==='watch') render();
-  };
+  $('#dstar').onclick=()=>toggleStar(key(b), b.name);   // same path as every row star
 }
 
 /* ══════════════════════════════════════════════════════════════════════
    9 · shell + events
    ══════════════════════════════════════════════════════════════════════ */
-/** The previous dashboard still holds the bet slip, Kalshi odds, parlay EV,
-    the archive date-picker and the bullpen swap preview. None of that is
-    ported yet, so it needs a way in from here — otherwise making this the
-    main dashboard quietly hides those features rather than replacing them. */
+/** The archive date-picker and the bullpen swap were ported here 2026-07-25;
+    what the previous dashboard still holds alone is the bet slip, Kalshi odds
+    and parlay EV, so it needs a way in from here — otherwise making this the
+    main dashboard quietly hides those features rather than replacing them.
+    (Watch is this dashboard's own answer to the slip: a list you build by
+    starring rows, not a stake-and-payout ledger.) */
 function renderFooter(){
   const legacy = ON_SERVER ? '/legacy' : './legacy.html';
   $('#foot').innerHTML =
     `<span>Mochi · scores are calibrated probabilities, not betting advice.</span>
-     <a href="${legacy}">Previous dashboard — bet slip, odds &amp; archive →</a>`;
+     <a href="${legacy}">Previous dashboard — bet slip &amp; odds →</a>`;
+}
+/** Human label for an archive date. Tomorrow's file is a --preview-tomorrow
+    run on ESTIMATED lineups, so it gets said out loud rather than looking
+    like another settled day. */
+function dateLabel(d, long){
+  const today = TODAY();
+  if(d === today) return 'Tonight';
+  const dt = new Date(d+'T12:00:00');
+  const s = dt.toLocaleDateString([], long ? {weekday:'long',month:'long',day:'numeric'}
+                                           : {weekday:'short',month:'short',day:'numeric'});
+  // the long form is used where the surrounding sentence already says it's a
+  // preview, so only the compact picker label carries the suffix
+  return (d > today && !long) ? s+' · preview' : s;
+}
+function renderDateSel(){
+  const sel = $('#dsel'), today = TODAY();
+  if(!sel) return;
+  // Nothing to pick between → no control at all. This is the mirror's normal
+  // state when slates_index.json hasn't shipped yet, and an empty dropdown
+  // reads as broken.
+  const dates = S.dates.filter(d=>d!==today);
+  if(!dates.length){ sel.hidden = true; return; }
+  sel.hidden = false;
+  sel.classList.toggle('past', !!S.date);
+  sel.innerHTML = `<option value="">Tonight</option>` +
+    dates.map(d=>`<option value="${d}" ${S.date===d?'selected':''}>${esc(dateLabel(d))}</option>`).join('');
+  sel.value = S.date;
+}
+/** Shown on every view while an archive is loaded — the board otherwise looks
+    exactly like tonight, which is how you end up reading Tuesday as today. */
+function dateBar(){
+  if(!S.date) return '';
+  const future = S.date > TODAY();
+  return `<div class="datebar">
+    <span>${future?'Previewing':'Viewing'} <b>${esc(dateLabel(S.date,true))}</b>${
+      future ? ' — estimated lineups, not final' : ' — a finished slate, scores frozen as of first pitch'}</span>
+    <button class="lnk" id="dback">Back to tonight →</button>
+  </div>`;
 }
 function renderNav(){
   $('#nav').innerHTML = VIEWS.map(v=>`<button data-go="${v.id}" ${S.view===v.id?'aria-current="page"':''}>${v.label}</button>`).join('');
@@ -1646,13 +2004,15 @@ function animateNumbers(){
 function render(){
   renderNav();
   renderFooter();
+  renderDateSel();
   const m=$('#main');
   try{
-    m.innerHTML = S.view==='today'   ? viewToday()
+    m.innerHTML = dateBar() + (
+                  S.view==='today'   ? viewToday()
                 : S.view==='batters' ? viewBatters()
                 : S.view==='games'   ? viewGames()
                 : S.view==='watch'   ? viewWatch()
-                : viewHonesty();
+                : viewHonesty());
   }catch(e){
     m.innerHTML=`<div class="empty">Something went wrong rendering this view.<br><span class="num" style="font-size:11px">${esc(e.message)}</span></div>`;
     console.error(e);
@@ -1678,6 +2038,15 @@ function wireView(){
     openDrawer(el.dataset.k, list);
   }));
   $$('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
+  const back=$('#dback'); if(back) back.addEventListener('click',()=>goDate(''));
+  $$('[data-star]').forEach(el=>el.addEventListener('click',ev=>{
+    ev.stopPropagation();          // a table star sits INSIDE tr[data-k]
+    toggleStar(el.dataset.star, el.dataset.name);
+  }));
+  $$('.psel').forEach(sel=>{
+    sel.addEventListener('click',e=>e.stopPropagation());   // never open the drawer behind it
+    sel.addEventListener('change',()=>setPreview(sel.dataset.pk, sel.dataset.team, sel.value));
+  });
   const q=$('#fq');
   if(q){
     q.addEventListener('input',()=>{ S.filters.q=q.value; const s=q.selectionStart; render(); const n=$('#fq'); if(n){n.focus(); n.setSelectionRange(s,s);} });
@@ -1704,6 +2073,7 @@ function applyTheme(t){
   const sys = matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.dataset.theme = t==='auto' ? (sys?'dark':'light') : t;
 }
+document.head.insertAdjacentHTML('beforeend', `<style id="teamcss">${teamCSS()}</style>`);
 let theme = store.get('theme','aurora'); applyTheme(theme);   // Aurora is the default
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ if(theme==='auto') applyTheme('auto'); });
 
@@ -1716,6 +2086,7 @@ $('#btnTheme').onclick=()=>{
   toast(next.id==='auto' ? `Auto — ${document.documentElement.dataset.theme}` : next.name);
 };
 $('#btnStar').onclick=()=>go('watch');
+$('#dsel').onchange=e=>goDate(e.target.value);
 $('#btnReload').onclick=async()=>{ delete once.cal; toast('Reloading…'); await boot(true); };
 window.addEventListener('resize',applyResponsiveTable);
 window.addEventListener('hashchange',()=>{ const h=location.hash.slice(1); if(h&&h!==S.view) go(h); });
@@ -1747,8 +2118,10 @@ async function boot(force){
   }
   render();
   // everything below is an enhancement: the page is already useful without it
+  loadDates().then(renderDateSel);
   loadLive().then(()=>{ render(); scheduleLive(); });
   loadJSON('pitcher_recent_games.json').then(d=>{ S.pitcherLog=d; if(!$('#drawer').hidden) renderDrawer(); });
+  loadJSON('bullpen_preview.json').then(d=>{ S.bullpen=d; if(S.view==='games') render(); });
   calibration().then(c=>{ S.cal=c; render(); }).catch(()=>{ /* mirror may not ship picks_log */ });
 }
 boot();
