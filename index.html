@@ -567,47 +567,70 @@ td.sc b{font-size:var(--t-bd)}
    than a standalone .grp-h between sections would want. */
 .grp-h.gsgrp{margin:16px 0 4px}
 .grp-h.gsgrp:first-child{margin-top:10px}
-/* 176px, not 132: the widest cell here is a live game — "10:35 AM · BOT 10TH ·
-   2–2" — and gswhen is nowrap, so a short track does not wrap it, it slides it
-   under the first team badge. */
-.gsrow{display:grid;grid-template-columns:176px 1fr;gap:12px;align-items:center;
-  padding:6px 0;border-bottom:1px solid var(--line)}
+/* A schedule with heat (2026-07-26, third pass). The two previous versions
+   both tried to SAY where the good bats are — averages, bars, dot counts —
+   and each one turned a glance into a decoding exercise. This one shows it
+   instead: every row is just time and matchup, read like a TV listing, and
+   the row itself is warmer the more of tonight's top-fifth bats it holds.
+   `--heat` is 0..1, set inline, and drives both the left edge and a faint
+   wash; a game with none of the good bats is a plain line. The only numbers
+   anywhere are live/final scores, which mean what scores always mean. */
+.gsrow{display:grid;grid-template-columns:84px auto minmax(0,1fr) auto;gap:12px;align-items:center;
+  width:100%;text-align:left;padding:8px 12px 8px 9px;border-bottom:1px solid var(--line);
+  border-left:3px solid color-mix(in srgb, var(--tier-hi) calc(var(--heat,0)*100%), var(--line));
+  background:linear-gradient(90deg,
+    color-mix(in srgb, var(--tier-hi) calc(var(--heat,0)*11%), transparent),
+    transparent 70%);
+  transition:background .12s}
+.gsrow:hover{background:var(--surf2)}
 /* Settled games are history — kept for reference, not competing for the eye
    with the games you can still do something about. */
-.gsrow.done{opacity:.5}
+.gsrow.done{opacity:.45}
 .gsrow.done:hover{opacity:1}
 .gswhen{display:flex;align-items:center;gap:7px;white-space:nowrap}
 .gstime{font-family:var(--mono);font-size:var(--t-xs);color:var(--ink3);letter-spacing:-.02em}
-.gsscore{font-size:var(--t-xs);color:var(--ink2);font-weight:650}
-.gssides{display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center;min-width:0}
-.gsat{font-size:var(--t-mi);color:var(--ink4);padding:0 2px}
-.gsside{display:flex;align-items:center;gap:9px;min-width:0;padding:5px 9px;border-radius:8px;
-  background:none;text-align:left;transition:background .12s}
-.gsside:hover{background:var(--surf2)}
-.gsavg{font-size:var(--t-xs);font-weight:650;flex:0 0 auto}
-.gsbest{font-size:var(--t-mi);color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.gsbest b{color:var(--ink2);font-weight:650}
-/* One dot per bat in tonight's top fifth. A count alone reads as another
-   statistic; the dots are countable at a glance and differ ROW TO ROW, which
-   is the whole point — the averages barely do. */
-.gshot{display:flex;align-items:center;gap:2px;flex:0 0 auto}
-.gshot i{width:4px;height:4px;border-radius:50%;background:var(--tier-hi);display:block}
-.gshot .num{font-size:var(--t-mi);color:var(--tier-hi);font-weight:650;margin-left:2px}
-/* 64px and inline, not full-bleed on a second row: the bar is here to make two
-   averages a point apart look a point apart, and a 500px-wide version of that
-   shouts louder than the shortlist above it. */
-.gsbar{display:block;flex:0 0 64px;height:3px;background:var(--surf3);position:relative;overflow:hidden}
-.gsbar i{position:absolute;left:0;top:0;bottom:0;background:var(--ink4)}
-.gsbar.t-hi i{background:var(--tier-hi)} .gsbar.t-mid i{background:var(--tier-mid)} .gsbar.t-lo i{background:var(--tier-lo)}
+.gsmid{display:flex;align-items:center;gap:6px;min-width:0;font-size:var(--t-sm);
+  font-weight:650;color:var(--ink2)}
+/* Fixed width for two digits each, so "1 @ 2" becoming "12 @ 9" (extra innings,
+   a blowout) never shifts the badges around it — only the digits themselves
+   move, centered inside their own slot. Empty pre-game keeps the same slot,
+   just blank, so the row's badges land at the same x whether or not a score
+   exists yet. */
+.gsscore{font-size:var(--t-xs);color:var(--ink2);font-weight:650;
+  width:1.5em;text-align:center;flex:0 0 auto}
+.gsat{font-size:var(--t-mi);color:var(--ink4);padding:0 1px;flex:0 0 auto}
+/* The one concession to words: rows with heat say why in plain language, in
+   the margin voice. "3 top bats" is a caption, not a statistic. */
+.gsn{font-size:var(--t-mi);color:var(--ink3);white-space:nowrap}
+/* The middle of the row used to be blank space; now it names the bats the heat
+   is about. Names at reading weight, scores a notch quieter, one line, ellipsis
+   past the fourth — the row stays a schedule line, just no longer an empty one. */
+.gsbats{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:var(--t-xs);color:var(--ink4);text-align:left}
+/* Names stay neutral ink on every row. They were once tinted toward the heat
+   colour on warm rows — cut 2026-07-26: it restated what the row's edge+wash
+   already say, and once ✓ meant "recorded a hit", a green-hued name read as a
+   claim about the outcome. Green now appears in exactly one place: the ✓. */
+.gsbats b{color:var(--ink2);font-weight:650}
+.gsbats .num{color:var(--ink4);font-size:var(--t-mi)}
+.gsdot{color:var(--ink4);padding:0 6px}
+/* hit state, one glyph per name: settled ✓/✗ at caption size. The miss mark is
+   quieter than the hit mark on purpose — a miss is closure, not an alarm. */
+.gshit,.gsmiss{font-style:normal;font-weight:750;padding-left:4px;font-size:var(--t-mi)}
+.gshit{color:var(--tier-hi)}
+.gsmiss{color:var(--bad);opacity:.6}
+.gsmore{color:var(--ink4);padding-left:8px}
+.gsbest{color:var(--ink4);font-style:normal}
 /* fifteen glowing live pills would make the supporting section the loudest
    thing on Today. Same information, stated at the volume the section deserves;
    the full-strength tag still lives on the Games tab. */
 .gstrip .tag{font-size:var(--t-mi);padding:1px 6px}
 .gstrip .tag.live{background:none;box-shadow:none;border-color:color-mix(in srgb,var(--bad) 40%,transparent);opacity:.75}
 @media(max-width:640px){
-  .gsrow{grid-template-columns:1fr;gap:6px;padding:11px 0}
-  .gssides{grid-template-columns:1fr}
-  .gsat{display:none}
+  .gsrow{grid-template-columns:1fr auto;gap:4px 10px;padding:10px 10px 10px 9px}
+  .gswhen{order:2;grid-column:1/-1}
+  /* names get their own full-width line under the matchup on a phone */
+  .gsbats{order:3;grid-column:1/-1}
 }
 /* ── lineups — the Teams tab ───────────────────────────────────────────
    One card per LINEUP, never per matchup: the two sides of a game are laid out
@@ -1271,9 +1294,6 @@ html[data-theme="aurora"] .toast{
 html[data-theme="aurora"] .meter.t-hi i {background:linear-gradient(90deg,color-mix(in srgb,var(--tier-hi) 55%,var(--violet)),var(--tier-hi))}
 html[data-theme="aurora"] .meter.t-mid i{background:linear-gradient(90deg,color-mix(in srgb,var(--tier-mid) 55%,var(--violet)),var(--tier-mid))}
 html[data-theme="aurora"] .meter.t-lo i {background:linear-gradient(90deg,var(--violet),var(--tier-lo))}
-html[data-theme="aurora"] .gsbar.t-hi i {background:linear-gradient(90deg,color-mix(in srgb,var(--tier-hi) 55%,var(--violet)),var(--tier-hi))}
-html[data-theme="aurora"] .gsbar.t-mid i{background:linear-gradient(90deg,color-mix(in srgb,var(--tier-mid) 55%,var(--violet)),var(--tier-mid))}
-html[data-theme="aurora"] .gsbar.t-lo i {background:linear-gradient(90deg,var(--violet),var(--tier-lo))}
 html[data-theme="aurora"] .mini.t-hi {background:var(--tier-hi-dim);border-color:var(--tier-hi-line);color:var(--tier-hi)}
 html[data-theme="aurora"] .mini.t-mid{background:var(--tier-mid-dim);border-color:var(--tier-mid-line);color:var(--tier-mid)}
 html[data-theme="aurora"] .mini.t-lo {background:var(--tier-lo-dim);border-color:var(--tier-lo-line);color:var(--ink2)}
@@ -1875,6 +1895,7 @@ const S = {                                   // app state
   filters:{q:'',team:'',game:'',slot:'',lineup:'',sort:'p',dir:-1},
   stars:store.get('stars',[]), snap:null, drawerIdx:-1, drawerList:[],
   lsort:store.get('lsort','strength'),      // how the Teams tab orders its lineups
+  lq:'',                                    // Teams tab search — team, player, or arm
   date:'', dates:[],    // '' = tonight's live slate; else a slates/<date>.csv archive
   // which alternate arm each side is being previewed against, keyed
   // `${gamePk}|${battingTeam}`. Deliberately not persisted — a what-if is a
@@ -2187,31 +2208,10 @@ function viewToday(){
     </details>`;
   }
 
-  // since-this-morning
-  let sinceHTML='';
-  if(S.snap && S.snap.moves.length){
-    const t=new Date(S.snap.at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
-    const mv=S.snap.moves.slice(0,8);
-    sinceHTML=`<section class="sec sub">
-      <div class="sec-h"><h2>Since ${t}</h2><p>What changed while you were away</p></div>
-      <div class="blist">${mv.map(m=>{
-        if(m.kind==='gone') return `<div class="bcard" style="cursor:default"><span class="rank">—</span>
-          <span class="bmain"><span class="bname">${esc(m.name)}</span>
-          <span class="bmeta">${teamSpan(m.team)} · no longer in a projected lineup</span></span>
-          <span class="bscore"><span class="chip down">dropped</span></span></div>`;
-        const b=m.b, dp=m.dp||0;
-        const bits=[];
-        if(m.confirmedNow) bits.push(`<span class="chip up">lineup confirmed</span>`);
-        if(m.slotFrom!=null && m.slotFrom!==b.slot) bits.push(`<span class="chip flat">slot ${m.slotFrom} → ${b.slot}</span>`);
-        if(m.kind==='new') bits.push(`<span class="chip up">newly added</span>`);
-        return `<button class="bcard" data-k="${key(b)}"><span class="rank num">${dp?((dp>0?'+':'')+(dp*100).toFixed(1)):'·'}</span>
-          <span class="bmain"><span class="bname">${esc(b.name)} ${stateTag(b)}</span>
-          <span class="bmeta">${teamSpan(b.team)} · ${matchupHTML(b.matchup)} · vs ${esc(b.pit||'TBD')}</span>
-          <span class="bwhy">${bits.join('')}</span></span>
-          <span class="bscore"><span class="pct ${tcls(b.p)}">${pct(b.p,1)}</span>${meter(b)}</span></button>`;
-      }).join('')}</div>
-    </section>`;
-  }
+  // The "Since <time>" section (lineup churn since a morning snapshot) lived
+  // here until 2026-07-26 — cut on client call: it never earned its screen
+  // space. The snapshot machinery (S.snap) stays, in case a quieter use for
+  // it appears; recover the section itself from git history.
 
   const bandNote = b => { const bd=bandFor(S.cal,b?.p); return bd&&bd.n>60 ? `<span class="muted">history: this band has landed <span class="num">${pct(bd.act,1)}</span> over ${bd.n.toLocaleString()} picks</span>` : ''; };
 
@@ -2234,9 +2234,9 @@ function viewToday(){
       ${bandNote(short[0])} · Ranking is by the model score alone; open any batter for the evidence behind it.
     </p>
   </section>
-  ${sinceHTML}
   <section class="sec sub">
-    <div class="sec-h"><h2>Where the bats are</h2><p>${gameStripCount()}</p>
+    <div class="sec-h"><h2>Where the bats are</h2>
+      <p>Warmer games hold more of tonight's best bats · ${gameStripCount()}</p>
       <button class="lnk" data-go="teams">Lineups →</button></div>
     ${gameStrip()}
   </section>`;
@@ -2263,19 +2263,38 @@ function viewToday(){
         thing that actually separates one game from another — two lineups can
         average 63% with one of them holding three of tonight's best names.
     Within a group the order is still first pitch, since a schedule read in
-    any other order is not a schedule. */
+    any other order is not a schedule.
+
+    Third pass, same day: the four-column version answered the question but
+    made the reader decode dots, a bar and two percentages per side to get it —
+    convoluted, per the client. This one is a plain schedule where the ROW
+    ITSELF carries the answer: warmth (left edge + wash, `--heat` 0..1 scaled
+    to the hottest game tonight) shows where the top-fifth bats are, a short
+    caption says it in words ("4 top bats"), and everything else — averages,
+    bars, best-bat names — moved into the hover title and the Teams tab, which
+    the whole row now links to. Nothing to decode; the hot games just look hot. */
+/** Top fifth of tonight's field. A fixed cutoff would call every bat "hot" on a
+    friendly slate and none on a hard one; a percentile is always the same
+    fraction of the field. Shared so the footnote can name the actual number. */
+function hotCutoff(){
+  const ps=S.batters.map(b=>b.p).filter(p=>p!=null&&!isNaN(p)).sort((a,b)=>a-b);
+  return ps.length ? ps[Math.floor(ps.length*0.8)] : Infinity;
+}
 function gameStripData(){
   const byGame=new Map();
   for(const b of S.batters){ if(!byGame.has(b.gamePk)) byGame.set(b.gamePk,[]); byGame.get(b.gamePk).push(b); }
-  // Top fifth of tonight's field. A fixed cutoff would call every bat "hot" on
-  // a friendly slate and none on a hard one; this is always the same fraction.
-  const ps=S.batters.map(b=>b.p).filter(p=>p!=null&&!isNaN(p)).sort((a,b)=>a-b);
-  const hotCut = ps.length ? ps[Math.floor(ps.length*0.8)] : Infinity;
+  const hotCut=hotCutoff();
   const games=[...byGame.entries()].map(([pk,bs])=>{
     const g=S.live[pk]||{};
     const state=String(g.state||bs[0].gameState||'');
-    const live = g.abstract==='Live' || /progress/i.test(state);
-    const fin  = !live && (/final|game over/i.test(state) || (g.away!=null&&g.home!=null));
+    // `abstract` is the authority ('Preview' | 'Live' | 'Final'); the regex on
+    // `state` only covers a feed that omits it. Do NOT infer "final" from the
+    // score being present — the live feed reports 0–0 for a game that has not
+    // started, which filed every pre-game matchup under Final, dimmed at the
+    // bottom of the strip, with a "0–0" beside it.
+    const live = g.abstract==='Live'  || (!g.abstract && /progress/i.test(state));
+    const fin  = g.abstract==='Final' || (!g.abstract && /final|game over/i.test(state));
+    const pre  = !live && !fin;
     // "AWAY @ HOME" — the same parse lineups() does, so the away side is drawn
     // on the left the way every scoreboard in the sport draws it.
     const order=String(bs[0].matchup||'').split('@').map(s=>s.trim());
@@ -2288,14 +2307,19 @@ function gameStripData(){
         best: [...tb].sort((x,y)=>y.p-x.p)[0],
         hot: tb.filter(b=>b.p>=hotCut).length};
     });
-    return {pk, g, live, fin, start:bs[0].startTime||'', sides,
-            grp: fin?2:live?1:0, hot:sides.reduce((s,x)=>s+x.hot,0)};
+    return {pk, g, live, fin, pre, start:bs[0].startTime||'', sides,
+            grp: fin?2:live?1:0, hot:sides.reduce((s,x)=>s+x.hot,0),
+            // the names behind the heat, hottest first — what the middle of the
+            // row shows instead of blank space
+            hotBats: bs.filter(b=>b.p>=hotCut).sort((x,y)=>y.p-x.p),
+            best: [...bs].sort((x,y)=>y.p-x.p)[0]};
   });
   games.sort((a,b)=> a.grp-b.grp || startMin(a.start)-startMin(b.start));
   return games;
 }
-/** The section's own subtitle. "15 on the card" was a fact about the schedule;
-    what a reader wants first is how much of tonight is still ahead of them. */
+/** The tail of the section's subtitle. "15 on the card" was a fact about the
+    schedule; what a reader wants is how much of tonight is still ahead of them.
+    The heading states the QUESTION, this states how much of it is still open. */
 function gameStripCount(){
   const gs=gameStripData(), n=gs.length;
   const pre=gs.filter(x=>x.grp===0).length, live=gs.filter(x=>x.grp===1).length;
@@ -2307,14 +2331,12 @@ function gameStripCount(){
 }
 const GS_GROUP = ['Still to come','In progress','Final'];
 function gameStrip(){
-  const games=gameStripData();
+  const games=gameStripData(), hotCut=hotCutoff();
   if(!games.length) return '';
-  // One scale across every side on the slate, so a bar means the same thing in
-  // the first row as in the last. Ends padded slightly: a full-width bar on the
-  // best lineup and an empty one on the worst overstates a 10-point spread.
-  const avgs=games.flatMap(x=>x.sides.map(s=>s.avg)).filter(v=>v!=null&&!isNaN(v));
-  const lo=Math.min(...avgs), hi=Math.max(...avgs), span=(hi-lo)||1;
-  const bar = v => clamp(.12+.88*((v-lo)/span), 0, 1)*100;
+  // Heat is scaled to the hottest game TONIGHT, not an absolute count, for the
+  // same reason the cutoff is a percentile: the strip should always have a
+  // visible warm end, whatever kind of slate this is.
+  const maxHot=Math.max(1,...games.map(x=>x.hot));
 
   let out='', grp=-1;
   for(const x of games){
@@ -2324,29 +2346,46 @@ function gameStrip(){
       out+=`<div class="grp-h gsgrp"><span class="lbl">${GS_GROUP[grp]}</span><span class="rule"></span>
         <span class="lbl soft">${n}</span></div>`;
     }
-    const g=x.g;
-    const sides=x.sides.map((s,i)=>`<button class="gsside" data-k="${key(s.best)}"
-        title="${esc(s.best.name)} — ${esc(s.team)}'s highest score in this game. Lineup averages ${pct(s.avg,1)} over ${s.n} bats.">
-        ${teamBadge(s.team,'bg-sm')}
-        <span class="gsavg num ${tcls(s.avg)}">${pct(s.avg,0)}</span>
-        <span class="gsbar ${tcls(s.avg)}"><i style="width:${bar(s.avg).toFixed(1)}%"></i></span>
-        <span class="gsbest">${esc(s.best.name.split(' ').slice(-1)[0])} <b class="num">${pct(s.best.p,0)}</b></span>
-        ${s.hot?`<span class="gshot" title="${s.hot} of ${esc(s.team)}'s bats are in tonight's top fifth">${
-          '<i></i>'.repeat(Math.min(s.hot,5))}<span class="num">${s.hot}</span></span>`:''}
-      </button>${i===0?'<span class="gsat">@</span>':''}`).join('');
-    const scoreTxt = (g.away!=null&&g.home!=null) ? `${g.away}–${g.home}` : '';
-    out+=`<div class="gsrow${x.fin?' done':''}">
-      <span class="gswhen">
-        <span class="gstime">${esc(x.start)}</span>
-        ${x.live?`<span class="tag live">${esc(((g.half||'')+' '+(g.inning||'')).trim())||'live'}</span>`:''}
-        ${scoreTxt?`<span class="gsscore num">${esc(scoreTxt)}</span>`:''}
-      </span>
-      <span class="gssides">${sides}</span>
-    </div>`;
+    const g=x.g, a=x.sides[0], h=x.sides[1]||x.sides[0];
+    // Everything the old columns said, demoted to the hover title where it can
+    // be prose instead of a puzzle.
+    const detail=x.sides.map(s=>`${s.team}: ${s.hot||'no'} top bat${s.hot===1?'':'s'}, best ${s.best.name} ${pct(s.best.p,0)}`).join(' · ');
+    // Score sits BETWEEN the badges, not beside the time — "NYY 1 @ 2 PHI"
+    // reads as one unit, and each number gets its own fixed-width slot so a
+    // 1 becoming a 12 doesn't reflow the badges around it on every live poll.
+    const awayN = (!x.pre && g.away!=null) ? esc(String(g.away)) : '';
+    const homeN = (!x.pre && g.home!=null) ? esc(String(g.home)) : '';
+    out+=`<button class="gsrow${x.fin?' done':''}" data-go="teams"
+      ${x.hot?`style="--heat:${(x.hot/maxHot).toFixed(2)}"`:''}
+      title="${esc(detail)} — full lineups on Teams.">
+      <span class="gswhen">${
+        x.live
+          ? `<span class="tag live">${esc(((g.half||'')+' '+(g.inning||'')).trim()||'live')}</span>`
+          : `<span class="gstime">${esc(x.start)}</span>`
+      }</span>
+      <span class="gsmid">${teamBadge(a.team,'bg-sm')}
+        <span class="gsscore num">${awayN}</span>
+        <span class="gsat">@</span>
+        <span class="gsscore num">${homeN}</span>
+        ${teamBadge(h.team,'bg-sm')}</span>
+      <span class="gsbats">${(()=>{
+        // Once the game is underway, each name answers its own question: ✓ he
+        // hit, ✗ his game ended without one. A live game with no hit yet shows
+        // nothing — still undecided is not a miss.
+        const mark=b=>b.hasHit?'<i class="gshit" title="recorded a hit">✓</i>'
+                     :x.fin?'<i class="gsmiss" title="no hit">✗</i>':'';
+        const one=b=>`<b>${esc(b.name)}</b> <span class="num">${pct(b.p,0)}</span>${mark(b)}`;
+        return x.hot
+          ? x.hotBats.slice(0,4).map(one).join('<span class="gsdot">·</span>')
+            + (x.hot>4?`<span class="gsmore">+${x.hot-4} more</span>`:'')
+          : (x.best?`<span class="gsbest">best ${one(x.best)}</span>`:'');
+      })()}</span>
+      ${x.hot?`<span class="gsn num">${x.hot} top bat${x.hot===1?'':'s'}</span>`:'<span class="gsn"></span>'}
+    </button>`;
   }
   return `<div class="gstrip">${out}</div>
-    <p class="note">Bars place each lineup's average against the ${games.length*2} lineups on tonight's slate
-      (${pct(lo,0)}–${pct(hi,0)}); the dots count bats in the slate's top fifth. Tap a side for its best bat.</p>`;
+    <p class="note">Warmer rows hold more of tonight's best bats — the slate's top fifth, scoring
+      ${pct(hotCut,0)} or better. Tap a game for its full lineups.</p>`;
 }
 
 /* ── Batters ───────────────────────────────────────────────────────── */
@@ -2680,7 +2719,15 @@ function viewTeams(){
   const rankOfLu=new Map(ranked.map((l,i)=>[l.pk+'|'+l.team, i+1]));
   const avgs=ranked.map(l=>l.avg).filter(v=>v!=null).sort((a,b)=>a-b);
   const scale={min:avgs[0], max:avgs[avgs.length-1], med:avgs[Math.floor(avgs.length/2)]};
-  const shown=sortLineups(ls, S.lsort);
+  const lq=S.lq.trim().toLowerCase();
+  const shown=sortLineups(ls, S.lsort).filter(l=>{
+    if(!lq) return true;
+    return l.team.toLowerCase().includes(lq)
+        || l.opp.toLowerCase().includes(lq)
+        || (l.arm.pit||'').toLowerCase().includes(lq)
+        || (l.alt?(l.alt.name||'').toLowerCase().includes(lq):false)
+        || l.bs.some(b=>b.name.toLowerCase().includes(lq));
+  });
   return `${ribbon()}
   <div class="sec-h" style="margin-bottom:14px">
     <h2>Lineups</h2>
@@ -2689,6 +2736,7 @@ function viewTeams(){
       the club it happens to be playing.</p>
   </div>
   <div class="filters">
+    <label class="field">${icon(ICONS.search)}<input id="lq" placeholder="Team, batter, pitcher" value="${esc(S.lq)}" aria-label="Search lineups"></label>
     <div class="seg" role="group" aria-label="Order the lineups">
       ${LU_SORTS.map(s=>`<button data-lsort="${s.id}" aria-pressed="${S.lsort===s.id}">${s.label}</button>`).join('')}
     </div>
@@ -2696,7 +2744,8 @@ function viewTeams(){
       <span class="num ${tcls(ranked[0].avg)}">${pct(ranked[0].avg,0)}</span> · slate spread
       <span class="num">${pct(scale.min,0)}–${pct(scale.max,0)}</span></span>
   </div>
-  <div class="lus">${shown.map(l=>lineupCard(l, rankOfLu.get(l.pk+'|'+l.team), ls.length, scale)).join('')}</div>`;
+  ${shown.length?`<div class="lus">${shown.map(l=>lineupCard(l, rankOfLu.get(l.pk+'|'+l.team), ls.length, scale)).join('')}</div>`
+    :`<div class="empty">No lineup, batter or arm matches “${esc(S.lq.trim())}”.</div>`}`;
 }
 
 /* ── Watch ─────────────────────────────────────────────────────────── */
@@ -3108,6 +3157,10 @@ function wireView(){
   const q=$('#fq');
   if(q){
     q.addEventListener('input',()=>{ S.filters.q=q.value; const s=q.selectionStart; render(); const n=$('#fq'); if(n){n.focus(); n.setSelectionRange(s,s);} });
+  }
+  const lq=$('#lq');
+  if(lq){
+    lq.addEventListener('input',()=>{ S.lq=lq.value; const s=lq.selectionStart; render(); const n=$('#lq'); if(n){n.focus(); n.setSelectionRange(s,s);} });
   }
   const bind=(id,k)=>{ const el=$(id); if(el) el.addEventListener('change',()=>{ S.filters[k]=el.value; render(); }); };
   bind('#fteam','team'); bind('#fgame','game'); bind('#fslot','slot');
