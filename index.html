@@ -5,48 +5,121 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>Mochi — calibrated hit indicator</title>
+<!-- Legacy's type system (2026-07-26). The same three faces hit-dugout.html
+     loads, for the same three jobs — see the "typography roles" block in the
+     stylesheet. This is the ONLY external request this page makes; everything
+     else is self-contained, and every rule below falls back to a system face,
+     so a blocked or offline load costs the look and nothing else. `display=swap`
+     means text paints in the fallback immediately rather than hanging on the
+     font. Weight RANGES are requested, not fixed stops, because the stylesheet
+     uses 650 and 750 as well as the round numbers. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=JetBrains+Mono:wght@400..700&family=Saira:wght@400..800&display=swap">
 <style>
 /* ═══════════════════════════════════════════════════════════════════════
-   MOCHI · broadcast
+   MOCHI · themes
    Hierarchy is carried by TYPE SCALE and RULES, not by boxing everything.
    The scale jumps hard on purpose — 60px score against a 10px label — so
    the eye lands on the number first and never has to hunt for the verdict.
-   Colour is rationed: one electric accent for "good for the batter", one
-   hot red for "bad", one amber for "unconfirmed / caution". Everything
-   else is greyscale, which is what makes the accent mean something.
+   Colour is rationed: one accent for "good for the batter", one hot red for
+   "bad", one amber for "unconfirmed / caution". Everything else is
+   greyscale, which is what makes the accent mean something.
+
+   Two theme families ship (2026-07-26, replacing the two Broadcast themes):
+
+     DUGOUT (dark / light) — the legacy dashboard's own palette, lifted
+       token-for-token out of hit-dugout.html. True black field, pure white
+       type, a single hot orange (#FF6B00) carrying every call-to-attention,
+       and the green/orange/grey score semantics the client already reads
+       fluently. `auto` resolves to one of these two, so the DEFAULT look of
+       this app is now the look of the dashboard it replaced.
+     AURORA — unchanged, glass and depth, further down the file.
+
+   The two ids stay `dark` and `light` because applyTheme('auto') writes one
+   of those names based on the OS setting; renaming them breaks Auto.
    ═══════════════════════════════════════════════════════════════════════ */
 :root{
-  /* surfaces — five steps of near-black, so panels separate without borders */
-  --bg:#08090A; --bg2:#0D0F11; --surf:#121417; --surf2:#171A1D; --surf3:#1E2226;
-  --line:#1E2124; --line2:#2A2E33; --rule:#33383E;
-  /* type */
-  --ink:#F4F5F6; --ink2:#9BA0A6; --ink3:#6C7278; --ink4:#4A4F55;
-  /* accents — rationed */
-  --acc:#C7FF3D;        /* FILLS only — backgrounds, solid rules */
-  --acc-txt:#C7FF3D;    /* text / icons / strokes — must pass on the page bg */
-  --acc-line:rgba(199,255,61,.34);
-  --acc-ink:#C7FF3D; --acc-on:#0A0C05; --acc-dim:rgba(199,255,61,.13);
-  --bad:#FF4D2E; --bad-dim:rgba(255,77,46,.14);
-  --warn:#FFB020; --warn-dim:rgba(255,176,32,.13);
+  /* ── DUGOUT DARK ────────────────────────────────────────────────────────
+     Surfaces are legacy's field/surf/raised (#000 → #0C0C0D → #17181A) with
+     two extra steps interpolated, since this app separates more panels than
+     the old one did. Greys are cool-neutral on purpose: legacy chose them so
+     the page reads modern rather than muddy next to the orange. */
+  --bg:#000000; --bg2:#0A0A0B; --surf:#0C0C0D; --surf2:#17181A; --surf3:#212328;
+  --line:#1C1F24; --line2:#2A2D33; --rule:#3B3F47;
+  /* type — legacy's chalk white and sage grey */
+  --ink:#FFFFFF; --ink2:#949AA3; --ink3:#6E747E; --ink4:#4A4F58;
+  /* accent — legacy's hot orange. 6.8:1 on the black field, so unlike most
+     saturated oranges it is safe as text and does not need a lighter twin. */
+  --acc:#FF6B00;        /* FILLS only — backgrounds, solid rules */
+  --acc-txt:#FF6B00;    /* text / icons / strokes — must pass on the page bg */
+  --acc-line:rgba(255,107,0,.36);
+  --acc-ink:#FF8A2B; --acc-on:#150500; --acc-dim:rgba(255,107,0,.14);
+  --bad:#FF2D46; --bad-dim:rgba(255,45,70,.14);
+  --warn:#FFB800; --warn-dim:rgba(255,184,0,.13);
   /* score ramp — sequential, single hue, for magnitude only */
-  --s1:#2A3318; --s2:#4C6423; --s3:#7FA82E; --s4:#C7FF3D;
-  --mono:ui-monospace,"SF Mono",SFMono-Regular,"JetBrains Mono",Menlo,monospace;
-  --sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+  --s1:#331700; --s2:#663000; --s3:#B34B00; --s4:#FF6B00;
+  /* ── score tiers ───────────────────────────────────────────────────────
+     Ported back from the legacy dashboard (2026-07-26) because the colour was
+     doing real work there: it sorts a screen of numbers into "worth a look /
+     middling / skip" before you have read a single digit, which the bare
+     greyscale ramp never did. Thresholds are legacy's: .70 / .55, and under
+     Dugout the values are legacy's literal --good / --amber / --sage. The mid
+     tier deliberately IS the accent here, exactly as it was in the old
+     dashboard — most of a slate lands in that band, and the client reads the
+     resulting wash of orange as "ordinary", not as an alarm. */
+  --tier-hi:#00D46A;  --tier-hi-dim:rgba(0,212,106,.14);  --tier-hi-line:rgba(0,212,106,.42);
+  --tier-mid:#FF6B00; --tier-mid-dim:rgba(255,107,0,.13); --tier-mid-line:rgba(255,107,0,.40);
+  --tier-lo:#949AA3;  --tier-lo-dim:rgba(148,154,163,.10);--tier-lo-line:rgba(148,154,163,.30);
+  /* pitcher grade ramp — describes the ARM, not the batter's edge, which is
+     why it is a separate scale from the tiers above (a grade-A arm is a bad
+     night for the hitter). Legacy's five-stop ramp, unchanged. */
+  --grade-a:#00D46A; --grade-b:#8CE04A; --grade-c:#FFB800; --grade-d:#FF8A1F; --grade-f:#FF2D46;
+  --seam:#FF2D46;       /* baseball lacing — legacy's --live red */
+  /* ── type faces ────────────────────────────────────────────────────────
+     Legacy's three, doing legacy's three jobs. The split is the point: when
+     --disp and --mono were the same face, every surface read as a debug
+     console.
+       --disp  Saira, an athletic grotesk. LABELS — headings, nav, player
+               names, column headers, section titles.
+       --mono  JetBrains Mono. MEASUREMENTS — anything that must align in a
+               column or be read digit by digit.
+       --sans  Inter. Running prose and everything unclaimed.
+     Each falls back to the system stack it replaced, so the page degrades to
+     its previous typography rather than to Times if the fonts don't load. */
+  --disp:"Saira",ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
+  --sans:"Inter",ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   /* type scale — deliberate jumps, not a gentle ramp */
   --t-hero:60px; --t-xl:38px; --t-lg:27px; --t-md:20px; --t-bd:16px;
   --t-sm:13px; --t-xs:11.5px; --t-mi:10px;
   --shadow:none;
   --safe-b:env(safe-area-inset-bottom,0px);
 }
+/* ── DUGOUT LIGHT ────────────────────────────────────────────────────────
+   Legacy's light variant: cool neutral greys rather than cream, so daylight
+   is the same product rather than a different one. Surface ORDER is
+   preserved from the dark theme — --bg is the page and the darkest tone,
+   --surf is the most elevated — which is what row hover and the drawer rely
+   on. Accents are the darkened hues legacy uses to clear contrast on white;
+   the hot orange in particular has to drop to #D95A00 to survive as text. */
 html[data-theme="light"]{
-  --bg:#FFFFFF; --bg2:#F7F7F5; --surf:#FFFFFF; --surf2:#F7F7F5; --surf3:#EFEFEC;
-  --line:#E4E4E1; --line2:#D4D4D0; --rule:#1A1A18;
-  --ink:#0A0A0A; --ink2:#5C5F63; --ink3:#84888D; --ink4:#A8ACB1;
-  --acc:#B6EE1F; --acc-txt:#4D7C0F; --acc-line:rgba(77,124,15,.38);
-  --acc-ink:#3F6212; --acc-on:#0A0C05; --acc-dim:rgba(133,190,20,.16);
-  --bad:#DC2626; --bad-dim:rgba(220,38,38,.09);
-  --warn:#B45309; --warn-dim:rgba(180,83,9,.10);
-  --s1:#E8F5C8; --s2:#C2E572; --s3:#9BCC33; --s4:#6B9E00;
+  /* --surf3 is the "empty track" tone (meters, form strips, skeletons). On a
+     white page it could sit just below white; against legacy's grey field it
+     has to go a step DARKER than --bg or an unfilled meter disappears. */
+  --bg:#E9EBEF; --bg2:#F1F3F6; --surf:#FFFFFF; --surf2:#F7F8FA; --surf3:#D8DDE4;
+  --line:#D7DBE1; --line2:#C3C9D2; --rule:#0B0D10;
+  --ink:#0B0D10; --ink2:#5C6470; --ink3:#7C8493; --ink4:#A3AAB6;
+  --acc:#D95A00; --acc-txt:#C25000; --acc-line:rgba(217,90,0,.38);
+  --acc-ink:#B34700; --acc-on:#FFFFFF; --acc-dim:rgba(217,90,0,.12);
+  --bad:#D80D26; --bad-dim:rgba(216,13,38,.10);
+  --warn:#B37400; --warn-dim:rgba(179,116,0,.12);
+  --s1:#FBE6D4; --s2:#F2B77E; --s3:#E4813A; --s4:#D95A00;
+  --tier-hi:#00994D;  --tier-hi-dim:rgba(0,153,77,.11);   --tier-hi-line:rgba(0,153,77,.38);
+  --tier-mid:#D95A00; --tier-mid-dim:rgba(217,90,0,.10);  --tier-mid-line:rgba(217,90,0,.36);
+  --tier-lo:#5C6470;  --tier-lo-dim:rgba(92,100,112,.08); --tier-lo-line:rgba(92,100,112,.28);
+  --grade-a:#00994D; --grade-b:#4E9E1F; --grade-c:#B37400; --grade-d:#D95A00; --grade-f:#D80D26;
+  --seam:#D80D26;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
@@ -76,7 +149,7 @@ header{
 }
 .hbar{display:flex;align-items:center;gap:14px;height:58px}
 .brand{display:flex;align-items:center;gap:9px;font-weight:750;letter-spacing:-.035em;font-size:var(--t-md)}
-.brand em{font-style:normal;color:var(--acc-txt);font-size:15px;line-height:1}
+.brand em{font-style:normal;color:var(--acc-txt);font-size:15px;line-height:1;display:flex;align-items:center}
 .brand small{font-weight:700;color:var(--ink3);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;padding-left:4px}
 @media(max-width:700px){ .brand small{display:none} }
 .hspace{flex:1}
@@ -146,7 +219,13 @@ header{
 details.truth{display:block}
 details.truth summary{list-style:none;cursor:pointer;padding:13px 16px;display:flex;gap:12px;align-items:flex-start}
 details.truth summary::-webkit-details-marker{display:none}
-details.truth summary::after{content:'▾';margin-left:auto;color:var(--ink3);font-size:11px;padding-top:3px}
+details.truth summary::after{content:'▾';order:3;color:var(--ink3);font-size:11px;padding-top:3px}
+details.truth summary > span{flex:1}
+.truthx{
+  order:2;width:22px;height:22px;flex:0 0 22px;display:grid;place-items:center;border-radius:3px;
+  color:var(--ink4);font-size:15px;line-height:1;margin-top:-2px;
+}
+.truthx:hover{background:var(--surf3);color:var(--ink)}
 details.truth[open] summary::after{content:'▴'}
 details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .truth svg{width:16px;height:16px;flex:0 0 16px;margin-top:2px;stroke:var(--warn);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -218,11 +297,50 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
    club mark is a weight bump plus its own hue; the row edge is the same hue
    at low alpha, enough to group a game at a glance without becoming stripes. */
 .tm{font-weight:750;letter-spacing:.02em}
-.bcard{box-shadow:inset 2px 0 0 -0.5px transparent;transition:box-shadow .15s}
-.blist .bcard{box-shadow:inset 2px 0 0 -0.5px color-mix(in srgb,var(--tc,transparent) 42%,transparent)}
-.blist .bcard:hover{box-shadow:inset 3px 0 0 -0.5px var(--tc,transparent)}
-.gside{box-shadow:inset 2px 0 0 -0.5px color-mix(in srgb,var(--tc,transparent) 55%,transparent)}
+/* The club edge is a CHILD, not an inset box-shadow. A shadow is painted
+   inside the padding box and ignores the border-radius the themes apply, so
+   under Aurora it hung off the rounded corners as a stray coloured slash —
+   which is exactly the "odd coloured border" it was reported as. A ::before
+   inherits the radius and is clipped by the card's own overflow. */
+.blist .bcard,.gside{position:relative}
+.blist .bcard:not(.hero)::before,.gside::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:inherit;
+  background:var(--tc,transparent);opacity:.42;transition:opacity .15s,width .15s;pointer-events:none;
+}
+.blist .bcard:not(.hero):hover::before{opacity:.95;width:4px}
+/* on a game card the side's full height is mostly the batter chips, so a
+   full-length club rule reads as a stray line floating in whitespace. Clip it
+   to the team label it actually belongs to. */
+.gside::before{opacity:.75;top:12px;bottom:auto;height:32px;width:2px;border-radius:2px}
 .gteams .at{color:var(--ink4);font-weight:500;padding:0 1px}
+
+/* ── score tiers ────────────────────────────────────────────────────────
+   One rule, applied everywhere a probability is printed, so the same number
+   is the same colour in the shortlist, the table, a game card and the drawer. */
+/* `.vbig` sets its own colour further down the file, and at equal specificity
+   the later rule wins — so the drawer's verdict is named explicitly here.
+   Any future element that both prints a score and sets its own colour needs
+   the same treatment. */
+.t-hi, .vbig.t-hi {color:var(--tier-hi);--tier-c:var(--tier-hi)}
+.t-mid,.vbig.t-mid{color:var(--tier-mid);--tier-c:var(--tier-mid)}
+.t-lo, .vbig.t-lo {color:var(--tier-lo);--tier-c:var(--tier-lo)}
+.meter.t-hi i{background:var(--tier-hi)} .meter.t-mid i{background:var(--tier-mid)} .meter.t-lo i{background:var(--tier-lo)}
+.mini.t-hi{color:var(--tier-hi);background:var(--tier-hi-dim);border-color:var(--tier-hi-line)}
+.mini.t-mid{color:var(--tier-mid);background:var(--tier-mid-dim);border-color:var(--tier-mid-line)}
+.mini.t-lo{color:var(--ink2);background:var(--tier-lo-dim);border-color:var(--tier-lo-line)}
+.mini.t-hi b,.mini.t-mid b{color:inherit}
+/* the pitcher grade is on its own scale — it grades the ARM, so A is a hard
+   night for the hitter. Kept visually distinct from the tier colours by being
+   a filled disc rather than plain text. */
+.grade[data-g="A"]{color:var(--grade-a);border-color:var(--grade-a)}
+.grade[data-g="B"]{color:var(--grade-b);border-color:var(--grade-b)}
+.grade[data-g="C"]{color:var(--grade-c);border-color:var(--grade-c)}
+.grade[data-g="D"]{color:var(--grade-d);border-color:var(--grade-d)}
+.grade[data-g="F"]{color:var(--grade-f);border-color:var(--grade-f)}
+.gr{font-family:var(--mono);font-size:9px;font-weight:750;padding:1px 4px;border-radius:2px;border:1px solid currentColor;opacity:.9}
+.gr[data-g="A"]{color:var(--grade-a)} .gr[data-g="B"]{color:var(--grade-b)}
+.gr[data-g="C"]{color:var(--grade-c)} .gr[data-g="D"]{color:var(--grade-d)}
+.gr[data-g="F"]{color:var(--grade-f)}
 .bwhy{margin-top:9px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 .bscore{text-align:right;display:grid;gap:5px;justify-items:end}
 .pct{font-family:var(--mono);font-size:var(--t-lg);font-weight:700;letter-spacing:-.045em;line-height:1}
@@ -266,7 +384,11 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .tag.est{border-color:var(--warn);color:var(--warn)}
 .tag.conf{border-color:var(--line2);color:var(--ink3)}
 .tag.live{border-color:var(--bad);color:var(--bad);background:var(--bad-dim)}
-.tag.hit{background:var(--acc);color:var(--acc-on);border-color:var(--acc)}
+/* a recorded hit is the good outcome, so it wears the good-tier colour rather
+   than the theme accent — the accent means "high score", which is a different
+   claim about a different thing */
+.tag.hit{background:var(--tier-hi);color:#04140B;border-color:var(--tier-hi)}
+html[data-theme="light"] .tag.hit{color:#fff}
 
 .strip{display:inline-flex;gap:2.5px;align-items:center}
 .strip i{width:6px;height:14px;background:var(--surf3);display:block;border-radius:1px}
@@ -287,23 +409,46 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .seg button:last-child{border-right:0}
 .seg button[aria-pressed="true"]{background:var(--acc);color:var(--acc-on)}
 
-/* ── table ──────────────────────────────────────────────────────────── */
+/* ── table ──────────────────────────────────────────────────────────────
+   Fixed layout with declared column widths. Left to itself the browser gave
+   every point of slack to the two text columns, so BATTER and PITCHER opened
+   into long empty corridors while the number columns crowded — the "long
+   spaces". Fixed widths spend the slack where it is readable and let the two
+   text columns ellipsis instead of stretching. */
 .tblwrap{overflow-x:auto}
-@media(min-width:900px){ .tblwrap{overflow:visible} }
-table{border-collapse:collapse;width:100%;font-size:var(--t-sm)}
+@media(min-width:1120px){ .tblwrap{overflow:visible} }
+table{border-collapse:collapse;width:100%;min-width:1040px;font-size:var(--t-sm);table-layout:fixed}
 th{
   text-align:left;font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);
-  font-weight:750;padding:10px 12px 10px 0;border-bottom:1px solid var(--rule);white-space:nowrap;
+  font-weight:750;padding:10px 10px 10px 0;border-bottom:1px solid var(--rule);white-space:nowrap;
   position:sticky;top:58px;background:var(--bg);z-index:2;
 }
 th.sortable{cursor:pointer}
 th.sortable:hover{color:var(--ink)}
 th[aria-sort]{color:var(--acc-txt)}
-td{padding:11px 12px 11px 0;border-bottom:1px solid var(--line);vertical-align:middle}
+td{padding:10px 10px 10px 0;border-bottom:1px solid var(--line);vertical-align:middle}
 tbody tr{cursor:pointer}
 tbody tr:hover{background:var(--surf2)}
-td.r,th.r{text-align:right;padding-left:16px;padding-right:14px}
+/* a right-aligned number sits hard against whatever follows it — K% was
+   touching the pitcher's name — so numeric cells buy a little more air */
+td.r,th.r{text-align:right;padding-left:8px;padding-right:14px}
+td.c,th.c{text-align:center;padding-left:6px;padding-right:6px}
+/* text columns truncate rather than push the numbers off the right edge —
+   which is what was cutting columns off between 900 and 1120px */
+td.ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 th:last-child,td:last-child{padding-right:0}
+/* declared widths, in column order:
+   batter · tm · slot · score · form · matchup · hit% · xba · k% · pitcher · arm · pa/g · ★ */
+col.c-name{width:20%} col.c-tm{width:54px}  col.c-slot{width:54px} col.c-score{width:128px}
+col.c-form{width:72px} col.c-mu{width:82px} col.c-hit{width:70px} col.c-xba{width:70px}
+col.c-k{width:68px}    col.c-pit{width:15%} col.c-arm{width:66px} col.c-pa{width:66px}
+col.c-star{width:40px}
+/* the score cell: number and meter on one line, so the column is as wide as
+   its content instead of as wide as the widest of two stacked things */
+td.sc,th.sch{text-align:left;padding-left:8px}
+td.sc{white-space:nowrap}
+td.sc .meter{width:52px;margin-left:8px}
+td.sc b{font-size:var(--t-bd)}
 
 /* ── games ──────────────────────────────────────────────────────────── */
 .games{display:grid;gap:0}
@@ -314,7 +459,7 @@ th:last-child,td:last-child{padding-right:0}
 .gtime{font-size:var(--t-mi);color:var(--ink3);font-family:var(--mono);letter-spacing:.06em}
 .gscore{margin-left:auto;font-family:var(--mono);font-size:var(--t-md);font-weight:700;letter-spacing:-.03em}
 .gsides{display:grid;gap:10px}
-.gside{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:start;padding:11px 0 0;border-top:1px solid var(--line)}
+.gside{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:start;padding:11px 0 0 10px;border-top:1px solid var(--line)}
 .gteam{font-family:var(--mono);font-size:var(--t-sm);font-weight:750;letter-spacing:-.02em}
 .gvs{font-size:var(--t-xs);color:var(--ink3);line-height:1.4}
 .gvs b{color:var(--ink);font-weight:650}
@@ -351,7 +496,13 @@ th:last-child,td:last-child{padding-right:0}
   .drawer{top:0;bottom:0;right:0;width:min(560px,95vw);border-left:1px solid var(--rule);transform:translateX(101%)}
   .drawer.on{transform:translateX(0)}
 }
-.dhead{padding:16px 20px;border-bottom:1px solid var(--rule);display:flex;align-items:flex-start;gap:12px}
+.dhead{padding:16px 20px;border-bottom:1px solid var(--rule);display:flex;align-items:flex-start;gap:12px;position:relative}
+/* the club mark. It used to be an inset box-shadow spanning the drawer's full
+   width, which put a 3px coloured bar hard against the top of the viewport
+   with nothing to relate it to — it read as a rendering fault rather than as
+   a team colour. Inset to the header's own padding it reads as a marker. */
+.dhead::before{content:'';position:absolute;left:20px;width:54px;top:0;height:3px;background:var(--tc,transparent);border-radius:0 0 2px 2px}
+@media(max-width:600px){ .dhead::before{left:15px} }
 .dbody{overflow-y:auto;padding:20px;flex:1;overscroll-behavior:contain}
 .dtitle{font-size:var(--t-lg);font-weight:750;letter-spacing:-.035em;line-height:1.1}
 .dsub{font-size:var(--t-xs);color:var(--ink3);margin-top:5px}
@@ -416,6 +567,69 @@ footer{margin:44px 0 30px;padding-top:16px;border-top:1px solid var(--line);
   font-size:var(--t-xs);color:var(--ink4);display:flex;gap:14px;flex-wrap:wrap;align-items:baseline}
 footer a{color:var(--ink3);border-bottom:1px solid var(--line2);padding-bottom:1px}
 footer a:hover{color:var(--acc-txt);border-bottom-color:var(--acc-line)}
+
+/* ══ typography roles ═══════════════════════════════════════════════════
+   Which face each thing gets. Kept as one block rather than edited into the
+   fifteen rules above, so the split stays legible and reversible: delete this
+   block and the <link> in <head> and the page is back on system faces.
+   Everything NOT listed here is either already --mono (a measurement) or
+   inherits --sans from <body> (prose). Measurements deliberately stay in
+   JetBrains Mono even where legacy used Saira for the big score, because
+   Aurora counts the hero number up frame by frame and a proportional face
+   makes it jitter as the digits change width.
+   ══════════════════════════════════════════════════════════════════════ */
+.brand,
+.nav button, .tabbar button, .seg button,
+.lbl, .slab, th,
+.sec-h h2, .sec-h .lnk, .dtitle,
+.bname, .gteams,
+.evlab, .toast{ font-family:var(--disp) }
+/* Saira sets tighter than the system grotesk it replaces, so the display
+   sizes give back some of the negative tracking they were carrying. */
+.sec-h h2, .dtitle{ letter-spacing:-.02em }
+.bname{ letter-spacing:-.005em }
+.brand{ letter-spacing:-.02em }
+
+/* ══ the sport ══════════════════════════════════════════════════════════
+   The page was reading as a generic analytics dashboard — correct, legible,
+   and about nothing in particular. These are the few marks that are actually
+   OF baseball rather than decoration laid on top of it: the ball's lacing,
+   and the scorecard diamond that has carried a batting-order number for a
+   century. None of them encode data. They are identity, so they stay quiet
+   and never compete with a score.
+   ══════════════════════════════════════════════════════════════════════ */
+.ball{width:20px;height:20px;flex:0 0 20px;display:block;overflow:visible}
+.ball .bd{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.5}
+.ball .sk{fill:none;stroke:var(--seam);stroke-width:1.6;stroke-linecap:round}
+.ball .st{stroke:var(--seam);stroke-width:1.1;stroke-linecap:round;opacity:.9}
+
+/* the lacing rule: angled ticks, the way stitching reads from the stands.
+   A gradient, so it costs no markup and no request. */
+.sec-h{padding-bottom:11px;border-bottom:1px solid var(--line);position:relative}
+.sec-h::after{
+  content:'';position:absolute;left:0;bottom:-2px;width:70px;height:4px;pointer-events:none;
+  background-image:repeating-linear-gradient(115deg,var(--seam) 0 2px,transparent 2px 8px);
+  opacity:.85;
+}
+/* scorecard diamond — the lineup slot */
+.dia{position:relative;display:inline-block;width:16px;height:16px;vertical-align:-3px}
+.dia::before{content:'';position:absolute;inset:2px;border:1px solid var(--line2);transform:rotate(45deg)}
+.dia i{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;
+  font-family:var(--mono);font-size:9px;font-weight:750;color:var(--ink2);letter-spacing:0}
+td.c .dia{vertical-align:middle}
+.bcard.hero .dia::before{border-color:var(--acc-line)}
+.bcard.hero .dia i{color:var(--ink2)}
+/* a ball, faintly, behind the one row that matters most. It lives INSIDE the
+   hero card and the card clips it, so it can be larger than the row without
+   spilling onto the page. */
+.bcard.hero{position:relative;overflow:hidden}
+.seammark{
+  position:absolute;right:-34px;top:50%;transform:translateY(-50%);
+  width:230px;height:230px;pointer-events:none;color:var(--ink);opacity:.06;z-index:0;
+}
+.bcard.hero > :not(.seammark){position:relative;z-index:1}
+.seammark svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.2}
+@media(max-width:600px){ .seammark{width:150px;height:150px;right:-30px;opacity:.05} }
 
 /* ── phone ──────────────────────────────────────────────────────────────
    Scenario A (05:30, coffee, phone) is the most common and was the worst
@@ -486,6 +700,13 @@ html[data-theme="aurora"]{
   --bad:#FF6B8A; --bad-dim:rgba(255,107,138,.14);
   --warn:#FFC46B; --warn-dim:rgba(255,196,107,.13);
   --s1:#173042; --s2:#1F5E77; --s3:#2E9DB8; --s4:#4DE8FF;
+  /* the tiers keep their meaning under glass — lifted in lightness so they
+     read against the violet field, not re-hued into the aurora palette */
+  --tier-hi:#3DF5A6;  --tier-hi-dim:rgba(61,245,166,.14); --tier-hi-line:rgba(61,245,166,.40);
+  --tier-mid:#FFC46B; --tier-mid-dim:rgba(255,196,107,.14);--tier-mid-line:rgba(255,196,107,.38);
+  --tier-lo:#9C9CC4;  --tier-lo-dim:rgba(156,156,196,.10); --tier-lo-line:rgba(156,156,196,.28);
+  --grade-a:#3DF5A6; --grade-b:#A6F06A; --grade-c:#FFC46B; --grade-d:#FF9E5E; --grade-f:#FF6B8A;
+  --seam:#FF6B8A;
   --violet:#A78BFA; --glow:0 0 24px rgba(77,232,255,.30);
   --rg:18px;              /* glass corner radius */
   --spring:cubic-bezier(.22,1,.36,1);
@@ -591,12 +812,15 @@ html[data-theme="aurora"] .bcard.hero::before{      /* soft halo behind the scor
 html[data-theme="aurora"] .bcard.hero .rank{
   color:var(--acc);text-shadow:0 0 22px rgba(77,232,255,.65);
 }
+/* the big numbers still get the glass gradient, but it is built FROM the score
+   tier rather than from the theme accent — a 74% and a 51% must not glow the
+   same colour just because they are both the largest thing on their screen */
 html[data-theme="aurora"] .bcard.hero .pct,
 html[data-theme="aurora"] .vbig{
-  background:linear-gradient(120deg,#FFFFFF 10%,var(--acc) 55%,var(--violet));
+  background:linear-gradient(120deg,#FFFFFF 6%,var(--tier-c,var(--acc)) 68%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
   -webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 26px rgba(77,232,255,.35));
+  filter:drop-shadow(0 0 26px color-mix(in srgb,var(--tier-c,var(--acc)) 40%,transparent));
 }
 html[data-theme="aurora"] .bcard.hero .pct span{-webkit-text-fill-color:var(--ink3)}
 html[data-theme="aurora"] .vbig span{-webkit-text-fill-color:var(--ink3)}
@@ -646,7 +870,7 @@ html[data-theme="aurora"] .sgrid{
    scroll container — which re-anchors the sticky <th> to the wrap instead of
    the viewport and drops it into the middle of the table. Same trap as the
    base stylesheet's overflow-x:auto. Round the header cells instead. */
-@media(min-width:900px){
+@media(min-width:1120px){
   html[data-theme="aurora"] .tblwrap{overflow:visible}
   html[data-theme="aurora"] th:first-child{border-top-left-radius:var(--rg)}
   html[data-theme="aurora"] th:last-child{border-top-right-radius:var(--rg)}
@@ -679,12 +903,16 @@ html[data-theme="aurora"] .seg button{border-right-color:var(--line);transition:
 html[data-theme="aurora"] .seg button[aria-pressed="true"]{
   background:linear-gradient(120deg,var(--acc),#8FF3FF);color:var(--acc-on);
 }
+/* A coloured border-LEFT on a rounded box bends round both corners and reads
+   as a stray arc rather than a rule — it was the most obvious of the "odd
+   coloured borders". Under Aurora the accent is carried by the tint and the
+   icon instead, and the box keeps one even hairline all the way round. */
 html[data-theme="aurora"] .truth{
-  border:1px solid var(--line);border-left:2px solid var(--warn);border-radius:var(--rg);
-  background:var(--surf);backdrop-filter:blur(14px);
+  border:1px solid color-mix(in srgb,var(--warn) 26%,var(--line));border-left-width:1px;
+  border-radius:var(--rg);background:var(--surf);backdrop-filter:blur(14px);
 }
 html[data-theme="aurora"] .vcheck{
-  border-radius:14px;border-left:2px solid var(--acc);background:var(--acc-dim);
+  border-radius:14px;border:1px solid var(--acc-line);border-left-width:1px;background:var(--acc-dim);
 }
 html[data-theme="aurora"] .empty{border-radius:var(--rg);background:var(--surf)}
 
@@ -716,6 +944,22 @@ html[data-theme="aurora"] .toast{
   border-radius:999px;background:linear-gradient(120deg,var(--acc),#8FF3FF);color:var(--acc-on);
   box-shadow:0 0 30px rgba(77,232,255,.5);
 }
+/* ── tiers, restated last ─────────────────────────────────────────────────
+   The Aurora rules above are all more specific than the base .meter.t-hi /
+   .mini.t-hi, and several of them come later in the file, so without this the
+   theme repaints every bar and pill back to the one accent colour and the
+   score tiers vanish under glass. Nothing below this line may set a .mini or
+   .meter background. */
+html[data-theme="aurora"] .meter.t-hi i {background:linear-gradient(90deg,color-mix(in srgb,var(--tier-hi) 55%,var(--violet)),var(--tier-hi))}
+html[data-theme="aurora"] .meter.t-mid i{background:linear-gradient(90deg,color-mix(in srgb,var(--tier-mid) 55%,var(--violet)),var(--tier-mid))}
+html[data-theme="aurora"] .meter.t-lo i {background:linear-gradient(90deg,var(--violet),var(--tier-lo))}
+html[data-theme="aurora"] .mini.t-hi {background:var(--tier-hi-dim);border-color:var(--tier-hi-line);color:var(--tier-hi)}
+html[data-theme="aurora"] .mini.t-mid{background:var(--tier-mid-dim);border-color:var(--tier-mid-line);color:var(--tier-mid)}
+html[data-theme="aurora"] .mini.t-lo {background:var(--tier-lo-dim);border-color:var(--tier-lo-line);color:var(--ink2)}
+html[data-theme="aurora"] .mini.t-hi:hover,
+html[data-theme="aurora"] .mini.t-mid:hover,
+html[data-theme="aurora"] .mini.t-lo:hover{background:var(--surf2);border-color:currentColor}
+
 /* view changes fade rather than snap */
 html[data-theme="aurora"] #main{animation:viewIn .38s var(--spring)}
 @keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -730,7 +974,11 @@ html[data-theme="aurora"] #main{animation:viewIn .38s var(--spring)}
 
 <header>
   <div class="wrap hbar">
-    <div class="brand"><em>◍</em> Mochi <small>calibrated hit indicator</small></div>
+    <div class="brand"><em><svg class="ball" viewBox="0 0 24 24" aria-hidden="true">
+      <circle class="bd" cx="12" cy="12" r="9.2"/>
+      <path class="sk" d="M5.2 4.6c3.1 3.6 3.1 11.2 0 14.8M18.8 4.6c-3.1 3.6-3.1 11.2 0 14.8"/>
+      <path class="st" d="M6.6 7.2l1.6-.7M6.9 9.6l1.7-.5M6.9 14.4l1.7.5M6.6 16.8l1.6.7M17.4 7.2l-1.6-.7M17.1 9.6l-1.7-.5M17.1 14.4l-1.7.5M17.4 16.8l-1.6.7"/>
+    </svg></em> Mochi <small>calibrated hit indicator</small></div>
     <nav class="nav" id="nav" aria-label="Views"></nav>
     <div class="hspace"></div>
     <select class="dsel" id="dsel" aria-label="Slate date" hidden></select>
@@ -765,6 +1013,18 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const pct  = (v,d=0) => v==null||isNaN(v) ? '—' : (v*100).toFixed(d)+'%';
 const num  = (v,d=2) => v==null||isNaN(v) ? '—' : Number(v).toFixed(d);
 const clamp= (v,a,b) => Math.max(a,Math.min(b,v));
+/** The legacy dashboard's three-tier read on a probability, thresholds and
+    all (.70 / .55). Every printed score wears it, so the same number is the
+    same colour wherever it appears. */
+const tierOf = p => p==null||isNaN(p) ? 'lo' : p>=.70 ? 'hi' : p>=.55 ? 'mid' : 'lo';
+const tcls   = p => 't-'+tierOf(p);
+const GRADES = new Set(['A','B','C','D','F']);
+/** Pitcher letter grade as a coloured pill — separate scale from the score
+    tiers on purpose: it grades the arm, so A is a hard night for the hitter. */
+const gradePill = (g,cls='gr') => {
+  const G = String(g||'').trim().toUpperCase().slice(0,1);
+  return g ? `<span class="${cls}" ${GRADES.has(G)?`data-g="${G}"`:''} title="Pitcher grade ${esc(g)} — grades the arm, so A is the toughest matchup for the batter">${esc(g)}</span>` : '';
+};
 const key  = b => `${b.gamePk}:${b.batterId}`;          // doubleheader-safe, always
 const store = {
   get(k,f){ try{ const v=localStorage.getItem('mochi.'+k); return v==null?f:JSON.parse(v);}catch(e){return f} },
@@ -842,8 +1102,8 @@ function readable(hex, bgLum, target){
     dark-on-light one. Emitting CSS (rather than colouring at render time)
     means the theme toggle re-colours everything for free — nothing re-renders. */
 function teamCSS(){
-  const BG_DARK = relLum([8/255,9/255,10/255]);    // --bg, dark + aurora
-  const BG_LIGHT = relLum([1,1,1]);                // --bg, light
+  const BG_DARK = relLum([0,0,0]);                       // --bg, Dugout dark + Aurora
+  const BG_LIGHT = relLum([233/255,235/255,239/255]);    // --bg, Dugout light
   const line = bg => Object.entries(TEAM_HEX)
     .map(([t,hex])=>`--tc-${t}:${readable(hex,bg,4.5)}`).join(';');
   return `:root{${line(BG_DARK)}}\nhtml[data-theme="light"]{${line(BG_LIGHT)}}`;
@@ -1325,8 +1585,15 @@ function meter(b){
   const s=S.st.p; if(!s) return '';
   const span=(s.max-s.min)||1;
   const w=clamp((b.p-s.min)/span,0,1)*100, med=clamp((s.med-s.min)/span,0,1)*100;
-  return `<span class="meter" role="img" aria-label="${pct(b.p,1)}, slate median ${pct(s.med,1)}"><i style="width:${w.toFixed(1)}%"></i><b style="left:${med.toFixed(1)}%"></b></span>`;
+  return `<span class="meter ${tcls(b.p)}" role="img" aria-label="${pct(b.p,1)}, slate median ${pct(s.med,1)}"><i style="width:${w.toFixed(1)}%"></i><b style="left:${med.toFixed(1)}%"></b></span>`;
 }
+/** The lineup slot drawn as a scorecard diamond. The batting order is one of
+    the few numbers here that is a baseball object rather than a statistic, and
+    a rotated square with the number inside it is how every scorecard in the
+    game has drawn it — it costs nothing and it reads instantly. */
+const slotDiamond = s => s
+  ? `<span class="dia" title="Bats ${s} in the order" role="img" aria-label="bats ${s}"><i>${s}</i></span>`
+  : `<span class="muted">slot TBD</span>`;
 function stripHTML(l10){
   if(!l10) return '<span class="muted" style="font-size:11px">no recent games</span>';
   const s=l10.slice(-10);
@@ -1375,19 +1642,28 @@ function batterCard(b, rank, hero, idx){
   const pos = rank ?? idx ?? 0;
   const stagger = Math.min(pos, 14);
   return `<div class="brow${hero?' hero':''}"><button class="bcard${hero?' hero':''}${pos<20?' stagger':''}" data-k="${key(b)}" style="--i:${stagger};--tc:${tc(b.team,'var(--line2)')}">
+    ${hero?SEAM_MARK:''}
     <span class="rank num">${rank!=null?rank:''}${hero?'<b>RANK</b>':''}</span>
     <span class="bmain">
       <span class="bname">${esc(b.name)} ${lineupTag(b)} ${stateTag(b)}</span>
-      <span class="bmeta"><span class="num tm" style="color:${tc(b.team)}">${esc(b.team)}</span> · ${matchupHTML(b.matchup)} · ${b.slot?`bats ${b.slot}`:'slot TBD'} · vs ${esc(b.pit||'TBD')}${b.pGrade?` (${esc(b.pGrade)})`:''}</span>
+      <span class="bmeta"><span class="num tm" style="color:${tc(b.team)}">${esc(b.team)}</span> · ${matchupHTML(b.matchup)} · ${slotDiamond(b.slot)} · vs ${esc(b.pit||'TBD')} ${gradePill(b.pGrade)}</span>
       <span class="bwhy">${top.map(chipFor).join('')}${flags.map(chipFor).join('')}${stripHTML(b.last10)}</span>
     </span>
     <span class="bscore">
-      <span class="pct">${p}<span>%</span></span>
+      <span class="pct ${tcls(b.p)}">${p}<span>%</span></span>
       ${meter(b)}
       <span class="slaterank">${r?`#${r} of ${S.batters.length}`:''}</span>
     </span>
   </button>${starBtn(b)}</div>`;
 }
+/** A ball, faint, behind the top row. Rendered as markup rather than a CSS
+    background image so it can use currentColor and follow every theme. */
+const SEAM_MARK = `<span class="seammark" aria-hidden="true"><svg viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="45"/>
+  <path d="M21 13c13 15 13 59 0 74M79 13c-13 15-13 59 0 74"/>
+  <path d="M27 22l6-3M25 31l6-2M24 41l6-1M24 50h6M24 59l6 1M25 68l6 2M27 78l6 3
+           M73 22l-6-3M75 31l-6-2M76 41l-6-1M76 50h-6M76 59l-6 1M75 68l-6 2M73 78l-6 3" stroke-width="1.6"/>
+</svg></span>`;
 
 /* ══════════════════════════════════════════════════════════════════════
    7 · views
@@ -1420,20 +1696,38 @@ function ribbon(){
   </div>`;
 }
 
+/* ── the honesty note ─────────────────────────────────────────────────────
+   Shown, dismissible, and back in a month. A permanent dismissal would lose
+   the caveat for good on a shared machine; a nag that returns every load is
+   what made it invisible in the first place. */
+const TRUTH_SNOOZE_DAYS = 30;
+function truthDue(){
+  const until = store.get('truthSnoozedUntil', 0);
+  return !(typeof until==='number' && Date.now() < until);
+}
+function snoozeTruth(){
+  store.set('truthSnoozedUntil', Date.now() + TRUTH_SNOOZE_DAYS*864e5);
+  toast('Hidden — still on the Honesty tab');
+  render();
+}
+
 /* ── Today ─────────────────────────────────────────────────────────── */
 function viewToday(){
   const cal=S.cal;
   const ranked=[...S.batters].sort((a,b)=>b.p-a.p);
   const short=ranked.slice(0,10);
-  const dismissed=store.get('truthDismissed',false);
-
   let truth='';
-  if(cal && !dismissed){
+  if(cal && truthDue()){
     const strong=cal.tags.find(t=>t.tag==='STRONG'), avoid=cal.tags.find(t=>t.tag==='AVOID');
     const spread = strong&&avoid ? ((strong.act-avoid.act)*100).toFixed(1) : '—';
-    truth=`<details class="truth" id="truth" ${window.innerWidth>=601?'open':''}>
+    // Collapsed by default and dismissible. It used to open itself on every
+    // load forever — a caveat you have already read ten times is not a caveat,
+    // it is furniture, and the standing version of this lives on Honesty.
+    truth=`<details class="truth" id="truth">
       <summary>${icon(ICONS.info)}<span><b>Read the spread, not the label.</b> The best and worst matchup
-        tags are only <b class="num">${spread}</b> points apart in reality.</span></summary>
+        tags are only <b class="num">${spread}</b> points apart in reality.</span>
+        <button class="truthx" id="truthx" title="Hide this for a month — it stays on the Honesty tab"
+          aria-label="Dismiss this note">×</button></summary>
       <div class="more">Across ${cal.n.toLocaleString()} settled picks the model's
         <span class="num">STRONG</span> matchups landed <b class="num">${pct(strong?.act,1)}</b> and
         <span class="num">AVOID</span> landed <b class="num">${pct(avoid?.act,1)}</b>. Every tier has come in
@@ -1464,7 +1758,7 @@ function viewToday(){
           <span class="bmain"><span class="bname">${esc(b.name)} ${stateTag(b)}</span>
           <span class="bmeta">${esc(b.team)} · ${esc(b.matchup)} · vs ${esc(b.pit||'TBD')}</span>
           <span class="bwhy">${bits.join('')}</span></span>
-          <span class="bscore"><span class="pct">${pct(b.p,1)}</span>${meter(b)}</span></button>`;
+          <span class="bscore"><span class="pct ${tcls(b.p)}">${pct(b.p,1)}</span>${meter(b)}</span></button>`;
       }).join('')}</div>
     </section>`;
   }
@@ -1515,10 +1809,14 @@ function viewBatters(){
   const teams=[...new Set(S.batters.map(b=>b.team))].sort();
   const games=[...new Map(S.batters.map(b=>[b.gamePk,b.matchup])).entries()];
   const cols=[
-    ['name','Batter',''],['team','Tm',''],['slot','Slot','r'],['p','Score','r'],['base','Form','r'],
+    ['name','Batter',''],['team','Tm','c'],['slot','Slot','c'],['p','Score','sch'],['base','Form','r'],
     ['delta','Matchup','r'],['bHit','Hit%','r'],['bXba','xBA','r'],['bK','K%','r'],
-    ['pit','Pitcher',''],['pRating','Arm','r'],['bPA','PA/g','r'],['','','r']
+    ['pit','Pitcher',''],['pRating','Arm','r'],['bPA','PA/g','r'],['','','c']
   ];
+  // one <col> per column, in the same order — the widths live in the
+  // stylesheet so the table can be table-layout:fixed (see .tblwrap)
+  const colgroup = ['name','tm','slot','score','form','mu','hit','xba','k','pit','arm','pa','star']
+    .map(c=>`<col class="c-${c}">`).join('');
   return `${ribbon()}
   <div class="filters">
     <label class="field">${icon(ICONS.search)}<input id="fq" placeholder="Batter, team, pitcher" value="${esc(f.q)}" aria-label="Search"></label>
@@ -1533,22 +1831,22 @@ function viewBatters(){
     <span class="muted" style="font-size:12.5px">${list.length} shown</span>
   </div>
   <div class="tblwrap" style="display:none" id="tbl">
-    <table><thead><tr>${cols.map(([k,l,a])=> k===''
+    <table><colgroup>${colgroup}</colgroup><thead><tr>${cols.map(([k,l,a])=> k===''
       ? `<th class="${a}" aria-label="Watchlist"></th>`      // star column — nothing to sort by
       : `<th class="sortable ${a}" data-sort="${k}" ${f.sort===k?`aria-sort="${f.dir<0?'descending':'ascending'}"`:''}>${l}</th>`).join('')}</tr></thead>
     <tbody>${list.map(b=>{
       const d=b.delta;
       return `<tr data-k="${key(b)}">
-        <td><b>${esc(b.name)}</b> ${b.confirmed?'':'<span class="tag est">est</span>'} ${stateTag(b)}</td>
-        <td class="num tm" style="color:${tc(b.team)}">${esc(b.team)}</td>
-        <td class="r num">${b.slot??'—'}</td>
-        <td class="r"><b class="num">${pct(b.p,1)}</b> ${meter(b)}</td>
+        <td class="ell"><b>${esc(b.name)}</b> ${b.confirmed?'':'<span class="tag est">est</span>'} ${stateTag(b)}</td>
+        <td class="c num tm" style="color:${tc(b.team)}">${esc(b.team)}</td>
+        <td class="c">${b.slot?slotDiamond(b.slot):'—'}</td>
+        <td class="sc"><b class="num ${tcls(b.p)}">${pct(b.p,1)}</b>${meter(b)}</td>
         <td class="r num">${pct(b.base,1)}</td>
-        <td class="r num" style="color:${d>0?'var(--acc-txt)':d<0?'var(--bad)':'var(--ink3)'}">${d==null?'—':(d>0?'+':'')+(d*100).toFixed(1)}</td>
+        <td class="r num" style="color:${d>0?'var(--tier-hi)':d<0?'var(--bad)':'var(--ink3)'}">${d==null?'—':(d>0?'+':'')+(d*100).toFixed(1)}</td>
         <td class="r num">${pct(b.bHit,1)}</td>
         <td class="r num">${num(b.bXba,3)}</td>
         <td class="r num">${pct(b.bK,1)}</td>
-        <td>${esc(b.pit||'TBD')} <span class="tag">${esc(b.pGrade||'?')}</span></td>
+        <td class="ell">${esc(b.pit||'TBD')} ${gradePill(b.pGrade||'?')}</td>
         <td class="r num">${b.pRating??'—'}</td>
         <td class="r num">${num(b.bPA,2)}</td>
         <td class="r">${starBtn(b,'tstar')}</td>
@@ -1642,7 +1940,7 @@ function gameCards(compact){
           <option value="">${alt&&alt.live?'Auto · whoever is pitching':'Probable starter'}</option>${armOptions(cands, manualPid)}</select>` : '';
       return `<div class="gside" style="--tc:${tc(t,'var(--line2)')}">
         <div><span class="gteam" style="color:${tc(t,'var(--ink)')}">${esc(t)}</span>
-          <div class="num" style="font-size:10.5px;color:var(--ink3)">${pct(avg,0)} avg${
+          <div class="num" style="font-size:10.5px;color:var(--ink3)"><span class="${tcls(avg)}">${pct(avg,0)}</span> avg${
             alt?` <span class="delta ${dAvg>=0?'up':'down'}">${dAvg>=0?'+':''}${(dAvg*100).toFixed(1)}</span>`:''}</div></div>
         <div class="gvs">vs <b>${esc(alt?alt.name:(arm.pit||'TBD'))}</b> ${
             alt ? (alt.hand?`(${alt.hand})`:'') : (arm.pitHand?`(${arm.pitHand})`:'')}
@@ -1653,8 +1951,9 @@ function gameCards(compact){
                      alt.n_games?` · ${alt.n_games} games in the trailing window`:''}">${alt.live?'live arm':'what-if'}</span>`
                  : (conf?'':'<span class="tag est">projected</span>')}
           ${picker}
-          <div class="gbatters" style="margin-top:6px">${top.map(b=>
-            `<button class="mini${alt?(alt.live?' alt livearm':' alt'):''}" data-k="${key(b)}">${esc(b.name.split(' ').slice(-1)[0])} <b>${pct(pFor(b,alt),0)}</b></button>`).join('')}</div>
+          <div class="gbatters" style="margin-top:6px">${top.map(b=>{
+            const pv=pFor(b,alt);
+            return `<button class="mini ${tcls(pv)}${alt?(alt.live?' alt livearm':' alt'):''}" data-k="${key(b)}">${esc(b.name.split(' ').slice(-1)[0])} <b>${pct(pv,0)}</b></button>`;}).join('')}</div>
           ${alt?`<div class="muted" style="font-size:10.5px;margin-top:6px">${
             alt.live ? `${esc(alt.name)} is pitching now, so these are this lineup against him rather than against ${esc(arm.pit||'the probable starter')}
                         — still the same "if this arm went the whole way" simplification the pregame number makes.`
@@ -1662,7 +1961,8 @@ function gameCards(compact){
             Open a batter for the full evidence, which is still built against ${esc(arm.pit||'the probable starter')}.</div>`:''}
         </div>
         ${alt ? `<div class="grade" style="opacity:.45" title="The 0–100 pitcher grade isn't computed for what-if arms — only the model inputs are">–</div>`
-              : `<div class="grade" title="Pitcher grade">${esc(arm.pGrade||'?')}</div>`}
+              : `<div class="grade" ${GRADES.has(String(arm.pGrade||'').toUpperCase())?`data-g="${esc(String(arm.pGrade).toUpperCase())}"`:''}
+                   title="Pitcher grade — grades the arm, so A is the toughest matchup for the batter">${esc(arm.pGrade||'?')}</div>`}
       </div>`;
     }).join('');
     const scoreTxt = (g.away!=null&&g.home!=null) ? `${g.awayAbbr||''} ${g.away} – ${g.home} ${g.homeAbbr||''}` : '';
@@ -1830,10 +2130,10 @@ function renderDrawer(){
     <span class="evnum">${esc(e.val??'')}</span></div>`;
 
   $('#drawer').innerHTML=`
-  <div class="dhead" style="--tc:${tc(b.team,'var(--line2)')};box-shadow:inset 0 3px 0 -0.5px var(--tc)">
+  <div class="dhead" style="--tc:${tc(b.team,'var(--line2)')}">
     <div style="min-width:0">
       <div class="dtitle" id="dtitle">${esc(b.name)}</div>
-      <div class="dsub">${teamSpan(b.team)} · ${matchupHTML(b.matchup)} · ${esc(b.startTime||'')} ${b.slot?`· bats ${b.slot}`:''} ${lineupTag(b)} ${stateTag(b)}</div>
+      <div class="dsub">${teamSpan(b.team)} · ${matchupHTML(b.matchup)} · ${esc(b.startTime||'')} ${b.slot?`· ${slotDiamond(b.slot)}`:''} ${lineupTag(b)} ${stateTag(b)}</div>
     </div>
     <div class="dnav">
       <button class="iconbtn" id="dprev" ${S.drawerIdx<=0?'disabled style="opacity:.3;transform:rotate(180deg)"':'style="transform:rotate(180deg)"'} aria-label="Previous batter">${icon(ICONS.chev)}</button>
@@ -1844,7 +2144,7 @@ function renderDrawer(){
   <div class="dbody">
     <div class="verdict">
       <div class="vtop">
-        <div class="vbig">${pct(b.p,1).replace('%','')}<span>%</span></div>
+        <div class="vbig ${tcls(b.p)}">${pct(b.p,1).replace('%','')}<span>%</span></div>
         <div class="vside">
           Chance of <b>at least one hit</b> ${S.date?'that day':'tonight'} — ${v.where}.<br>
           <span class="muted">${esc(v.lead.charAt(0).toUpperCase()+v.lead.slice(1))}.</span>
@@ -2021,11 +2321,14 @@ function render(){
   wireView();
   animateNumbers();
 }
-/** Desktop gets the dense table; phones get the card list. Never a squeezed table. */
+/** Desktop gets the dense table; phones get the card list. Never a squeezed table.
+    The threshold is 1120 rather than 900 because the table declares 1040px of
+    column widths — below that the last columns were being clipped by the wrap
+    rather than falling back to cards. */
 function applyResponsiveTable(){
   const t=$('#tbl'), c=$('#cards');
   if(!t||!c) return;
-  const wide = window.innerWidth>=900;
+  const wide = window.innerWidth>=1120;
   t.style.display = wide?'block':'none';
   c.style.display = wide?'none':'grid';
 }
@@ -2038,6 +2341,8 @@ function wireView(){
     openDrawer(el.dataset.k, list);
   }));
   $$('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
+  const tx=$('#truthx');
+  if(tx) tx.addEventListener('click',ev=>{ ev.preventDefault(); ev.stopPropagation(); snoozeTruth(); });
   const back=$('#dback'); if(back) back.addEventListener('click',()=>goDate(''));
   $$('[data-star]').forEach(el=>el.addEventListener('click',ev=>{
     ev.stopPropagation();          // a table star sits INSIDE tr[data-k]
@@ -2062,11 +2367,13 @@ function wireView(){
 }
 function go(v){ if(!VIEWS.some(x=>x.id===v)) return; S.view=v; location.hash=v; window.scrollTo(0,0); render(); }
 
-/* theme — Broadcast (auto/light/dark) plus Scout, a paper-and-ink alternative */
+/* theme — Dugout (auto/light/dark), the legacy dashboard's own palette, plus
+   Aurora. The ids `light`/`dark` are load-bearing: applyTheme('auto') writes
+   one of those two names onto the root, so they cannot be renamed. */
 const THEMES = [
   {id:'auto',  name:'Auto'},
-  {id:'light', name:'Broadcast light'},
-  {id:'dark',  name:'Broadcast dark'},
+  {id:'light', name:'Dugout light'},
+  {id:'dark',  name:'Dugout dark'},
   {id:'aurora', name:'Aurora'}
 ];
 function applyTheme(t){
