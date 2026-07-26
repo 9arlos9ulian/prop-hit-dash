@@ -1572,7 +1572,7 @@ function toBatter(r){
     slot:N(r.slot), gamePk:r.game_pk, matchup:r.matchup, startTime:r.start_time,
     gameState:r.game_state, confirmed:(r.lineup_source||'')==='live',
     p:N(r.p_hit), base:N(r.base_p_hit), delta:N(r.matchup_delta),
-    leanTag:r.lean_tag, hasHit:r.has_hit==='True', last10:(r.last5||'').replace(/[^01]/g,''),
+    hasHit:r.has_hit==='True', last10:(r.last5||'').replace(/[^01]/g,''),
     // batter form
     bHit:N(r.b_hit_rate), bXba:N(r.b_xba), bHard:N(r.b_hardhit), bBabip:N(r.b_babip),
     bK:N(r.b_k_rate), bGames:N(r.b_n_games), bRest:N(r.b_days_rest), bPA:N(r.b_avg_pa),
@@ -1829,7 +1829,7 @@ async function calibration(){
       const k=r.game_pk+'|'+r.batter, prev=once.get(k);
       if(!prev || String(r.date) > String(prev.date)) once.set(k, r);
     }
-    const bands=new Map(), tags=new Map(), days=new Map();
+    const bands=new Map(), days=new Map();
     let n=0, brier=0, sumP=0, hits=0, eraN=0;
     /* The headline row measures the range the current model scores in, not the
        whole file. Below CAL_LO the record belongs to the pre-MODEL_ERA model
@@ -1855,7 +1855,6 @@ async function calibration(){
          dragged that band 0.8pt worse than it is. They get their own row. */
       const bk=Math.min(CAL_HI,Math.max(.2,Math.floor(p*20)/20));
       const B=bands.get(bk)||{n:0,h:0,p:0,nEra:0}; B.n++; B.h+=y; B.p+=p; if(era) B.nEra++; bands.set(bk,B);
-      if(r.lean_tag){ const T=tags.get(r.lean_tag)||{n:0,h:0,p:0}; T.n++; T.h+=y; T.p+=p; tags.set(r.lean_tag,T); }
       const D=days.get(r.date)||{n:0,h:0,p:0}; D.n++; D.h+=y; D.p+=p; days.set(r.date,D);
     }
     return {
@@ -1869,7 +1868,6 @@ async function calibration(){
          slate has produced since 07-18. Both stay in the table. */
       bands:[...bands.entries()].sort((a,b)=>a[0]-b[0]).map(([k,v])=>({band:k,...v,act:v.h/v.n,pred:v.p/v.n,
         pos: k+.05<=CAL_LO ? 'lo' : k>=CAL_HI ? 'hi' : 'in', live: k+.05>CAL_LO && k<CAL_HI})),
-      tags:[...tags.entries()].map(([k,v])=>({tag:k,...v,act:v.h/v.n,pred:v.p/v.n})).sort((a,b)=>b.act-a.act),
       days:[...days.entries()].sort((a,b)=>b[0].localeCompare(a[0])).map(([k,v])=>({date:k,...v,act:v.h/v.n,pred:v.p/v.n}))
     };
   });
@@ -2166,48 +2164,10 @@ function ribbon(){
   </div>`;
 }
 
-/* ── the honesty note ─────────────────────────────────────────────────────
-   Shown, dismissible, and back in a month. A permanent dismissal would lose
-   the caveat for good on a shared machine; a nag that returns every load is
-   what made it invisible in the first place. */
-const TRUTH_SNOOZE_DAYS = 30;
-function truthDue(){
-  const until = store.get('truthSnoozedUntil', 0);
-  return !(typeof until==='number' && Date.now() < until);
-}
-function snoozeTruth(){
-  store.set('truthSnoozedUntil', Date.now() + TRUTH_SNOOZE_DAYS*864e5);
-  toast('Hidden — still on the Honesty tab');
-  render();
-}
-
 /* ── Today ─────────────────────────────────────────────────────────── */
 function viewToday(){
-  const cal=S.cal;
   const ranked=[...S.batters].sort((a,b)=>b.p-a.p);
   const short=ranked.slice(0,10);
-  let truth='';
-  if(cal && truthDue()){
-    const strong=cal.tags.find(t=>t.tag==='STRONG'), avoid=cal.tags.find(t=>t.tag==='AVOID');
-    const spread = strong&&avoid ? ((strong.act-avoid.act)*100).toFixed(1) : '—';
-    // Collapsed by default and dismissible. It used to open itself on every
-    // load forever — a caveat you have already read ten times is not a caveat,
-    // it is furniture, and the standing version of this lives on Honesty.
-    truth=`<details class="truth" id="truth">
-      <summary>${icon(ICONS.info)}<span><b>Read the spread, not the label.</b> The best and worst matchup
-        tags are only <b class="num">${spread}</b> points apart in reality.</span>
-        <button class="truthx" id="truthx" title="Hide this for a month — it stays on the Honesty tab"
-          aria-label="Dismiss this note">×</button></summary>
-      <!-- all.n, not n: the tag stats below it are over the unscoped record -->
-      <div class="more">Across ${cal.all.n.toLocaleString()} settled picks the model's
-        <span class="num">STRONG</span> matchups landed <b class="num">${pct(strong?.act,1)}</b> and
-        <span class="num">AVOID</span> landed <b class="num">${pct(avoid?.act,1)}</b>. Every tier has come in
-        above its predicted rate, so the score is honest about direction but conservative about level.
-        Treat it as one input to your own read, not a verdict.
-        <button class="lnk" data-go="honesty" style="display:block;margin-top:6px">See the full record →</button></div>
-    </details>`;
-  }
-
   // The "Since <time>" section (lineup churn since a morning snapshot) lived
   // here until 2026-07-26 — cut on client call: it never earned its screen
   // space. The snapshot machinery (S.snap) stays, in case a quieter use for
@@ -2222,7 +2182,7 @@ function viewToday(){
      so, and the gap between #1 and #10 is usually a couple of points. */
   const lead = short.slice(0,4), tail = short.slice(4);
 
-  return `${ribbon()}${truth}
+  return `${ribbon()}
   <section class="sec lead">
     <div class="sec-h"><h2>${S.date?'Shortlist':"Tonight's shortlist"}</h2><p>Highest calibrated hit probability on the slate</p>
       <button class="lnk" data-go="batters">All ${S.batters.length} →</button></div>
@@ -2856,15 +2816,6 @@ function viewHonesty(){
     }).join('')}</tbody></table></div>
   </section>
   <section class="sec">
-    <div class="sec-h"><h2>Matchup tags</h2><p>The team-side STRONG / LEAN / NEUTRAL / AVOID label, audited</p></div>
-    <div class="tblwrap fit"><table><thead><tr><th>Tag</th><th class="r">Picks</th><th class="r">Predicted</th><th class="r">Actual</th><th class="r">Gap</th></tr></thead>
-    <tbody>${cal.tags.map(t=>`<tr style="cursor:default"><td><span class="tag">${esc(t.tag)}</span></td>
-      <td class="r num">${t.n.toLocaleString()}</td><td class="r num">${pct(t.pred,1)}</td>
-      <td class="r num"><b>${pct(t.act,1)}</b></td>
-      <td class="r num">${((t.act-t.pred)*100>0?'+':'')+((t.act-t.pred)*100).toFixed(1)}</td></tr>`).join('')}</tbody></table></div>
-    <p class="muted" style="font-size:12.5px;margin-top:8px">The tag is a <b>team-side</b> label — every batter in a lineup shares it. It is not a per-batter verdict, and the spread between the best and worst tag is small.</p>
-  </section>
-  <section class="sec">
     <div class="sec-h"><h2>Last 14 days</h2><p>Daily predicted vs actual</p></div>
     <div class="tblwrap fit"><table><thead><tr><th>Date</th><th class="r">Picks</th><th class="r">Predicted</th><th class="r">Actual</th><th class="r">Gap</th></tr></thead>
     <tbody>${recent.map(d=>{const gap=(d.act-d.pred)*100;return `<tr style="cursor:default"><td class="num">${esc(d.date)}</td>
@@ -3025,17 +2976,14 @@ function renderDrawer(){
 /* ══════════════════════════════════════════════════════════════════════
    9 · shell + events
    ══════════════════════════════════════════════════════════════════════ */
-/** The archive date-picker and the bullpen swap were ported here 2026-07-25;
-    what the previous dashboard still holds alone is the bet slip, Kalshi odds
-    and parlay EV, so it needs a way in from here — otherwise making this the
-    main dashboard quietly hides those features rather than replacing them.
-    (Watch is this dashboard's own answer to the slip: a list you build by
-    starring rows, not a stake-and-payout ledger.) */
+/** The legacy dashboard was retired 2026-07-26 (screenshots in
+    docs/legacy-screenshots/, code in git history); its bet slip, Kalshi
+    odds and parlay EV went with it. Watch is this dashboard's answer to
+    the slip: a list you build by starring rows, not a stake-and-payout
+    ledger. */
 function renderFooter(){
-  const legacy = ON_SERVER ? '/legacy' : './legacy.html';
   $('#foot').innerHTML =
-    `<span>Mochi · scores are calibrated probabilities, not betting advice.</span>
-     <a href="${legacy}">Previous dashboard — bet slip &amp; odds →</a>`;
+    `<span>Mochi · scores are calibrated probabilities, not betting advice.</span>`;
 }
 /** Human label for an archive date. Tomorrow's file is a --preview-tomorrow
     run on ESTIMATED lineups, so it gets said out loud rather than looking
@@ -3143,8 +3091,6 @@ function wireView(){
     openDrawer(el.dataset.k, list);
   }));
   $$('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
-  const tx=$('#truthx');
-  if(tx) tx.addEventListener('click',ev=>{ ev.preventDefault(); ev.stopPropagation(); snoozeTruth(); });
   const back=$('#dback'); if(back) back.addEventListener('click',()=>goDate(''));
   $$('[data-star]').forEach(el=>el.addEventListener('click',ev=>{
     ev.stopPropagation();          // a table star sits INSIDE tr[data-k]
