@@ -305,6 +305,44 @@ header{
 .sec.sub{margin-top:30px;padding-top:22px;border-top:1px solid var(--line)}
 .sec.sub .sec-h h2{font-size:var(--t-md);font-weight:700;color:var(--ink2)}
 .sec.lead .sec-h{margin-bottom:20px}
+/* ── the view head — one shape for all five tabs ───────────────────────
+   Every tab used to introduce itself differently: Today led with a title and
+   an action, Teams with a title and a three-line essay wedged outside any
+   section, Batters with nothing at all (the search field WAS the top of the
+   page), and each of them parked its headline number somewhere else again —
+   Batters and Teams at the tail of the filter row as a `muted` span with an
+   inline font-size, Watch inside its subtitle. Switching tabs on a phone
+   therefore changed the shape of the page, not just its contents.
+
+   `.vh` is that one shape, and there is exactly one per view:
+
+       Title                                   30 of 270
+       one line of prose (desktop only)
+       ──── seam ────
+       [ controls, if this view has any ]
+
+   The COUNT is the part that survives to the phone, because it is the only
+   half that is about tonight rather than about the tab — a subtitle that
+   says "every bat on the slate" restates the word already lit in the tab
+   bar, while "30 of 270" is the answer to why the list is as long as it is.
+   `.lv2` is for the sub-section heads under a view head (Today's game strip,
+   Honesty's three charts) so a view has one loudest line and not four. */
+.sec-h .vh-n{margin-left:auto;font-family:var(--mono);font-size:var(--t-mi);
+  font-weight:650;letter-spacing:.02em;color:var(--ink4);white-space:nowrap}
+.sec-h .vh-n b{font-weight:650;color:var(--ink2)}
+.sec-h.lv2 h2{font-size:var(--t-md);font-weight:700;color:var(--ink2)}
+/* The drawer's own subject is the batter's name (.dtitle), so every head
+   inside it is a level down — they were all 21px/750/--ink at exactly the
+   same values as .dtitle, which gave the sheet six equally-loudest lines and
+   no way to tell which one was the thing being described. They also each
+   carried an inline `margin-top:20px`; one rule owns that spacing now, and
+   the first head in the sheet has nothing above it to be spaced from. */
+.dbody .sec-h{margin-top:20px}
+.dbody > .sec-h:first-child{margin-top:0}
+/* The view head owns the gap down to the controls it introduces, so no view
+   needs an inline margin to sit its filter row at the right distance. */
+.sec-h.vh{margin-bottom:14px}
+.sec-h.vh + .filters{margin-bottom:18px}
 /* group divider inside a section — quieter than an <h2>, louder than nothing */
 .grp-h{display:flex;align-items:center;gap:12px;margin:26px 0 10px}
 /* 26px is the gap BETWEEN groups. The first one in a list has no group above
@@ -1371,10 +1409,19 @@ td.c .dia{vertical-align:middle}
      as the page's dateline for a screen reader. */
   #main{display:flex;flex-direction:column}
   .ribbon{order:99;font-size:11.5px;margin:18px 0 0}
-  /* The one section heading whose subtitle only restates the tab you are
-     already on. Every other .sec-h p carries something (game counts, cuts,
-     what a column means) and keeps its line. */
-  .sec-h.plain p{display:none}
+  /* A VIEW head's prose only ever restates the tab you are already standing
+     in — its count is the half that says something about tonight, and that
+     stays. Sub-section heads (.lv2) and the drawer keep their line, because
+     those explain a chart or a block rather than the tab.
+     This replaces a `.sec-h.plain p` rule that hid exactly one view's
+     subtitle: same saving, now the same on all five tabs. */
+  .sec-h .vh-sub{display:none}
+  /* Likewise the head's navigation link: every target it points at is a tab
+     in the bar 40px under the thumb — the same argument #btnStar loses on.
+     A head action that is NOT a tab (Batters' "clear") has no such twin and
+     is marked .act so it survives. */
+  .sec-h .lnk.nav{display:none}
+  .sec-h.vh{margin-bottom:11px}
   .lbl{font-size:8.5px;letter-spacing:.1em}
   /* two chips must fit on one line at 375px, or the hero pushes its own
      score below the fold — which defeats the whole point of a shortlist */
@@ -3078,6 +3125,29 @@ function ribbon(){
   return `<p class="ribbon"><span class="dot ${live?'live':''}"></span>${bits.join(' · ')}</p>`;
 }
 
+/** The one header every view opens with — see the `.vh` block in the
+    stylesheet for why there is only one shape.
+
+    `title` names the view, `n` is its headline number (kept on the phone),
+    `sub` is the prose (desktop only), and `action` is at most one control.
+    An action that merely goes to another tab passes `go:` and is dropped on
+    a phone where that tab is in the bar; a real action passes `id:` and is
+    always drawn. Nothing here is optional-by-accident: a view with no number
+    to report simply omits `n`. */
+function viewHead({title, n, sub, action}){
+  const a = !action ? ''
+    : action.go ? `<button class="lnk nav" data-go="${action.go}">${esc(action.label)} →</button>`
+                : `<button class="lnk act" id="${action.id}">${esc(action.label)}</button>`;
+  return `<div class="sec-h vh">
+    <h2>${esc(title)}</h2>
+    ${/* the prose sits between them so that on a desktop it is the flex:1
+          child and pushes count + action to the right edge; on a phone it
+          is `order:3` and drops out from under both */''}
+    ${sub?`<p class="vh-sub">${sub}</p>`:''}
+    ${n?`<span class="vh-n">${n}</span>`:''}
+    ${a}</div>`;
+}
+
 /* ── Today ─────────────────────────────────────────────────────────── */
 function viewToday(){
   const ranked=[...S.batters].sort((a,b)=>b.p-a.p);
@@ -3100,8 +3170,11 @@ function viewToday(){
 
   return `${ribbon()}
   <section class="sec lead">
-    <div class="sec-h plain"><h2>${S.date?'Shortlist':"Tonight's shortlist"}</h2><p>Highest calibrated hit probability on the slate</p>
-      <button class="lnk" data-go="batters">All ${S.batters.length} →</button></div>
+    ${viewHead({
+      title: S.date?'Shortlist':"Tonight's shortlist",
+      n: `top <b>${short.length}</b> of ${S.batters.length}`,
+      sub: 'Highest calibrated hit probability on the slate',
+      action: {go:'batters', label:`All ${S.batters.length}`}})}
     <div class="blist">${lead.map((b,i)=>batterCard(b,i+1,i===0)).join('')}</div>
     ${tail.length?`<div class="grp-h"><span class="lbl">Also on the shortlist</span><span class="rule"></span>
       <span class="lbl soft">${pct(tail[tail.length-1].p,1).replace('%','')}–${pct(tail[0].p,1)}</span></div>
@@ -3111,7 +3184,7 @@ function viewToday(){
     </p>
   </section>
   <section class="sec sub">
-    <div class="sec-h"><h2>Where the bats are</h2>
+    <div class="sec-h lv2"><h2>Where the bats are</h2>
       <p>Warmer games hold more of tonight's best bats · ${gameStripCount()}</p>
       <button class="lnk" data-go="teams">Lineups →</button></div>
     ${gameStrip()}
@@ -3344,7 +3417,22 @@ function viewBatters(){
     <span class="lbl">${TIER_LABEL[bd.tier]||''}</span>
     <span class="rule"></span><span class="lbl soft">${bd.n} ${bd.n===1?'batter':'batters'}</span></td></tr>`;
   const bandAt = i => bands ? bands.filter(bd=>bd.at===i) : [];
+  /* The head's number is the state of the FILTER, not of the slate — this is
+     the one view whose length the reader controls, so "30 of 270" also has to
+     say whether that 30 is a cut or the whole answer. When something is
+     filtering, the head's action becomes the way out of it: a "clear" is a
+     real action rather than a trip to another tab, so it keeps its place on a
+     phone (see .lnk.act). */
+  const narrowed = !!(f.q.trim()||f.team||f.game||f.slot||f.lineup);
   return `${ribbon()}
+  <section class="sec">
+  ${viewHead({
+    title:'Batters',
+    n: capped ? `top <b>${shown.length}</b> of ${list.length}`
+      : narrowed ? `<b>${list.length}</b> of ${S.batters.length}`
+                 : `<b>${list.length}</b> bats`,
+    sub:'Every bat on tonight’s slate. Sort on any column, or open a row for the evidence behind its score.',
+    action: narrowed ? {id:'clearf', label:'Clear'} : {go:'teams', label:'Lineups'}})}
   <div class="filters">
     <label class="field">${icon(ICONS.search)}<input id="fq" placeholder="Batter, team, pitcher, tag" value="${esc(f.q)}" aria-label="Search batters, teams, pitchers and evidence tags"></label>
     <label class="field"><select id="fteam" aria-label="Team"><option value="">All teams</option>${teams.map(t=>`<option ${f.team===t?'selected':''}>${t}</option>`).join('')}</select></label>
@@ -3355,7 +3443,6 @@ function viewBatters(){
       <button data-lu="conf" aria-pressed="${f.lineup==='conf'}">Confirmed</button>
       <button data-lu="est" aria-pressed="${f.lineup==='est'}">Projected</button>
     </div>
-    <span class="muted" style="font-size:12.5px">${capped?`top ${shown.length} of ${list.length}`:`${list.length} shown`}</span>
   </div>
   <div class="tblwrap" style="display:none" id="tbl">
     <table><colgroup>${colgroup}</colgroup><thead>
@@ -3392,7 +3479,10 @@ function viewBatters(){
     // Full weight for the top tier, lite for everything below it — the same
     // "the tail is a list" move Today's shortlist makes, applied to all 270.
     + batterCard(b,null,false,i, bands ? tierOf(b.p)!=='hi' : false)).join('')}</div>
-  ${hidden>0?`<button class="lnk" id="morebat" style="display:block;margin:16px auto 0">Show all ${list.length} batters (${hidden} more) →</button>`:''}`;
+  ${!shown.length?`<div class="empty">No batter, team, arm or tag matches these filters.
+    <button class="lnk" id="clearf2" style="display:block;margin:10px auto 0">Clear them →</button></div>`:''}
+  ${hidden>0?`<button class="lnk" id="morebat" style="display:block;margin:16px auto 0">Show all ${list.length} batters (${hidden} more) →</button>`:''}
+  </section>`;
 }
 
 /* ── Games ─────────────────────────────────────────────────────────── */
@@ -3634,7 +3724,11 @@ function lineupCard(lu, rank, n, scale){
 
 function viewTeams(){
   const ls = lineups();
-  if(!ls.length) return `${ribbon()}<div class="empty">No lineups on this slate yet.</div>`;
+  if(!ls.length) return `${ribbon()}
+  <section class="sec">
+    ${viewHead({title:'Lineups', sub:'Each lineup is an offense and the single arm in front of it.'})}
+    <div class="empty">No lineups on this slate yet.</div>
+  </section>`;
   const ranked=[...ls].sort((a,b)=>(b.avg??0)-(a.avg??0));
   const rankOfLu=new Map(ranked.map((l,i)=>[l.pk+'|'+l.team, i+1]));
   const avgs=ranked.map(l=>l.avg).filter(v=>v!=null).sort((a,b)=>a-b);
@@ -3652,32 +3746,46 @@ function viewTeams(){
         // the card says which ones (see lineupCard's .lu-tag).
         || l.bs.some(b=>tagsOf(b).hay.includes(lq));
   });
+  /* The head reports the SPREAD rather than the count, because a lineup card
+     is only readable against the field — "57–68%" is what makes 68 mean
+     something, and it is the fact the whole ranking rests on. The count of
+     lineups and games moved into the prose, where it was already implied by
+     thirty cards. */
   return `${ribbon()}
-  <div class="sec-h" style="margin-bottom:14px">
-    <h2>Lineups</h2>
-    <p>${ls.length} lineups across ${new Set(ls.map(l=>l.pk)).size} games. Each one is an offense
-      and the single arm in front of it — ranked against every other lineup on the slate, not against
-      the club it happens to be playing.</p>
-  </div>
+  <section class="sec">
+  ${viewHead({
+    title:'Lineups',
+    n:`${ls.length} · spread <b>${pct(scale.min,0).replace('%','')}–${pct(scale.max,0)}</b>`,
+    sub:`${ls.length} lineups across ${new Set(ls.map(l=>l.pk)).size} games — each one an offense and the
+      single arm in front of it, ranked against every other lineup on the slate rather than against the
+      club it happens to be playing. Strongest tonight: <b>${esc(ranked[0].team)}</b> at
+      <span class="num ${tcls(ranked[0].avg)}">${pct(ranked[0].avg,0)}</span>.`,
+    action: S.lq.trim() ? {id:'clearl', label:'Clear'} : {go:'batters', label:'All bats'}})}
   <div class="filters">
     <label class="field">${icon(ICONS.search)}<input id="lq" placeholder="Team, batter, pitcher, tag" value="${esc(S.lq)}" aria-label="Search lineups by team, batter, pitcher or evidence tag"></label>
     <div class="seg" role="group" aria-label="Order the lineups">
       ${LU_SORTS.map(s=>`<button data-lsort="${s.id}" aria-pressed="${S.lsort===s.id}">${s.label}</button>`).join('')}
     </div>
-    <span class="muted" style="font-size:12.5px">strongest tonight: ${esc(ranked[0].team)} at
-      <span class="num ${tcls(ranked[0].avg)}">${pct(ranked[0].avg,0)}</span> · slate spread
-      <span class="num">${pct(scale.min,0)}–${pct(scale.max,0)}</span></span>
   </div>
   ${shown.length?`<div class="lus">${shown.map(l=>lineupCard(l, rankOfLu.get(l.pk+'|'+l.team), ls.length, scale)).join('')}</div>`
-    :`<div class="empty">No lineup, batter, arm or tag matches “${esc(S.lq.trim())}”.</div>`}`;
+    :`<div class="empty">No lineup, batter, arm or tag matches “${esc(S.lq.trim())}”.</div>`}
+  </section>`;
 }
 
 /* ── Watch ─────────────────────────────────────────────────────────── */
 function viewWatch(){
   const list=S.batters.filter(b=>S.stars.includes(key(b))).sort((a,b)=>b.p-a.p);
-  if(!list.length) return `${ribbon()}<div class="empty">
+  // An empty watchlist is still the Watch tab, so it keeps its head. Losing
+  // the title was the reason a phone could not tell an empty list apart from
+  // a view that had failed to render at all.
+  if(!list.length) return `${ribbon()}
+  <section class="sec">
+    ${viewHead({title:'Watchlist', sub:'Bats you star are followed here through the night.',
+                action:{go:'batters', label:'Add bats'}})}
+    <div class="empty">
     Nothing on the watchlist yet.<br><span style="font-size:12.5px">Tap the ☆ on any batter — in the shortlist, the table, or the drawer — to follow them through the night.
-    <button class="lnk" data-go="today" style="display:block;margin:10px auto 0">Back to tonight's shortlist →</button></span></div>`;
+    <button class="lnk" data-go="today" style="display:block;margin:10px auto 0">Back to tonight's shortlist →</button></span></div>
+  </section>`;
   // The list's own scoreboard — this is the tab the outcome exists FOR, so
   // the header keeps the running answer: landed, finished without, still open.
   const done=list.filter(b=>outcomeOf(b)==='hit').length;
@@ -3690,7 +3798,16 @@ function viewWatch(){
   const hidden = list.length - shown.length;
   return `${ribbon()}
   <section class="sec">
-    <div class="sec-h"><h2>Watchlist</h2><p><b class="num">${done}</b> of ${list.length} have a hit${missed?` · <b class="num">${missed}</b> finished without`:''}${open?` · <b class="num">${open}</b> still open`:''}${capped?` · showing top ${shown.length}`:''}</p></div>
+    ${/* This is the one view whose number IS the point of it, so the head's
+          count keeps all three states rather than a total — landed, finished
+          without, still open, in the order the night resolves them. Which
+          also means the prose must NOT restate them: it says what the list
+          is, the count says how it is doing. */''}
+    ${viewHead({
+      title:'Watchlist',
+      n:`<b>${done}</b> hit${missed?` · <b>${missed}</b> no`:''}${open?` · <b>${open}</b> open`:''}${capped?` · top ${shown.length}`:''}`,
+      sub:`The ${list.length} bats you starred, in score order, followed through the night.`,
+      action:{go:'batters', label:'Add bats'}})}
     <div class="blist">${shown.map((b,i)=>batterCard(b,i+1)).join('')}</div>
     ${hidden>0?`<button class="lnk" id="morewatch" style="display:block;margin:16px auto 0">Show all ${list.length} (${hidden} more) →</button>`:''}
   </section>`;
@@ -3808,7 +3925,15 @@ function viewHonesty(){
     measured over the range both share.</div></div>`;
   return `${ribbon()}
   <section class="sec">
-    <div class="sec-h"><h2>Is the number honest?</h2><p>The one hard rule of this project — measured on the ${cal.n.toLocaleString()} settled picks inside the range the current model scores in</p></div>
+    ${/* This tab had four heads at identical weight, so nothing on it read as
+          the title — the three charts below are now .lv2 under this one. */''}
+    ${viewHead({
+      title:'Is the number honest?',
+      // No head number here, and this is the reason `n` is optional: every
+      // figure it could carry is already a tile 20px below it, and the head
+      // would be the only place on the page saying a thing twice. The long
+      // title would also wrap it onto a line of its own.
+      sub:`The one hard rule of this project — measured on the ${cal.n.toLocaleString()} settled picks inside the range the current model scores in`})}
     <div class="sgrid">
       <div class="scell"><div class="slab">Settled picks</div><div class="sval">${cal.n.toLocaleString()}</div><div class="ssub">${pct(cal.lo,0)}+, since ${esc(cal.since||'')}</div></div>
       <div class="scell"><div class="slab">Brier</div><div class="sval">${num(cal.brier,4)}</div><div class="ssub">lower is better</div></div>
@@ -3825,7 +3950,7 @@ function viewHonesty(){
       gap that is almost entirely the retired low bands.</p>
   </section>
   <section class="sec">
-    <div class="sec-h"><h2>Reliability</h2><p>A well-calibrated model sits on the dashed line. Circle size is sample size. Drawn over ${pct(CAL_LO,0)}–${pct(CAL_HI,0)} — the range the current model actually scores in.</p></div>
+    <div class="sec-h lv2"><h2>Reliability</h2><p>A well-calibrated model sits on the dashed line. Circle size is sample size. Drawn over ${pct(CAL_LO,0)}–${pct(CAL_HI,0)} — the range the current model actually scores in.</p></div>
     <div style="padding:2px 0 0">${reliabilitySVG(cal)}
       ${worst?`<div class="truth" style="margin-top:12px">${icon(ICONS.info)}<div>Worst-calibrated band in this range: the model said
       <b class="num">${pct(worst.pred,1)}</b> and those picks landed <b class="num">${pct(worst.act,1)}</b>
@@ -3836,14 +3961,14 @@ function viewHonesty(){
     </div>
   </section>
   <section class="sec">
-    <div class="sec-h"><h2>Score bands</h2><p>What a score in each band has actually done. The bar is the gap between claim and outcome — every band, including the ones off either end of the current model's range, which are dimmed</p></div>
+    <div class="sec-h lv2"><h2>Score bands</h2><p>What a score in each band has actually done. The bar is the gap between claim and outcome — every band, including the ones off either end of the current model's range, which are dimmed</p></div>
     <div style="padding:2px 0 0">${bandsSVG(cal)}${CHART_LEGEND(4,'tick')}
       <p class="muted" style="font-size:12.5px;margin-top:12px">The number beside each bar is how many settled picks
         that band rests on, and it varies by more than an order of magnitude — a long bar on a few hundred picks is a
         thinner claim than a short one on several thousand. Each row carries its exact figures as a tooltip.</p></div>
   </section>
   <section class="sec">
-    <div class="sec-h"><h2>Last 14 days</h2><p>The dashed line is what the model claimed each night; the dot is what happened, sized by how many picks that slate carried</p></div>
+    <div class="sec-h lv2"><h2>Last 14 days</h2><p>The dashed line is what the model claimed each night; the dot is what happened, sized by how many picks that slate carried</p></div>
     <div style="padding:2px 0 0">${daysSVG(recent)}${CHART_LEGEND(8,'dash')}</div>
   </section>`;
 }
@@ -3912,7 +4037,7 @@ function renderDrawer(){
   });
   const me = gl?.status==='ok' ? gl.players[String(b.batterId).replace(/\.0$/,'')] : null;
   const happened = !fin ? '' : `
-    <div class="sec-h"><h2>What happened</h2><p>${
+    <div class="sec-h lv2"><h2>What happened</h2><p>${
       gl?.status==='ok' ? (me ? `Final — ${me.h>0 ? `${me.h} hit${me.h>1?'s':''} ${outMark('hit')}` : `no hit ${outMark('miss')}`}` : 'Final — did not bat')
       : gl?.status==='err' ? 'Final — game log unavailable' : 'Final — loading the game log…'}</p></div>
     ${me?`<div class="sgrid" style="margin-bottom:6px">
@@ -3966,13 +4091,13 @@ function renderDrawer(){
       ${waterfall(b)}
     </div>
 
-    <div class="sec-h" style="margin-top:20px"><h2>Why</h2><p>Ranked by how much each factor moves this score</p></div>
+    <div class="sec-h lv2"><h2>Why</h2><p>Ranked by how much each factor moves this score</p></div>
     <div class="ev">${ev.signal.map(evRow).join('')}</div>
 
-    ${ev.context.length?`<div class="sec-h" style="margin-top:20px"><h2>Context</h2><p>Real information the model does not train on</p></div>
+    ${ev.context.length?`<div class="sec-h lv2"><h2>Context</h2><p>Real information the model does not train on</p></div>
     <div class="ev">${ev.context.map(evRow).join('')}</div>`:''}
 
-    <div class="sec-h" style="margin-top:20px"><h2>Form</h2><p>Last 10 games — filled means he got a hit. Green stats favour him tonight, red work against him, each against the rest of the slate.</p></div>
+    <div class="sec-h lv2"><h2>Form</h2><p>Last 10 games — filled means he got a hit. Green stats favour him tonight, red work against him, each against the rest of the slate.</p></div>
     <div style="padding:2px 0 0">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         ${stripHTML(b.last10,'lg')}
@@ -3988,7 +4113,7 @@ function renderDrawer(){
       </div>
     </div>
 
-    <div class="sec-h" style="margin-top:20px"><h2>The arm</h2><p>${esc(b.pit||'TBD')} · ${esc(b.pitHand||'?')}HP · ${esc(b.pRole||'SP')} — read green as good for the hitter, not for the pitcher.</p></div>
+    <div class="sec-h lv2"><h2>The arm</h2><p>${esc(b.pit||'TBD')} · ${esc(b.pitHand||'?')}HP · ${esc(b.pRole||'SP')} — read green as good for the hitter, not for the pitcher.</p></div>
     <div style="padding:2px 0 0">
       <div class="sgrid">
         ${scell('Grade',        esc(b.pGrade||'—'),`rating ${b.pRating??'—'}`,'pRating',b.pRating)}
@@ -4456,7 +4581,18 @@ function wireView(){
   }));
   $$('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
   const mb=$('#morebat'); if(mb) mb.addEventListener('click',()=>{ S.batShowAll=true; render(); });
+  /* Every filter at once, including the sort — a half-cleared list is the
+     thing the reader was trying to get out of. `sort` goes back to the score
+     because that is the order the list has when you arrive on it. */
+  const clearBat=()=>{
+    S.filters={...S.filters, q:'', team:'', game:'', slot:'', lineup:'', sort:'p', dir:-1};
+    S.batShowAll=false; render();
+  };
+  // two entry points, one behaviour: the head's action, and the way out of an
+  // empty result — which is where the reader actually is when they need it
+  $$('#clearf,#clearf2').forEach(el=>el.addEventListener('click',clearBat));
   const mw=$('#morewatch'); if(mw) mw.addEventListener('click',()=>{ S.watchShowAll=true; render(); });
+  const cl=$('#clearl'); if(cl) cl.addEventListener('click',()=>{ S.lq=''; render(); });
   const back=$('#dback'); if(back) back.addEventListener('click',()=>goDate(''));
   $$('[data-star]').forEach(el=>el.addEventListener('click',ev=>{
     ev.stopPropagation();          // a table star sits INSIDE tr[data-k]
