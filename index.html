@@ -30,7 +30,7 @@
 
      DUGOUT (dark / light) — the legacy dashboard's own palette, lifted
        token-for-token out of hit-dugout.html. True black field, pure white
-       type, a single hot orange (#FF6B00) carrying every call-to-attention,
+       type, a single steel blue (#2389E2) carrying every call-to-attention,
        and the green/orange/grey score semantics the client already reads
        fluently. `auto` resolves to one of these two, so the DEFAULT look of
        this app is now the look of the dashboard it replaced.
@@ -50,16 +50,20 @@
   --grph:29px;            /* height of the column-group band above a header */
   /* type — legacy's chalk white and sage grey */
   --ink:#FFFFFF; --ink2:#949AA3; --ink3:#6E747E; --ink4:#4A4F58;
-  /* accent — legacy's hot orange. 6.8:1 on the black field, so unlike most
-     saturated oranges it is safe as text and does not need a lighter twin. */
-  --acc:#FF6B00;        /* FILLS only — backgrounds, solid rules */
-  --acc-txt:#FF6B00;    /* text / icons / strokes — must pass on the page bg */
-  --acc-line:rgba(255,107,0,.36);
-  --acc-ink:#FF8A2B; --acc-on:#150500; --acc-dim:rgba(255,107,0,.14);
+  /* accent — steel blue, 5.8:1 on the black field, safe as text without a
+     lighter twin. It replaced legacy's hot orange (#FF6B00) on 2026-07-27:
+     black plus that exact orange is another site's identity, and Mochi was
+     wearing it. Blue is the one substitution that had to be MEASURED rather
+     than picked, because --tier-lo is itself a cool blue-grey (#949AA3) —
+     see the tier block below for what that ruled out. */
+  --acc:#2389E2;        /* FILLS only — backgrounds, solid rules */
+  --acc-txt:#2389E2;    /* text / icons / strokes — must pass on the page bg */
+  --acc-line:rgba(35,137,226,.36);
+  --acc-ink:#55A5EC; --acc-on:#00121F; --acc-dim:rgba(35,137,226,.14);
   --bad:#FF2D46; --bad-dim:rgba(255,45,70,.14);
   --warn:#FFB800; --warn-dim:rgba(255,184,0,.13);
   /* score ramp — sequential, single hue, for magnitude only */
-  --s1:#331700; --s2:#663000; --s3:#B34B00; --s4:#FF6B00;
+  --s1:#04182B; --s2:#0A3355; --s3:#1560A0; --s4:#2389E2;
   /* ── score tiers ───────────────────────────────────────────────────────
      Ported back from the legacy dashboard (2026-07-26) because the colour was
      doing real work there: it sorts a screen of numbers into "worth a look /
@@ -68,9 +72,17 @@
      Dugout the values are legacy's literal --good / --amber / --sage. The mid
      tier deliberately IS the accent here, exactly as it was in the old
      dashboard — most of a slate lands in that band, and the client reads the
-     resulting wash of orange as "ordinary", not as an alarm. */
+     resulting wash of accent as "ordinary", not as an alarm.
+
+     Which is exactly why swapping the accent had to clear the GREY, not just
+     the background. --tier-lo is a cool blue-grey, so a calm steel blue put
+     mid and lo at a normal-vision ΔE of 10–12 against a floor of 15 — two
+     tiers telling most of the slate apart by a difference you cannot see.
+     Measured with the dataviz validator over a 502-colour sweep; #2389E2 is
+     the tone that clears it (ΔE 16.0 normal, 13.1 CVD), and it beats the old
+     orange on colour-blind separation, which only ever WARNed at 7.7. */
   --tier-hi:#00D46A;  --tier-hi-dim:rgba(0,212,106,.14);  --tier-hi-line:rgba(0,212,106,.42);
-  --tier-mid:#FF6B00; --tier-mid-dim:rgba(255,107,0,.13); --tier-mid-line:rgba(255,107,0,.40);
+  --tier-mid:#2389E2; --tier-mid-dim:rgba(35,137,226,.13); --tier-mid-line:rgba(35,137,226,.40);
   --tier-lo:#949AA3;  --tier-lo-dim:rgba(148,154,163,.10);--tier-lo-line:rgba(148,154,163,.30);
   /* pitcher grade ramp — describes the ARM, not the batter's edge, which is
      why it is a separate scale from the tiers above (a grade-A arm is a bad
@@ -102,8 +114,11 @@
    is the same product rather than a different one. Surface ORDER is
    preserved from the dark theme — --bg is the page and the darkest tone,
    --surf is the most elevated — which is what row hover and the drawer rely
-   on. Accents are the darkened hues legacy uses to clear contrast on white;
-   the hot orange in particular has to drop to #D95A00 to survive as text. */
+   on. Accents darken to clear contrast on white. The blue has to go further
+   than a simple darkening: light's --tier-lo (#5C6470) is a cool blue-grey
+   too, and the calm mid-blues all landed at ΔE 10–13.5 against it, so the
+   accent here is a deeper, more saturated step (ΔE 16.8) rather than the
+   dark theme's tone shifted down. */
 html[data-theme="light"]{
   /* --surf3 is the "empty track" tone (meters, form strips, skeletons). On a
      white page it could sit just below white; against legacy's grey field it
@@ -111,13 +126,13 @@ html[data-theme="light"]{
   --bg:#E9EBEF; --bg2:#F1F3F6; --surf:#FFFFFF; --surf2:#F7F8FA; --surf3:#D8DDE4;
   --line:#D7DBE1; --line2:#C3C9D2; --rule:#0B0D10;
   --ink:#0B0D10; --ink2:#5C6470; --ink3:#7C8493; --ink4:#A3AAB6;
-  --acc:#D95A00; --acc-txt:#C25000; --acc-line:rgba(217,90,0,.38);
-  --acc-ink:#B34700; --acc-on:#FFFFFF; --acc-dim:rgba(217,90,0,.12);
+  --acc:#0E5FD0; --acc-txt:#0E5FD0; --acc-line:rgba(14,95,208,.38);
+  --acc-ink:#0B4CA8; --acc-on:#FFFFFF; --acc-dim:rgba(14,95,208,.12);
   --bad:#D80D26; --bad-dim:rgba(216,13,38,.10);
   --warn:#B37400; --warn-dim:rgba(179,116,0,.12);
-  --s1:#FBE6D4; --s2:#F2B77E; --s3:#E4813A; --s4:#D95A00;
+  --s1:#DCE7F8; --s2:#A6C2EC; --s3:#4E86DC; --s4:#0E5FD0;
   --tier-hi:#00994D;  --tier-hi-dim:rgba(0,153,77,.11);   --tier-hi-line:rgba(0,153,77,.38);
-  --tier-mid:#D95A00; --tier-mid-dim:rgba(217,90,0,.10);  --tier-mid-line:rgba(217,90,0,.36);
+  --tier-mid:#0E5FD0; --tier-mid-dim:rgba(14,95,208,.10); --tier-mid-line:rgba(14,95,208,.36);
   --tier-lo:#5C6470;  --tier-lo-dim:rgba(92,100,112,.08); --tier-lo-line:rgba(92,100,112,.28);
   --grade-a:#00994D; --grade-b:#4E9E1F; --grade-c:#B37400; --grade-d:#D95A00; --grade-f:#D80D26;
   --seam:#D80D26;
@@ -128,7 +143,16 @@ body{
   background:var(--bg); color:var(--ink); font-family:var(--sans);
   font-size:var(--t-sm); line-height:1.5; -webkit-font-smoothing:antialiased;
   padding-bottom:calc(66px + var(--safe-b));
+  /* A short view (an empty watchlist, a search with no matches) left the
+     footer stranded mid-screen with several hundred pixels of dead page under
+     it — on a phone that is most of the viewport. Column flex pins the footer
+     to the bottom of the fold and lets the view own the space above it.
+     #main stays a BLOCK box: making it a flex container would stop the
+     section margins collapsing and silently re-space every view. */
+  display:flex; flex-direction:column; min-height:100vh;
 }
+#main{flex:1 0 auto}
+#foot{flex:0 0 auto}
 @media(min-width:860px){ body{padding-bottom:56px} }
 button,input,select{font:inherit;color:inherit}
 button{background:none;border:0;cursor:pointer;padding:0}
@@ -154,6 +178,54 @@ header{
 .brand small{font-weight:700;color:var(--ink3);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;padding-left:4px}
 @media(max-width:700px){ .brand small{display:none} }
 .hspace{flex:1}
+/* ── global search (phone) ───────────────────────────────────────────────
+   Every view already has a filter row, but each one only searches its own
+   view: the Batters field cannot find a lineup and the Teams field cannot
+   open a batter. This one searches the slate itself and routes to whichever
+   view answers — a batter opens its drawer, a pitcher lands in Batters
+   filtered to the arm he is, a club lands in Teams filtered to its lineup.
+   Desktop keeps the per-view fields; there the nav owns this row. */
+.qs{display:none}
+/* Collapsed it is a 32px magnifier; focused it takes the whole row and the
+   brand and the date picker step aside. A permanently open field could only
+   be ~40px wide between them at 375px — too narrow to type in and too narrow
+   to read a result — and the three things it displaces are all still one tap
+   away once the query is cleared. */
+.qsfield{display:flex;align-items:center;gap:6px;width:100%;min-width:0;
+  height:32px;padding:0 8px;border-radius:3px;background:var(--surf2);border:1px solid var(--line);
+  transition:border-color .15s}
+.qsfield svg{width:15px;height:15px;flex:none;stroke:var(--ink3);fill:none;stroke-width:1.9;stroke-linecap:round}
+.qsfield input{flex:1;min-width:0;width:0;background:none;border:0;outline:none;color:var(--ink);
+  font-family:var(--sans);font-size:13px;opacity:0;pointer-events:none;transition:opacity .12s}
+.qsfield input::-webkit-search-cancel-button{display:none}
+.qsfield input::placeholder{color:var(--ink4)}
+.hbar.qson .qsfield{border-color:var(--acc-line)}
+.hbar.qson .qsfield svg{stroke:var(--acc-txt)}
+.hbar.qson .qsfield input{opacity:1;pointer-events:auto}
+.qsx{flex:none;width:22px;height:22px;display:none;place-items:center;border:0;background:none;
+  color:var(--ink3);font-size:16px;line-height:1;padding:0}
+.hbar.qson .qsx{display:grid}
+/* the results sheet hangs under the header and owns the screen while open */
+.qsres{position:fixed;left:0;right:0;top:46px;bottom:0;z-index:95;overflow-y:auto;
+  background:var(--bg);border-top:1px solid var(--line);padding:6px 0 24px;overscroll-behavior:contain}
+.qsres[hidden]{display:none}
+.qsres .qsh{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink4);
+  font-weight:750;padding:14px 16px 6px}
+.qsitem{display:flex;align-items:center;gap:10px;width:100%;padding:10px 16px;background:none;
+  border:0;border-bottom:1px solid var(--line);text-align:left;color:var(--ink);font-family:var(--sans)}
+.qsitem:active{background:var(--surf2)}
+.qsitem .qsn{flex:1;min-width:0;font-size:14px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qsitem .qsm{font-size:11px;color:var(--ink3);font-family:var(--mono)}
+.qsitem mark{background:none;color:var(--acc-txt);font-weight:750}
+.qsempty{padding:26px 16px;color:var(--ink3);font-size:13px;text-align:center}
+@media(max-width:759px){
+  .qs{display:flex;flex:0 0 32px;min-width:0;transition:flex-basis .18s ease}
+  .hbar.qson .qs{flex:1 1 auto}
+  .hbar.qson .brand,.hbar.qson .dsel,.hbar.qson #btnTheme{display:none}
+}
+@media(min-width:601px) and (max-width:759px){ .qsres{top:58px} }
+/* The 16px rule that keeps this field from zooming the page on iOS lives with
+   the other responsive rules, at the end of the stylesheet — see it there. */
 /* slate-date picker — sits with the header icons, so it matches their weight
    rather than the in-page .field controls */
 .dsel{
@@ -164,6 +236,15 @@ header{
 .dsel:hover{color:var(--ink)}
 .dsel.past{color:var(--acc-txt);border-color:var(--acc-txt)}
 @media(max-width:420px){ .dsel{max-width:112px} }
+/* At 320–360px the brand, the date picker and three 34px icon buttons no
+   longer fit at a 14px gap, and the last button (refresh) ran past the
+   content edge and under the viewport. Tighten the gap and the picker rather
+   than dropping a control — all three are one-tap things you reach for. */
+@media(max-width:360px){
+  .hbar{gap:8px}
+  .dsel{max-width:96px;padding:0 4px}
+  .iconbtn{width:30px}
+}
 /* viewing an archived day — a standing reminder that this is not tonight */
 .datebar{
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
@@ -195,13 +276,19 @@ header{
 .tabbar button svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .tabbar button[aria-current="page"]{color:var(--acc-txt)}
 
-/* ── status ribbon — divided cells, not a sentence ──────────────────── */
-.ribbon{display:flex;flex-wrap:wrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:26px}
-.rcell{padding:11px 22px 11px 0;margin-right:22px;border-right:1px solid var(--line);flex:0 0 auto}
-.rcell:last-child{border-right:0;margin-right:0}
-.rv{font-family:var(--mono);font-size:var(--t-bd);font-weight:650;letter-spacing:-.035em;margin-top:5px;line-height:1}
-.rv small{font-size:11px;color:var(--ink3);font-weight:400;letter-spacing:0}
-.rv.warn{color:var(--warn)}
+/* ── status line — a sidenote, not a scoreboard ─────────────────────── */
+/* This was a strip of bordered stat cells with uppercase labels and 15px mono
+   values, i.e. the visual weight of a headline metric. None of it is: the
+   slate's game count, confirmation state and score spread are provenance —
+   "what am I looking at and is it current" — checked once on arrival and
+   never again. It answers no question the page is FOR. Demoted 2026-07-26 to
+   one muted sentence: the numerals keep the mono face so they stay scannable,
+   and only the live dot and a stale/final warn state carry colour. Wrapping
+   is free now, so the phone grid and the 601-780px squeeze it needed are both
+   gone with it. */
+.ribbon{font-size:12.5px;color:var(--ink3);line-height:1.75;margin:4px 0 22px}
+.ribbon b{font-family:var(--mono);font-weight:650;letter-spacing:-.02em;color:var(--ink2)}
+.ribbon .warn, .ribbon .warn b{color:var(--warn)}
 .dot{width:6px;height:6px;border-radius:50%;background:var(--acc-txt);display:inline-block;margin-right:6px;vertical-align:2px}
 .dot.live{background:var(--bad);animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
@@ -220,11 +307,22 @@ header{
 .sec.lead .sec-h{margin-bottom:20px}
 /* group divider inside a section — quieter than an <h2>, louder than nothing */
 .grp-h{display:flex;align-items:center;gap:12px;margin:26px 0 10px}
+/* 26px is the gap BETWEEN groups. The first one in a list has no group above
+   it to be separated from — it was stacking that margin on top of the filter
+   bar's own and opening 44px of nothing above the first row. */
+.blist > .grp-h:first-child{margin-top:4px}
 .grp-h .rule{flex:1;height:1px;background:var(--line)}
 .lbl.soft{font-family:var(--mono);letter-spacing:0;text-transform:none;font-weight:650;color:var(--ink4)}
 .note{margin:14px 0 0;font-size:var(--t-xs);color:var(--ink3);line-height:1.55}
 .card{background:var(--surf);border:1px solid var(--line);border-radius:4px}
-.empty{padding:48px 20px;text-align:center;color:var(--ink3);font-size:var(--t-sm);border:1px dashed var(--line2);border-radius:4px}
+/* Sized to its message, not to the viewport: an inflated dashed box with 300px
+   of nothing inside it is the same void it was meant to fix, just outlined.
+   The body's column flex already keeps the footer off the middle of the
+   screen, so the leftover space below is plain background rather than an
+   empty container asking to be looked at. */
+.empty{display:grid;align-content:center;padding:34px 20px;text-align:center;
+  color:var(--ink3);font-size:var(--t-sm);border:1px dashed var(--line2);border-radius:4px;
+  margin-bottom:22px}
 
 /* ── truth banner ───────────────────────────────────────────────────── */
 .truth{border-left:3px solid var(--warn);background:var(--warn-dim);font-size:var(--t-sm);line-height:1.55}
@@ -253,28 +351,25 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
    The top-ranked batter gets a fundamentally different treatment — not a
    slightly-bigger card. Accent rule above, gradient wash, 60px score. */
 .bcard.hero{
-  grid-template-columns:72px 1fr auto;gap:22px;padding:22px 18px 22px 0;
-  border-top:2px solid var(--acc);border-bottom:1px solid var(--line);
-  background:linear-gradient(90deg,var(--acc-dim),transparent 58%);
-  border-radius:0;align-items:center;
+  grid-template-columns:116px minmax(0,1fr);gap:0 22px;padding:18px 76px 18px 16px;
+  border:0;background:linear-gradient(90deg,var(--acc-dim),transparent 58%);
+  border-radius:14px;align-items:center;
 }
-.bcard.hero .rank{font-size:var(--t-xl);color:var(--acc);font-weight:750;letter-spacing:-.05em;line-height:.9}
-.bcard.hero .rank b{display:block;font-size:9px;letter-spacing:.16em;color:var(--ink3);font-weight:700;margin-top:7px}
+.bcard.hero .rank{font-size:var(--t-sm);color:var(--acc);font-weight:750;letter-spacing:-.02em;line-height:1}
 .bcard.hero .bname{font-size:var(--t-lg);font-weight:750;letter-spacing:-.035em}
 .bcard.hero .bmeta{font-size:var(--t-xs);margin-top:6px}
 .bcard.hero .bwhy{margin-top:13px}
-.bcard.hero .pct{font-size:var(--t-hero);letter-spacing:-.055em;line-height:.85}
-.bcard.hero .pct span{font-size:var(--t-md);color:var(--ink3)}
-.bcard.hero .slaterank{font-size:var(--t-mi);letter-spacing:.12em;text-transform:uppercase;font-weight:750;color:var(--ink3);margin-top:9px}
-.bcard.hero .meter{display:none}
+/* the hero's dial size lives in the .sdial size table below, with the others */
 
 /* ── list rows — hairline separated, no boxes ───────────────────────── */
-.blist{display:flex;flex-direction:column}
+.blist{display:flex;flex-direction:column;gap:6px}
 /* The star rides over the row's right edge rather than inside the card,
    because .bcard is itself a <button>. The gutter it needs lives on the ROW,
    not on the card's padding — Aurora restyles .bcard padding at higher
    specificity, which silently ate the gap and put the star over the score. */
 .brow{position:relative;padding-right:36px}
+/* revealed by the phone swipe only — see the media query below */
+.swipeact{display:none}
 .star{
   position:absolute;right:0;top:50%;transform:translateY(-50%);
   width:34px;height:34px;display:grid;place-items:center;border-radius:3px;
@@ -292,67 +387,198 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .brow:hover .star:not(.on),tr:hover .tstar:not(.on){opacity:.7}
 .tstar{position:static;transform:none;width:26px;height:26px}
 .tstar svg{width:14px;height:14px}
-/* on a phone the hero card is tall enough that a vertically-centred star reads
-   as floating; pin it to the top corner where it belongs to the row */
+/* ── the tracked STATE, on the name ──────────────────────────────────────
+   The edge star is the control; this is the fact. A row you are following
+   used to say so only through that control — a filled star out at the far
+   right gutter on a desktop, and on a phone nothing at all (the star lives
+   under a swipe there). The name line now carries a small filled star on
+   every surface a tracked batter appears, so "which of these are mine" is
+   answerable mid-scan. Accent, because accent on a star already means
+   exactly this everywhere else in the app. */
+.wmk{display:inline-block;margin-left:6px;color:var(--acc-txt);line-height:0;vertical-align:.01em}
+.wmk svg{width:11px;height:11px;fill:currentColor;stroke:none}
+.dtitle .wmk svg{width:13px;height:13px}
+.ordn .wmk{margin-left:4px}
+.ordn .wmk svg{width:9px;height:9px}
+/* The drawer's "☆ Add to watchlist" button (#dstar, in the drawer body) is
+   the keyboard-reachable, labelled path to the same action — which is what
+   lets the phone row give its star up to a gesture. */
+/* ── phone: the star leaves the row ──────────────────────────────────────
+   A 30px target in the top-RIGHT corner of every row is the single hardest
+   place to reach on a phone held in one hand, and it charged the whole list
+   30px of right gutter to sit there. On a phone the row is swiped LEFT
+   instead: the card slides to reveal the action beneath it, and letting go
+   past the arm point toggles the watchlist. The drawer's labelled
+   "☆ Add to watchlist" button is the discoverable, keyboard-reachable path —
+   a gesture must never be the ONLY way to do something. */
 @media(max-width:600px){
-  .brow{padding-right:30px}
-  .star{top:14px;transform:none;width:30px;height:30px}
+  .brow{padding-right:0;overflow:hidden}
+  .star{display:none}
+  /* Painted only while a swipe is in progress. The card's own background is
+     translucent under Aurora, so an always-on action would ghost through the
+     right edge of all 270 rows. */
+  .swipeact{
+    position:absolute;right:0;top:0;bottom:0;width:76px;display:grid;place-items:center;
+    color:var(--ink3);pointer-events:none;opacity:0;transition:opacity .12s;
+  }
+  .brow.swiping .swipeact,.brow.armed .swipeact{opacity:1}
+  .swipeact svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linejoin:round;position:relative;z-index:1}
+  /* ── the threshold, drawn ──────────────────────────────────────────────
+     A drag with no feedback is a guess: you cannot tell how far is far
+     enough until you have already let go and been wrong. The ring around the
+     star IS the distance to the commit point — a conic sweep driven straight
+     from --sp (0 at rest, 1 at the arm point), so the gesture reports its own
+     progress continuously rather than announcing the result afterwards.
+     Colour still means one thing here: accent appears only once releasing
+     would actually toggle the watchlist. Below the threshold the ring is the
+     neutral line colour, and the star stays an outline.
+     The sweep is a live gradient rather than an animation, so it survives the
+     prefers-reduced-motion block that kills every keyframe on the page — the
+     pop at the threshold is decoration and can go, the progress cannot. */
+  .swipeact .ring{
+    position:relative;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+    background:conic-gradient(var(--ring-c,var(--ink4)) calc(var(--sp,0) * 360deg), var(--line) 0);
+    transform:scale(calc(.82 + var(--sp,0) * .18));
+  }
+  .swipeact .ring::before{
+    content:'';position:absolute;inset:2px;border-radius:50%;background:var(--bg);
+  }
+  .brow.armed .swipeact{color:var(--acc-txt)}
+  .brow.armed .swipeact .ring{--ring-c:var(--acc-txt);animation:armPop .2s var(--spring,ease)}
+  .brow.armed .swipeact svg{fill:var(--acc-txt)}
+  /* already on the list: the same gesture removes it, so the star reads as
+     filled from the start and the ring is the only thing that changes */
+  .brow.starred .swipeact svg{fill:currentColor}
+  @keyframes armPop{ 0%{transform:scale(1)} 45%{transform:scale(1.16)} 100%{transform:scale(1)} }
+  .brow > .bcard{position:relative;z-index:1;transform:translateX(var(--sx,0px))}
+  /* the snap back is animated, the drag itself is not — a transition on the
+     finger-tracking frames is what makes a swipe feel like it lags */
+  .brow:not(.swiping) > .bcard{transition:transform .22s var(--spring,ease)}
 }
+/* ONE template, named areas, every weight and both breakpoints. The identity
+   block, the name, the matchup, the evidence and the score are FLAT children
+   of the card — they used to be nested in a .bmain wrapper, which is why the
+   phone layout could only ever be the desktop row reflowed: the score had
+   nothing to align to but the card's own edges, so it wrapped to a full-width
+   line starting back at the left gutter, 120px under the name and beside an
+   empty quadrant. Flat children + areas let the PHONE state the pairing that
+   actually matters — name and score on one optical line — instead of
+   inheriting it from the desktop composition. */
 .bcard{
-  display:grid;grid-template-columns:38px 1fr auto;gap:18px;align-items:center;
-  padding:15px 8px 15px 0;border-bottom:1px solid var(--line);
-  text-align:left;width:100%;background:none;border-radius:0;
+  display:grid;grid-template-columns:62px minmax(0,1fr);gap:0 18px;align-items:center;
+  grid-template-areas:"id name" "id meta" "id why";
+  /* the right gutter belongs to .brank */
+  padding:11px 52px 11px 12px;border:0;
+  text-align:left;width:100%;background:var(--surf);
+  /* A plain rounded rectangle. The left side was a full semicircle for a
+     day, to echo the dial sitting in it — it read as a lozenge rather than as
+     a card, and the dial does not need the card to repeat its shape. */
+  border-radius:10px;
   transition:background .1s;
 }
-.bcard:hover{background:var(--surf2)}
+.bid{grid-area:id} .bname{grid-area:name} .bmeta{grid-area:meta}
+.bwhy{grid-area:why}
+@media(hover:hover){ .bcard:hover{background:var(--surf2)} }
+/* the global focus ring is drawn 2px OUTSIDE its element. On a phone the card
+   sits in a .brow with overflow:hidden (the swipe gesture needs it to clip the
+   action panel), so an outset ring is cut off along whichever edge it crosses.
+   Inset it — on a keyboard the ring still reads, and it now follows the card's
+   own radius instead of being sliced square by the clip box. */
+.bcard:focus-visible{outline-offset:-3px}
 /* ── the tail: a list, not more cards ────────────────────────────────
    Same row anatomy, a third of the ink. The score drops below the section
    heading's size on purpose — only the hero is allowed to outrank a title. */
-.bcard.lite{padding:9px 8px 9px 0;gap:14px}
+/* row-gap stays 0 on every weight: the card is a THREE-ROW grid now, so a
+   shorthand `gap:14px` silently added 28px of dead height to each row. The
+   spacing between the name, the matchup and the evidence is their own margins,
+   which differ per weight. */
+.bcard.lite{padding:7px 40px 7px 10px;gap:0 14px;grid-template-columns:46px minmax(0,1fr)}
 .bcard.lite .bname{font-size:var(--t-sm);font-weight:650}
 .bcard.lite .bmeta{font-size:var(--t-mi);margin-top:2px;color:var(--ink4)}
-.bcard.lite .pct{font-size:var(--t-bd);font-weight:650;color:var(--ink2)}
-.bcard.lite .pct span{font-size:var(--t-mi)}
 .bcard.lite .rank{font-size:var(--t-xs);color:var(--ink4)}
-.bcard.lite .meter{width:56px;height:2px}
 .bcard.lite .dia{transform:scale(.85)}
-/* the identity column: club badge over slate rank */
-.bid{display:grid;justify-items:center;gap:5px}
+/* The identity column is the dial and nothing else. The club badge went
+   first (the dial is drawn in the club's own colour, so the badge said the
+   same thing twice in the same 60px), then the rank underneath it — which
+   was pinning the circle a few px off the card's left edge to make room for
+   a number that reads better opposite it. See .brank. */
+.bid{display:grid;justify-items:center}
 .rank{font-family:var(--mono);font-size:var(--t-bd);font-weight:650;color:var(--ink4);text-align:center;letter-spacing:-.03em}
-.bid .rank{font-size:var(--t-xs);line-height:1}
-.bcard.lite .bid{gap:3px}
-.bmain{min-width:0}
-.bname{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-weight:700;font-size:var(--t-bd);letter-spacing:-.02em;line-height:1.2}
+.bname{min-width:0;display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-weight:700;font-size:var(--t-bd);letter-spacing:-.02em;line-height:1.2}
 .bmeta{font-size:var(--t-xs);color:var(--ink3);margin-top:4px;letter-spacing:.005em}
 /* ── team colour ─────────────────────────────────────────────────────
-   Colour is used to identify a club, never to say anything about the score —
-   nothing here competes with the accent that means "high probability". The
-   club mark is a weight bump plus its own hue; the row edge is the same hue
-   at low alpha, enough to group a game at a glance without becoming stripes. */
+   Colour identifies a CLUB. It used to be barred from saying anything about
+   the score, and the dial breaks that cleanly rather than by accident: the
+   hue is still purely the club's, and it is the AMOUNT of it — how much of
+   the ring is filled — that carries the number. The low-alpha team-coloured
+   left rule that used to run down each row is gone (2026-07-27): with a
+   62px club-coloured dial in the same column it was the third statement of
+   the same fact, and it read as a stray slash rather than as grouping. */
 .tm{font-weight:750;letter-spacing:.02em}
 .bmeta .at{color:var(--ink4);font-weight:400;margin:0 1px}
-/* The club edge is a CHILD, not an inset box-shadow. A shadow is painted
-   inside the padding box and ignores the border-radius the themes apply, so
-   under Aurora it hung off the rounded corners as a stray coloured slash —
-   which is exactly the "odd coloured border" it was reported as. A ::before
-   inherits the radius and is clipped by the card's own overflow. */
 .blist .bcard{position:relative}
-.blist .bcard:not(.hero)::before{
-  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:inherit;
-  background:var(--tc,transparent);opacity:.42;transition:opacity .15s,width .15s;pointer-events:none;
-}
-.blist .bcard:not(.hero):hover::before{opacity:.95;width:4px}
+
+
+/* ══ THE CARD IS MONOCHROME ═══════════════════════════════════════════════
+   One hue per card — the club's — and everything else on it is ink. The card
+   used to carry four unrelated palettes at once: cyan for a positive chip,
+   red for a negative one, amber for a projected lineup, a five-step scale for
+   the pitcher grade, and two team colours in the matchup. Five hues on a row
+   whose whole job is "this batter, tonight" — none of them meaning the same
+   thing twice, and none of them the colour of the dial two inches to the left.
+
+   So: where the card has colour, it is `--tc` (set inline per card). Where it
+   does not, it is ink. Direction did NOT live in the hue and is not lost —
+   every chip already prints its own ↑/↓/· arrow and its own words, which is
+   the channel that actually says up from down. Hue now says exactly one
+   thing here, the same thing the dial says: whose player this is.
+
+   Scoped to .bcard on purpose. The table, the drawer, the game strip and the
+   lineup cards keep the semantic palette — they are comparisons ACROSS clubs,
+   where a per-club hue would say nothing and cost the meaning it replaced. */
+.bcard{--tc-dim:color-mix(in srgb,var(--tc) 15%,transparent);
+       --tc-line:color-mix(in srgb,var(--tc) 40%,transparent)}
+/* evidence chips — outline on the list rows, solid on the hero, one hue */
+.bcard .chip.up,
+.bcard .chip.down,
+.bcard .chip.warn{background:transparent;color:var(--tc);border-color:var(--tc-line)}
+.bcard .chip.flat,
+.bcard .chip.out{background:transparent;color:var(--ink3);border-color:var(--line2)}
+.bcard.hero .chip.up,
+.bcard.hero .chip.down,
+.bcard.hero .chip.warn{background:var(--tc-dim);color:var(--tc);border-color:var(--tc-line)}
+/* lineup + live tags. `conf` stays ink: a confirmed lineup is the normal case
+   and does not need a colour to say so — `est` and `live` are the exceptions,
+   and an exception on a monochrome card is stated in the card's own hue. */
+.bcard .tag.est,
+.bcard .tag.live{border-color:var(--tc-line);color:var(--tc);background:var(--tc-dim)}
+.bcard .tag.conf{border-color:var(--line2);color:var(--ink3);background:none}
+/* the pitcher grade drops its A–F scale here — five hues for the ARM, on a
+   card that is one hue for the BATTER, was the loudest of the collisions */
+.bcard .gr,
+.bcard .gr[data-g]{color:var(--tc)}
+/* A settled MISS drains the whole card, not just the dial: --tc is set to
+   ink at render time (see batterCard) so the strip, the chips, the tags and
+   the grade all go quiet in one move, the same way the dial does. It has to
+   happen in JS rather than here because --tc is an inline custom property and
+   no stylesheet rule can outrank one. A HIT keeps the club hue — the dial
+   floods with it, and a celebrating row should not also be greyed out.
+
+   the batting-order diamond picks up the hue it sits in */
+.bcard .dia::before{border-color:var(--tc-line)}
+.bcard .dia i{color:var(--tc)}
+/* the matchup: the batter's own club is the one coloured code on the row and
+   takes the card's hue, the opponent takes the same ink as the rest of the
+   meta line it sits in — see matchupHTML() */
+.bcard .tm.own{color:var(--tc)}
+.bcard .tm.opp{color:var(--ink3);font-weight:650}
 
 /* ── score tiers ────────────────────────────────────────────────────────
    One rule, applied everywhere a probability is printed, so the same number
    is the same colour in the shortlist, the table, a game card and the drawer. */
-/* `.vbig` sets its own colour further down the file, and at equal specificity
-   the later rule wins — so the drawer's verdict is named explicitly here.
-   Any future element that both prints a score and sets its own colour needs
-   the same treatment. */
-.t-hi, .vbig.t-hi {color:var(--tier-hi);--tier-c:var(--tier-hi)}
-.t-mid,.vbig.t-mid{color:var(--tier-mid);--tier-c:var(--tier-mid)}
-.t-lo, .vbig.t-lo {color:var(--tier-lo);--tier-c:var(--tier-lo)}
+.t-hi {color:var(--tier-hi);--tier-c:var(--tier-hi)}
+.t-mid{color:var(--tier-mid);--tier-c:var(--tier-mid)}
+.t-lo {color:var(--tier-lo);--tier-c:var(--tier-lo)}
 .meter.t-hi i{background:var(--tier-hi)} .meter.t-mid i{background:var(--tier-mid)} .meter.t-lo i{background:var(--tier-lo)}
 .mini.t-hi{color:var(--tier-hi);background:var(--tier-hi-dim);border-color:var(--tier-hi-line)}
 .mini.t-mid{color:var(--tier-mid);background:var(--tier-mid-dim);border-color:var(--tier-mid-line)}
@@ -367,11 +593,17 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .gr[data-g="A"]{color:var(--grade-a)} .gr[data-g="B"]{color:var(--grade-b)}
 .gr[data-g="C"]{color:var(--grade-c)} .gr[data-g="D"]{color:var(--grade-d)}
 .gr[data-g="F"]{color:var(--grade-f)}
-.bwhy{margin-top:9px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+/* the evidence row is a two-column grid, not a flex line: the form strip is
+   the one element in it with a FIXED width (ten games is always ten games),
+   so it leads and the variable-width chips flow after it. Flex-wrapping the
+   strip in last meant its left edge moved with every chip's text length and
+   it dropped onto its own line on a narrow card — the same mark landing in a
+   different place on every row is what made it unreadable as a column. */
+/* chips alone since the L10 strip moved into the dial — the two-column grid
+   this used to be existed to pair the strip with them on one line */
+.bwhy{margin-top:9px;display:grid;grid-template-columns:minmax(0,1fr);align-items:center}
+.bchips{display:flex;gap:7px;flex-wrap:wrap;align-items:center;min-width:0}
 .bscore{text-align:right;display:grid;gap:5px;justify-items:end}
-.pct{font-family:var(--mono);font-size:var(--t-lg);font-weight:700;letter-spacing:-.045em;line-height:1}
-.pct span{font-size:var(--t-sm);font-weight:500;color:var(--ink3);letter-spacing:0}
-.slaterank{font-size:var(--t-mi);color:var(--ink4);font-family:var(--mono);letter-spacing:0}
 
 /* display matters: a bare <span> is inline, and width/height do not apply to
    non-replaced inline boxes. Inside .bscore (a grid) it was blockified and
@@ -394,10 +626,11 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .chip.flat{background:transparent;color:var(--ink3);border-color:var(--line2)}
 .chip.warn{background:transparent;color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
 .chip.out{border-color:var(--line2);color:var(--ink3)}
-/* the exception: one row on the page earns solid colour */
-.bcard.hero .chip.up{background:var(--acc);color:var(--acc-on);border-color:var(--acc)}
-.bcard.hero .chip.down{background:var(--bad);color:#fff;border-color:var(--bad)}
-.bcard.hero .chip.warn{background:var(--warn);color:#151006;border-color:var(--warn)}
+/* The hero's chips used to be the exception that earned SOLID accent/red/
+   amber. Those rules lived after the monochrome block and silently outranked
+   it, so on the Dugout themes the top row alone kept the old four-palette
+   look while every row under it went club-hued. The hero's solid treatment is
+   in the monochrome block now, in --tc — one place, all weights. */
 .chip .k{font-family:var(--mono);font-size:9.5px;opacity:.8;letter-spacing:0}
 .tag{
   font-family:var(--mono);font-size:9px;letter-spacing:.14em;font-weight:700;text-transform:uppercase;
@@ -410,19 +643,100 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .tag.est{border-color:var(--warn);color:var(--warn)}
 .tag.conf{border-color:var(--line2);color:var(--ink3)}
 .tag.live{border-color:var(--bad);color:var(--bad);background:var(--bad-dim)}
-/* a recorded hit is the good outcome, so it wears the good-tier colour rather
-   than the theme accent — the accent means "high score", which is a different
-   claim about a different thing */
-.tag.hit{background:var(--tier-hi);color:#04140B;border-color:var(--tier-hi)}
-html[data-theme="light"] .tag.hit{color:#fff}
+/* ── the outcome, as a state of the row ──────────────────────────────────
+   This used to be a solid green `hit ✓` pill wedged into the name line, next
+   to CONFIRMED — the loudest thing on a row, sitting in the slot reserved for
+   lineup status, saying something about the game instead. It read as pasted
+   on, because it was: the row underneath it still looked exactly like an
+   unsettled forecast.
 
-.strip{display:inline-flex;gap:2.5px;align-items:center}
-.strip i{width:6px;height:14px;background:var(--surf3);display:block;border-radius:1px}
+   The row resolves instead. `data-out` on the card is the only switch:
+
+     open      score wears its tier colour, meter wears it too — the forecast
+               is the live claim and colour is how it speaks
+     hit       tier colour retired everywhere on the row; ✓ beside the score
+               is the only colour left
+     miss      same, plus the row recedes — a settled miss is closure, not an
+               alarm, and it must not compete with the rows still in play
+
+   The point of retiring the tier colour is that green then means exactly one
+   thing at a time: "high score" on an open row, "he hit" on a settled one.
+   The two greens never appear on the same row, so neither can be misread as
+   the other. Same three states, same two glyphs, on every surface a batter
+   appears — see outcomeOf()/outMark(). */
+/* The mark is a STAMP, not punctuation. A bare glyph the size of a comma is
+   how the app's entire payoff — the forecast got answered — used to be said,
+   and it read as a footnote. The disc gives the answer a body: hit is the
+   only solid green object on a settled row, miss a dim red counter. Both are
+   sized in em so every surface (row score, hero, drawer title, verdict,
+   batting order, game strip) inherits the weight appropriate to its type. */
+.res{font-style:normal;font-weight:800;line-height:1;
+  display:inline-grid;place-items:center;width:1.6em;height:1.6em;border-radius:50%}
+/* glyph colour is --bg, not --surf: every theme's --bg is a solid page tone
+   (Aurora's --surf is translucent white, which vanished into the disc) */
+.res.hit{background:var(--tier-hi);color:var(--bg)}
+.res.miss{background:var(--bad-dim);color:var(--bad);opacity:.8}
+/* the moment it lands: a mark that arrived DURING this session pops in once.
+   Decoration, killed wholesale by the prefers-reduced-motion block. */
+@keyframes resPop{0%{transform:scale(0);opacity:0}55%{transform:scale(1.3)}100%{transform:scale(1)}}
+.res.pop{animation:resPop .5s var(--spring,ease) both}
+/* beside a score the mark is a companion to the number, not a second number:
+   it sits a size down and keeps the digits' own weight */
+td.sc .res{font-size:8.5px;margin-left:4px;vertical-align:.14em}
+/* ── the dial — see dialHTML(). The score, drawn as completeness ─────────
+   The svg does the geometry; these rules only place the core text over it.
+   (The HIT/NO HIT `.outword` micro-label lived here for one day — the dial
+   states replaced it.) */
+.sdial{position:relative;display:inline-grid;place-items:center;font-size:var(--ds,62px);
+  width:var(--ds,62px);height:var(--ds,62px);flex:none}
+/* the one size table — every dial on the page is one of these four */
+.bcard .sdial{--ds:62px}
+.bcard.lite .sdial{--ds:46px}
+.bcard.hero .sdial{--ds:116px}
+.vtop .sdial{--ds:200px}
+.sdial svg{display:block;width:100%;height:100%}
+.sdial .dc{position:absolute;display:flex;flex-direction:column;align-items:center;line-height:1;text-align:center}
+/* .24em, not .27em: the third ring took the core hole down to 35 units */
+.sdial .dv{font-weight:750;letter-spacing:-.04em;font-size:.24em}
+[data-out] .meter i,.meter.settled i{background:var(--ink4)}
+[data-out="miss"]{opacity:.6;transition:opacity .15s}
+[data-out="miss"]:hover{opacity:1}
+/* the game strip's inline marks — same class, so there is literally one
+   outcome vocabulary in the stylesheet rather than two that happen to match */
+.gsbats .res{margin-left:5px;font-size:9px;vertical-align:.08em}
+/* the batting order's fixed 13px outcome track — the disc must fit it */
+.ordo .res{width:13px;height:13px;font-size:8px}
+
+/* ── the L10 form strip ─────────────────────────────────────────────────
+   One component, two sizes, ONE geometry. The cell/gap dimensions are
+   custom properties so the drawer can render a bigger strip by changing
+   numbers rather than by CSS-transforming the small one — a scale() leaves
+   the layout box at its original width, which is why the drawer's label used
+   to sit on top of the bars and needed a hand-tuned margin to escape.
+   The reserved width is the full ten cells even when a batter has played
+   fewer, so the strip occupies a constant box on every row. That is what
+   lets it be an ALIGNED COLUMN down a list instead of an element that lands
+   wherever the chips before it happened to end. */
+.strip{--cw:6px;--ch:14px;--gp:2.5px;
+  display:inline-flex;gap:var(--gp);align-items:center;flex:0 0 auto;
+  width:calc(10 * var(--cw) + 9 * var(--gp));height:var(--ch);line-height:var(--ch)}
+.strip i{width:var(--cw);height:var(--ch);background:var(--surf3);display:block;border-radius:1px}
+.strip.sm{--cw:5px;--ch:12px;--gp:2px}
+.strip.lg{--cw:10px;--ch:24px;--gp:4px}
+/* the third state. A batter with no logged games is neither "hit" nor "no
+   hit", so it must not be drawn with either cell — it gets no cells at all,
+   in a box the same width as a real strip so the column still holds. */
+.strip.none{color:var(--ink4);font-size:11px;letter-spacing:.06em;align-items:center}
 /* the strip repeats on every row — dim it, and let only the hero and the
    drawer spend accent on it */
 .strip i.h{background:var(--ink4)}
 .strip i.n{background:var(--surf3)}
-.bcard.hero .strip i.h,.dbody .strip i.h{background:var(--acc-txt)}
+.dbody .strip i.h{background:var(--acc-txt)}   /* the hero's is club-hued — see the monochrome block */
+/* On the light theme the row-level pair (--ink4 on --surf3) is a 1.6:1
+   separation — legible as decoration, not as data, and the strip now carries
+   the Batters table's whole form column. One step darker for the filled cell
+   only; the empty track stays the shared "empty track" tone. */
+html[data-theme="light"] .strip i.h{background:var(--ink2)}
 
 /* ── filters ────────────────────────────────────────────────────────── */
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
@@ -478,42 +792,18 @@ td.nm{overflow:hidden}
 .nmw > b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .nmw .tag{flex:0 0 auto}
 th:last-child,td:last-child{padding-right:0}
-/* ── audit tables (Honesty tab) ───────────────────────────────────────
-   Five or six columns under `table-layout:fixed` split the panel into equal
-   224px slabs, so a three-digit pick count sat in the middle of a corridor —
-   and the right-most number ended up hard against the Aurora panel's border,
-   reading as a clipped column. Numbers get a fixed, compact cluster; the one
-   label column absorbs the slack; both ends of the row get real inset. */
-/* and once the numbers are compact, a full-bleed panel just moves the corridor
-   into the label column — so the panel itself stops at the width the content
-   needs instead of stretching to the section */
-.tblwrap.fit{max-width:840px}
-.tblwrap.fit th.r,.tblwrap.fit td.r{width:118px}
-.tblwrap.fit th:first-child,.tblwrap.fit td:first-child{padding-left:16px}
-.tblwrap.fit th:last-child,.tblwrap.fit td:last-child{padding-right:16px}
-.tblwrap.fit th.r:last-child,.tblwrap.fit td.r:last-child{padding-right:16px}
-/* the Calibration meter column is not numeric, so it needs its own width or it
-   splits the leftover space evenly with the label column */
-.tblwrap.fit th:last-child:not(.r){width:150px}
-.tblwrap.fit td:last-child .meter{max-width:100%}
-/* Aurora's panel rule sets `overflow:hidden` for corner clipping, which below
-   1120px beats the base `overflow-x:auto` — so a table wider than the phone
-   viewport was clipped with no way to scroll to the last column, and the label
-   column got squeezed to zero. Narrow screens drop the fixed cluster widths and
-   the decorative Calibration meter so the row fits instead of overflowing. */
-@media(max-width:820px){
-  .tblwrap.fit table{table-layout:auto}
-  .tblwrap.fit th.r,.tblwrap.fit td.r{width:auto;padding-left:6px;padding-right:10px}
-  .tblwrap.fit th:first-child,.tblwrap.fit td:first-child{padding-left:12px}
-  .tblwrap.fit th.r:last-child,.tblwrap.fit td.r:last-child{padding-right:12px}
-  /* :not(.r) so this only ever hits the Band table's meter, never a number */
-  .tblwrap.fit th:last-child:not(.r),.tblwrap.fit td:last-child:not(.r){display:none}
-}
+/* The Honesty tab used to carry two audit tables here (score bands, last 14
+   days) and a `.tblwrap.fit` block of column-width surgery to keep six numeric
+   columns from splitting the panel into equal corridors. Both tables are now
+   charts (`bandsSVG`/`daysSVG`) — a gap is a length you see, not two
+   percentages you subtract in your head — so the whole block is gone. Recover
+   from git history if a table is ever wanted back. */
 /* declared widths, in column order:
-   # · batter · tm · slot · score · form · matchup · hit% · xba · k% · pitcher · arm · pa/g · ★ */
+   # · batter · tm · slot · score · form · matchup · L10 · xba · k% · pitcher · arm · pa/g · ★
+   c-l10 holds a `.strip.sm` (63px) plus the 12px group rule padding. */
 col.c-rk{width:44px}
 col.c-name{width:19%} col.c-tm{width:48px}  col.c-slot{width:50px} col.c-score{width:124px}
-col.c-form{width:70px} col.c-mu{width:78px} col.c-hit{width:66px} col.c-xba{width:66px}
+col.c-form{width:70px} col.c-mu{width:78px} col.c-l10{width:84px} col.c-xba{width:66px}
 col.c-k{width:64px}    col.c-pit{width:14%} col.c-arm{width:62px} col.c-pa{width:62px}
 col.c-star{width:40px}
 /* ── column groups ──────────────────────────────────────────────────────
@@ -614,11 +904,9 @@ td.sc b{font-size:var(--t-bd)}
 .gsbats b{color:var(--ink2);font-weight:650}
 .gsbats .num{color:var(--ink4);font-size:var(--t-mi)}
 .gsdot{color:var(--ink4);padding:0 6px}
-/* hit state, one glyph per name: settled ✓/✗ at caption size. The miss mark is
-   quieter than the hit mark on purpose — a miss is closure, not an alarm. */
-.gshit,.gsmiss{font-style:normal;font-weight:750;padding-left:4px;font-size:var(--t-mi)}
-.gshit{color:var(--tier-hi)}
-.gsmiss{color:var(--bad);opacity:.6}
+/* hit state is `.res`, shared with every other surface — see the outcome
+   block above. The strip was the one place that already got this right;
+   now the rows agree with it instead of the other way round. */
 .gsmore{color:var(--ink4);padding-left:8px}
 .gsbest{color:var(--ink4);font-style:normal}
 /* fifteen glowing live pills would make the supporting section the loudest
@@ -627,10 +915,21 @@ td.sc b{font-size:var(--t-bd)}
 .gstrip .tag{font-size:var(--t-mi);padding:1px 6px}
 .gstrip .tag.live{background:none;box-shadow:none;border-color:color-mix(in srgb,var(--bad) 40%,transparent);opacity:.75}
 @media(max-width:640px){
-  .gsrow{grid-template-columns:1fr auto;gap:4px 10px;padding:10px 10px 10px 9px}
-  .gswhen{order:2;grid-column:1/-1}
+  /* Two lines, not three. The time used to be given a whole row of its own
+     under the matchup — a five-character string with 300px of nothing beside
+     it — while "3 top bats" sat up in the corner restating what the row's own
+     warmth already says, and says better. So: time joins the matchup on line
+     one where a schedule expects it, the caption goes (the heat edge and the
+     named bats below it both carry that), and the names keep their full-width
+     line. Fifteen games lose a line each. */
+  .gsrow{grid-template-columns:auto 1fr;gap:3px 12px;padding:9px 10px 9px 9px}
+  .gswhen{order:1}
+  /* left-aligned against the time, not pushed to the far edge: "9:15 AM ·
+     CLE 0 @ 1 TB" is one phrase and wants to be read as one */
+  .gsmid{order:2;justify-content:flex-start}
   /* names get their own full-width line under the matchup on a phone */
   .gsbats{order:3;grid-column:1/-1}
+  .gsn{display:none}
 }
 /* ── lineups — the Teams tab ───────────────────────────────────────────
    One card per LINEUP, never per matchup: the two sides of a game are laid out
@@ -655,6 +954,9 @@ td.sc b{font-size:var(--t-bd)}
 .lu-top{display:flex;align-items:flex-start;gap:14px}
 .lu-avg{font-family:var(--mono);font-size:var(--t-xl);font-weight:750;letter-spacing:-.055em;line-height:.9}
 .lu-avg span{font-size:var(--t-bd);color:var(--ink3);letter-spacing:0}
+/* settled: the average stops wearing the tier scale, same rule as a row */
+.lu-avg.settled{color:var(--ink2)}
+.lu-side .lu-res{color:var(--ink)}
 .lu-side{flex:1;min-width:0;font-size:var(--t-xs);color:var(--ink3);line-height:1.5}
 .lu-side b{color:var(--ink2);font-weight:650}
 .lu-side .meter{width:100%;margin:7px 0 0}
@@ -675,7 +977,12 @@ td.sc b{font-size:var(--t-bd)}
    one ordering a team card owes you; ranking the nine by score would be the
    Batters table again with fewer rows. */
 .ord{display:grid;gap:0}
-.ord button{display:grid;grid-template-columns:24px minmax(0,1fr) 52px 42px;align-items:center;gap:10px;
+/* The outcome gets its own 13px track rather than trailing the percentage:
+   nine scores in a batting order are read as a column, and a ✓ that pushed
+   every settled number 13px left would break the one alignment the card owes.
+   The track is there whether or not the game has settled, so a lineup does
+   not reflow the moment the first hit lands. */
+.ord button{display:grid;grid-template-columns:24px minmax(0,1fr) 52px 42px 13px;align-items:center;gap:10px;
   padding:5px 7px 5px 0;border-radius:3px;text-align:left;font-size:var(--t-xs);width:100%}
 .ord button:hover{background:var(--surf2)}
 .ordn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink3)}
@@ -686,6 +993,9 @@ td.sc b{font-size:var(--t-bd)}
 .ord .t-mid .obar i{background:var(--tier-mid)}
 .ord .t-lo .obar i{background:var(--tier-lo)}
 .ordp{font-family:var(--mono);font-size:var(--t-sm);font-weight:750;text-align:right;letter-spacing:-.03em}
+.ordo{font-size:11px;line-height:1;text-align:center}
+.ord button[data-out] .ordp{color:var(--ink2)}
+.ord button[data-out="miss"] .ordp{color:var(--ink3)}
 /* A hypothetical score must never be mistaken for a real one, so a what-if
    number leaves the tier scale and goes accent — the colour then means "this
    is not tonight's number" rather than "this is a good number".
@@ -698,8 +1008,13 @@ td.sc b{font-size:var(--t-bd)}
 .lu-foot{font-size:var(--t-mi);color:var(--ink4);line-height:1.55}
 .lu-foot b{color:var(--ink3);font-weight:650}
 @media(max-width:560px){
+  /* five stats over three columns: the last one spans the two empty tracks
+     rather than leaving a blank quarter of the card. Must be `span`, not
+     `grid-column-end` — see the note on .scell above. */
   .lu-stats{grid-template-columns:repeat(3,1fr)}
   .lu-cell{border-bottom:0}
+  .lu-cell:nth-child(3n+1):last-child{grid-column:span 3}
+  .lu-cell:nth-child(3n+2):last-child{grid-column:span 2}
 }
 .mini{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:2px;background:var(--surf2);border:1px solid var(--line);font-size:var(--t-xs)}
 .mini:hover{border-color:var(--acc-txt)}
@@ -762,14 +1077,17 @@ html[data-theme="aurora"] .dbody .tblwrap{overflow-x:auto;overflow-y:hidden}
 .dbody td,.dbody th{white-space:nowrap}
 .dbody td:last-child,.dbody th:last-child{padding-right:12px}
 .dtitle{font-size:var(--t-lg);font-weight:750;letter-spacing:-.035em;line-height:1.1}
+/* the outcome rides the NAME here rather than the score, because the drawer's
+   score sits two hundred pixels below the fold on a phone and the header is
+   the one thing you always see. Same two glyphs, same two colours. */
+.dtitle .res{font-size:.5em;margin-left:.35em;vertical-align:.16em}
 .dsub{font-size:var(--t-xs);color:var(--ink3);margin-top:5px}
+.dhead[data-out="miss"] .dtitle{color:var(--ink2)}
 .dnav{display:flex;gap:2px;margin-left:auto}
 
 /* verdict — the single loudest thing in the app */
 .verdict{padding:0}
 .vtop{display:flex;align-items:flex-start;gap:20px;padding-bottom:18px;border-bottom:1px solid var(--line)}
-.vbig{font-family:var(--mono);font-size:var(--t-hero);font-weight:750;letter-spacing:-.06em;line-height:.82;color:var(--acc-txt)}
-.vbig span{font-size:var(--t-md);font-weight:500;color:var(--ink3);letter-spacing:0}
 .vside{flex:1;font-size:var(--t-sm);line-height:1.55;color:var(--ink2);padding-top:3px}
 .vside b{color:var(--ink);font-weight:700}
 .vcheck{margin-top:16px;padding:13px 15px;background:var(--surf2);border-left:2px solid var(--rule);font-size:var(--t-xs);color:var(--ink2);line-height:1.6}
@@ -797,17 +1115,97 @@ html[data-theme="aurora"] .dbody .tblwrap{overflow-x:auto;overflow-y:hidden}
 /* stat grid */
 .sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:0;border-top:1px solid var(--line)}
 .scell{padding:13px 16px 13px 0;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
-.slab{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);font-weight:750}
-.sval{font-family:var(--mono);font-size:var(--t-md);font-weight:700;margin-top:6px;letter-spacing:-.04em;line-height:1}
+/* auto-fit gives a fixed column count, so four or five cells left a bordered
+   EMPTY box on the last row — a drawn container with nothing in it, which the
+   eye reads as a value that failed to load. The last cell takes the slack
+   instead, and its wrapping caption gets the extra width it wanted anyway.
+   `grid-column-end:-1` alone does NOT do this: it pins the END line, so the
+   item is auto-placed one track back and the hole simply moves to its left.
+   The span has to be stated, which means knowing the column count — hence
+   the explicit three-up below rather than auto-fit at phone width. Wider
+   than that, auto-fit lays four or five cells out in a single row and there
+   is no orphan to fix. */
+@media(max-width:700px){
+  .sgrid{grid-template-columns:repeat(3,1fr)}
+  .scell:nth-child(3n+1):last-child{grid-column:span 3}
+  .scell:nth-child(3n+2):last-child{grid-column:span 2}
+  /* exactly four cells (the drawer's box score) reads better as 2×2 than as
+     3 + one stretched across the rest */
+  .sgrid:has(.scell:nth-child(4):last-child){grid-template-columns:repeat(2,1fr)}
+  .sgrid:has(.scell:nth-child(4):last-child) .scell:last-child{grid-column:auto}
+}
+/* labels are one line at desktop width and two on a phone ("MEAN PREDICTED",
+   "OVERALL GAP"), and each cell stacks independently — so one wrapped label
+   pushed its own value a line below its neighbours' and the row of numbers
+   stopped being a row. Reserve the second line for every label in the grid
+   and the values land on one baseline whether they wrap or not. */
+.slab{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);font-weight:750;
+  line-height:1.35;min-height:2.7em;display:flex;align-items:flex-start}
+.sval{font-family:var(--mono);font-size:var(--t-md);font-weight:700;margin-top:2px;letter-spacing:-.04em;line-height:1}
 .ssub{font-size:var(--t-xs);color:var(--ink4);margin-top:4px}
+/* ── slate context on a stat cell ────────────────────────────────────
+   A number like "0.284 xBA" or "3.91 ERA" is unreadable without the field:
+   the drawer's grids now carry ONE extra fact per cell — where this value
+   sits among tonight's batters, ORIENTED so the good end is always good for
+   THIS hitter (a low pitcher ERA and a high batter hit rate both sit at the
+   same end of the rail). That single fact is stated twice in the same
+   register, never in two: the value's colour and the rail's fill length are
+   the same q. Green/red is the direction idiom already used by .lu-cv and
+   the honesty gap cell — good for the hitter / bad for him — not the
+   three-way score tier, which grades a probability and lives elsewhere. */
+.scell{position:relative}
+.srail{position:absolute;left:0;right:16px;bottom:-1px;height:2px;background:var(--surf3)}
+.srail i{position:absolute;left:0;top:0;bottom:0;background:var(--tier-lo)}
+.sval.q-hi{color:var(--tier-hi)} .srail.q-hi i{background:var(--tier-hi)}
+.sval.q-lo{color:var(--bad)}     .srail.q-lo i{background:var(--bad)}
+/* mid stays ink — most of the slate is unremarkable, and if two thirds of
+   the grid is coloured the colour has said nothing. */
+.srail.q-mid i{background:var(--ink4)}
+@media(max-width:700px){ .srail{right:12px} }
+html[data-theme="aurora"] .srail{left:14px}   /* aurora insets the cell */
 
 /* ── charts ─────────────────────────────────────────────────────────── */
-.chart{width:100%;height:auto;max-height:360px;display:block;overflow:visible}
-.chart text{font-family:var(--mono);font-size:9.5px;fill:var(--ink3)}
+/* max-width, not just max-height: the honesty panel runs to 1124px on a wide
+   screen, and an SVG left to fill it letterboxes against the height cap — the
+   three charts then sit at three different widths inside the same tab. One
+   width for all of them, and the height cap only catches a runaway. */
+.chart{width:100%;height:auto;max-width:840px;max-height:480px;display:block;overflow:visible}
+/* font-size in USER units, so it scales with the viewBox: a phone renders the
+   660-wide band chart at ~0.55x, which took 9.5px labels down to 5px. The var
+   is bumped for narrow screens rather than the whole chart being redrawn. */
+.chart{--ct:9.5px}
+.chart text{font-family:var(--mono);font-size:var(--ct);fill:var(--ink3)}
+@media(max-width:820px){ .chart{--ct:15px} }
 .chart .grid{stroke:var(--line);stroke-width:1}
 .chart .ideal{stroke:var(--ink4);stroke-dasharray:4 4;stroke-width:1}
 .chart .curve{stroke:var(--acc-txt);stroke-width:2.4;fill:none;stroke-linejoin:round}
 .chart .pt{fill:var(--acc-txt)}
+/* the band chart is 13 rows tall — the 360px cap made it unreadably squat */
+.chart.tall{max-height:none}
+/* Two marks, one grammar, shared by the band and daily charts: a TICK is what
+   the model claimed, a DOT is what happened, and the BAR between them is the
+   gap. Length carries the gap; colour is spent on exactly one thing — whether
+   the gap is past the tolerance for that chart (4pt by band, 8pt by day) — so
+   nothing else on these charts is allowed to be red. */
+.chart .gapbar{stroke:var(--ink4);stroke-width:3;stroke-linecap:round}
+.chart .predtick{stroke:var(--ink2);stroke-width:1.8;stroke-linecap:round}
+.chart .predline{stroke:var(--ink4);stroke-width:1.4;stroke-dasharray:4 3;fill:none;stroke-linejoin:round}
+.chart .actdot{fill:var(--acc-txt)}
+.chart .gapbar.off{stroke:var(--bad)}
+.chart .actdot.off{fill:var(--bad)}
+/* dead bands are dimmed, not dropped — this is the Honesty tab */
+.chart .dead{opacity:.4}
+.chart .rlab{fill:var(--ink2);font-size:10px}
+.chart .rn{fill:var(--ink4)}
+.clegend{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:12px 0 0;padding-left:2px;
+  font-size:var(--t-mi);letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--ink3)}
+.clegend span{display:inline-flex;align-items:center;gap:7px}
+.clegend i{display:inline-block;flex:none}
+.clegend i.tick{width:2px;height:12px;background:var(--ink2)}
+.clegend i.dash{width:16px;height:0;border-top:1.6px dashed var(--ink2)}
+.clegend i.dot{width:9px;height:9px;border-radius:50%;background:var(--acc-txt)}
+.clegend i.bar{width:16px;height:3px;border-radius:2px;background:var(--ink4)}
+.clegend i.off{background:var(--bad)}
 
 .toast{
   position:fixed;left:50%;transform:translateX(-50%) translateY(14px);bottom:calc(80px + var(--safe-b));
@@ -914,41 +1312,33 @@ td.c .dia{vertical-align:middle}
 .bcard.hero .bdg i{font-size:12px}
 .bcard.hero .bdg.nl i{transform:translateY(-3px)}
 
-/* ── the watermark ──────────────────────────────────────────────────────
-   The same badge blown up and bled off the right edge, clipped by the card.
-   Deliberately a shape and a hue only — no numbers, no text to read — so it
-   groups rows by club without adding anything to the reading load. */
+/* ── the rank, on the right ─────────────────────────────────────────────
+   This is where the club watermark used to sit: the badge blown up to 104px
+   at 7% opacity, bled off the right edge. It was spending the card's one
+   background layer on a fact the club-coloured dial now states at full
+   strength — and stating it so faintly you had to hunt for it.
+
+   The rank takes the slot instead, and takes it as a real number rather than
+   a ghost: standing in a 270-batter field is the thing a scan is actually
+   looking for, and it now sits opposite the dial with the whole name block
+   between them, so the two ends of the row are the two numbers that matter. */
 .bcard{position:relative;overflow:hidden}
-.bcard > :not(.tmark){position:relative;z-index:1}
-.tmark{
-  position:absolute;right:-26px;top:50%;transform:translateY(-50%);
-  width:104px;height:104px;pointer-events:none;z-index:0;display:grid;place-items:center;
-  background:color-mix(in srgb,var(--bc) 60%,transparent);opacity:.07;
+.bcard > :not(.brank){position:relative;z-index:1}
+.brank{
+  position:absolute;right:16px;top:50%;transform:translateY(-50%);
+  pointer-events:none;z-index:0;line-height:1;
+  font-size:26px;font-weight:750;letter-spacing:-.05em;color:var(--ink4);
 }
-.tmark i{
-  font-family:var(--mono);font-style:normal;font-size:30px;font-weight:750;
-  letter-spacing:-.06em;color:var(--bg);line-height:1;
-}
-/* the watermark can stay a clipped box — it is a filled silhouette with no
-   outline, which is the one case clip-path handles correctly. Shoulders at 63%
-   to match the badge path above, so the two read as the same mark. */
-.tmark.al{border-radius:50%}
-.tmark.nl{clip-path:polygon(50% 100%,0 63%,0 0,100% 0,100% 63%);align-content:center;padding-bottom:22px}
-/* On the hero the watermark loses its letters and most of its width. Behind a
-   60px score, a legible three-letter code is a second thing to read in the
-   same place as the loudest number on the page — the club is already stated by
-   the badge, the shape and the hue, so the text here only competed. */
-.bcard.hero .tmark{width:200px;height:200px;right:-84px;opacity:.09}
-.bcard.hero .tmark i{display:none}
-/* the tail rows are meant to recede — a watermark there would undo that */
-.bcard.lite .tmark{display:none}
-/* On a phone the row is barely wider than the watermark, so the code lands on
-   top of the meta line and becomes something to read. Shape and hue only —
-   the badge in the identity column is already carrying the letters. */
+.bcard.hero .brank{font-size:52px;right:26px}
+/* the tail recedes — its rank goes with it */
+.bcard.lite .brank{font-size:17px;right:12px;color:var(--surf3)}
+/* a settled row's rank is a forecast's standing, and the forecast has been
+   answered — it recedes with everything else the resolution rule quiets */
+.bcard[data-out="miss"] .brank{color:var(--surf3)}
 @media(max-width:600px){
-  .bcard.hero .tmark{width:150px;height:150px;right:-60px}
-  .tmark{width:76px;height:76px;right:-24px;opacity:.06}
-  .tmark i{display:none}
+  .brank{font-size:19px;right:10px}
+  .bcard.hero .brank{font-size:32px;right:14px}
+  .bcard.lite .brank{font-size:14px;right:8px}
 }
 
 /* ── phone ──────────────────────────────────────────────────────────────
@@ -959,9 +1349,25 @@ td.c .dia{vertical-align:middle}
 @media(max-width:600px){
   :root{ --t-hero:44px; --t-xl:30px; --t-lg:21px; --t-md:17px; --t-bd:15px; }
   .wrap{padding:0 15px}
-  .ribbon{margin-bottom:18px}
-  .rcell{padding:7px 11px 7px 0;margin-right:11px}
-  .rv{font-size:14px;margin-top:3px}
+  /* ── chrome ────────────────────────────────────────────────────────────
+     156px stood between the top of a phone screen and the first batter's
+     name: a 58px header, a 40px status line and a 57px section heading, none
+     of which is what the page is for. Now ~60px. */
+  .hbar{height:46px;gap:8px}
+  .iconbtn{width:30px;height:30px}
+  /* the tab bar's WATCH tab is the same destination, one thumb-reach away
+     instead of in the far top corner */
+  #btnStar{display:none}
+  /* The status line is provenance, so nothing should precede the first
+     batter with it. #main is a flex column on a phone purely so this one
+     child can be ordered last — it stays first in the DOM, where it reads
+     as the page's dateline for a screen reader. */
+  #main{display:flex;flex-direction:column}
+  .ribbon{order:99;font-size:11.5px;margin:18px 0 0}
+  /* The one section heading whose subtitle only restates the tab you are
+     already on. Every other .sec-h p carries something (game counts, cuts,
+     what a column means) and keeps its line. */
+  .sec-h.plain p{display:none}
   .lbl{font-size:8.5px;letter-spacing:.1em}
   /* two chips must fit on one line at 375px, or the hero pushes its own
      score below the fold — which defeats the whole point of a shortlist */
@@ -971,19 +1377,40 @@ td.c .dia{vertical-align:middle}
   .sec{margin:26px 0}
   .sec-h{gap:6px 12px}
   .sec-h p{flex:1 0 100%;order:3}
-  .bcard{grid-template-columns:24px 1fr auto;gap:11px;padding:13px 0;align-items:start}
-  .bcard.hero{grid-template-columns:34px 1fr;padding:14px 12px 15px 0;gap:10px}
-  .bcard.hero .rank{font-size:22px}
-  .bcard.hero .rank b{font-size:7.5px;margin-top:4px}
+  /* The phone uses the SAME areas as the desktop, and there are only two
+     columns now: the dial (which is the score AND the club AND the identity
+     column, all at once) and everything else stacked beside it. The score no
+     longer needs a column of its own on the right, which is what used to
+     starve the name and truncate the hero's matchup to "vs …". */
+  .bcard{
+    grid-template-columns:50px minmax(0,1fr);gap:0 11px;padding:8px 38px 8px 9px;
+    grid-template-areas:"id name" "id meta" "id why";
+  }
+  .bcard.lite{padding:6px 30px 6px 8px;grid-template-columns:40px minmax(0,1fr)}
+  .bcard.hero{grid-template-columns:78px minmax(0,1fr);padding:14px 50px 14px 10px;gap:0 13px}
   .bcard.hero .bname{font-size:19px}
-  .bcard.hero .bwhy{margin-top:9px}
-  .bcard.hero .bscore{grid-column:1 / -1;justify-items:start;margin-top:10px;text-align:left}
-  .bcard.hero .pct{font-size:40px}
-  .bcard.hero .slaterank{margin-top:4px}
-  .rank{font-size:var(--t-sm);padding-top:3px}
-  .bmeta{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .bwhy{margin-top:8px;gap:6px}
-  .pct{font-size:var(--t-md)}
+  /* the dial's box, per weight — the geometry inside is a 100-unit viewBox
+     and scales with it, digits included (they are sized in em off --ds) */
+  .bcard .sdial{--ds:50px}
+  .bcard.lite .sdial{--ds:40px}
+  .bcard.hero .sdial{--ds:78px}
+  .vtop .sdial{--ds:132px}
+  .rank{font-size:var(--t-sm)}
+  /* the matchup gives up its width first — it is the one line here that
+     degrades gracefully, and the drawer has all of it */
+  .bmeta{margin-top:2px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bwhy{margin-top:5px}
+  /* Two chips at 375px are ~145px and ~135px against 241px of row, so they
+     wrap rather than share a line — the only way to fit both across would be
+     to drop the trailing value, which is the informative half. Stacked it is;
+     the gap tightens so the second one costs a line of chip, not a line of
+     card. (The strip that used to sit here is the dial's inner ring now.) */
+  .bchips{gap:4px}
+  /* last defence: a chip can still be narrowed by a very long pitcher name or
+     a 4-digit value, and a clipped word is worse than an elided one */
+  .bcard .chip{max-width:100%;overflow:hidden}
+  .strip{--cw:5px;--ch:13px;--gp:2px}
+  .strip.lg{--cw:8px;--ch:20px;--gp:3.5px}
   .meter{width:56px}
   .vtop{gap:14px}
   .dbody{padding:15px}
@@ -991,6 +1418,30 @@ td.c .dia{vertical-align:middle}
   .field input{width:100%}
   .field:first-child{flex:1 0 100%}
   .scell{padding-right:12px}
+}
+
+/* ── the 16px rule ────────────────────────────────────────────────────────
+   iOS Safari zooms the page in whenever a focused text field computes to UNDER
+   16px, and it does not zoom back out on blur — so tapping the header search
+   left the app scaled up, the header off-screen, and no way back short of a
+   pinch. Every text-entry field here was 13px, so all three searches did it:
+   #qsq in the header, #fq on Batters, #lq on Teams.
+
+   16px at touch widths is the only fix that keeps the page usable. The two
+   alternatives are worse: `maximum-scale=1` / `user-scalable=no` on the
+   viewport meta suppresses the zoom by taking pinch-to-zoom away from
+   everyone, which is a real accessibility regression on a screen full of
+   10–13px numbers; and a scale(0.8) transform on the field lies to both the
+   caret and the tap target. The fields are 32–34px tall and 16px text fits in
+   them without moving the 46px header.
+
+   This block sits LAST on purpose. `.field input` is set to var(--t-sm) up at
+   the .field definition, and at equal specificity the later rule wins — the
+   first version of this fix was written next to .qsfield and silently lost to
+   it for #fq/#lq. Anything added below here must not set a sub-16px font-size
+   on a text input. */
+@media(max-width:759px){
+  .qsfield input, .field input{font-size:16px}
 }
 
 
@@ -1034,11 +1485,19 @@ html[data-theme="aurora"]{
 /* ── the ambient field: two slow-drifting light sources behind everything ── */
 html[data-theme="aurora"] body::before{
   content:'';position:fixed;inset:-12%;z-index:-2;pointer-events:none;
+  /* --slate-tc is the top-ranked batter's club colour on Today, unset
+     everywhere else, so each stop falls back to the theme's own hue. Mixed
+     rather than substituted: a club colour at full strength behind the whole
+     page is a wash, and thirty of them would be thirty different products.
+     `--tb-*` (the raw brand hex) is right here, not `--tc-*` — this is a
+     20%-alpha field behind everything, not text that owes 4.5:1. */
   background:
-    radial-gradient(46vw 46vw at 22% 22%,rgba(124,58,237,.46),transparent 62%),
-    radial-gradient(40vw 40vw at 82% 26%,rgba(34,211,238,.32),transparent 64%),
-    radial-gradient(48vw 48vw at 58% 88%,rgba(232,121,249,.22),transparent 66%);
+    radial-gradient(46vw 46vw at 22% 22%,color-mix(in srgb,var(--slate-tc,#7C3AED) 62%,#7C3AED) 0%,transparent 62%),
+    radial-gradient(40vw 40vw at 82% 26%,color-mix(in srgb,var(--slate-tc,#22D3EE) 45%,#22D3EE) 0%,transparent 64%),
+    radial-gradient(48vw 48vw at 58% 88%,color-mix(in srgb,var(--slate-tc,#E879F9) 55%,#E879F9) 0%,transparent 66%);
+  opacity:.42;
   filter:blur(28px);
+  transition:background .6s ease;
   animation:auroraDrift 28s ease-in-out infinite;
 }
 html[data-theme="aurora"] body::after{      /* grain, so the gradients don't band */
@@ -1076,23 +1535,15 @@ html[data-theme="aurora"] .tabbar button[aria-current="page"]{
 html[data-theme="aurora"] .iconbtn{border-radius:11px;transition:background .2s,transform .2s var(--spring)}
 html[data-theme="aurora"] .iconbtn:hover{background:var(--surf2);transform:translateY(-1px)}
 
-/* ── ribbon becomes a glass strip ─────────────────────────────────────── */
-html[data-theme="aurora"] .ribbon{
-  border:1px solid var(--line);border-radius:var(--rg);background:var(--surf);
-  backdrop-filter:blur(16px);padding:2px 6px;overflow:hidden;
-}
-html[data-theme="aurora"] .rcell{border-right-color:var(--line);padding-left:14px}
-html[data-theme="aurora"] .rv{
-  background:linear-gradient(120deg,var(--ink),var(--acc-txt));
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-}
-html[data-theme="aurora"] .rv.warn{background:none;-webkit-text-fill-color:var(--warn);color:var(--warn)}
+/* The status line had a glass panel and a gradient-clipped numeral treatment
+   here until 2026-07-26 — both removed with the strip itself. Aurora's glass
+   is for things the page is about; provenance is not one of them. */
 html[data-theme="aurora"] .dot{box-shadow:0 0 10px var(--acc)}
 
 /* ── list rows: translucent fill + hairline, NO per-row blur ──────────── */
 html[data-theme="aurora"] .bcard{
-  position:relative;overflow:hidden;border-bottom:1px solid var(--line);
-  border-radius:14px;margin-bottom:5px;padding-left:12px;padding-right:12px;
+  position:relative;overflow:hidden;border-bottom:0;
+  border-radius:14px;margin-bottom:0;padding-left:12px;padding-right:52px;
   background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
   transition:transform .3s var(--spring),box-shadow .3s,background .3s;
@@ -1100,11 +1551,10 @@ html[data-theme="aurora"] .bcard{
 /* the tail keeps the glass idiom but at a fraction of the lift, so the eye
    reads it as one block of rows instead of six more competing cards */
 html[data-theme="aurora"] .bcard.lite{
-  border-radius:10px;margin-bottom:2px;
+  border-radius:10px;margin-bottom:0;
   background:linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,.006));
   box-shadow:none;
 }
-html[data-theme="aurora"] .bcard.lite:hover{transform:none;box-shadow:inset 0 0 0 1px var(--acc-line)}
 html[data-theme="aurora"] .bcard.lite::after{display:none}
 html[data-theme="aurora"] .gsrow{border-bottom-color:var(--line)}
 html[data-theme="aurora"] .gstrip{border-top-color:var(--line)}
@@ -1113,10 +1563,54 @@ html[data-theme="aurora"] .bcard.stagger{
   animation-delay:calc(var(--i,0) * 34ms);
 }
 @keyframes riseIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-html[data-theme="aurora"] .bcard:hover{
-  transform:translateY(-2px);
-  background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03));
-  box-shadow:inset 0 0 0 1px var(--acc-line),0 10px 30px -14px rgba(77,232,255,.45);
+/* ── hover is a POINTER idiom ──────────────────────────────────────────
+   iOS latches :hover onto the last element you tapped and keeps it there
+   until you tap somewhere else, so on a phone every one of these fired on
+   TAP and then stayed. Two things went wrong with that. The accent ring is
+   the obvious one: a card you merely opened kept a blue outline afterwards,
+   which reads as a selection state this list does not have. The chopped look
+   was the lift — translateY(-2px) pushed the card 2px up out of .brow's
+   overflow:hidden, which the swipe-to-watch gesture needs to clip its action
+   panel, so the top edge of that ring was cut off square.
+
+   And the lift is a `transform`, at higher specificity than the
+   `.brow > .bcard{transform:translateX(var(--sx))}` that MOVES the card
+   during a swipe — so a latched hover was also quietly cancelling the drag.
+
+   hover:hover keeps the whole idiom on devices that actually have a pointer.
+   A phone's feedback is the swipe and the drawer opening, both of which are
+   the real thing happening rather than a hint that it could. */
+@media(hover:hover){
+  /* The card does NOT move on hover. It used to lift 2px, and the lift was
+     the whole problem: the glow under it points DOWN (0 10px 30px -14px), so
+     a card that had just slid up sat with a bright rim on three sides and a
+     bare top edge — which reads as the top border being cut off rather than
+     as the card rising. The ring and the lighter fill already say "hovered",
+     and neither of them moves anything. (The same transform was also the
+     thing outranking the swipe gesture's own translateX on touch.) */
+  html[data-theme="aurora"] .bcard:hover{
+    background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03));
+    box-shadow:inset 0 0 0 1px var(--acc-line),0 10px 30px -14px rgba(77,232,255,.45);
+  }
+  /* The tail needs its own hover BACKGROUND, not just a ring. `.bcard:hover`
+     and `.bcard.lite` are both (0,3,1) and the hover rule sits later, so a
+     tail row was taking the full-weight hover fill: .018 -> .085 is a 4.7x
+     jump where a full card only goes .045 -> .085, or 1.9x. The rows that are
+     meant to recede were lighting up HARDER than the ones above them. Same
+     1.9x, from the tail's own resting tone. */
+  html[data-theme="aurora"] .bcard.lite:hover{
+    background:linear-gradient(180deg,rgba(255,255,255,.034),rgba(255,255,255,.011));
+    box-shadow:inset 0 0 0 1px var(--acc-line);
+  }
+  /* The hero needs its own hover rule or it gets none. `.bcard.hero` and
+     `.bcard:hover` are both (0,3,1), so the tie went to source order — the
+     hero rule sits further down the file and kept winning, which left the top
+     card lifting on hover while keeping its resting shadow and never showing
+     the accent ring at all. Stating it at (0,4,1) settles it by weight
+     instead of by luck. */
+  html[data-theme="aurora"] .bcard.hero:hover{
+    box-shadow:inset 0 0 0 1px var(--acc-line),0 24px 60px -28px rgba(77,232,255,.55);
+  }
 }
 /* a sheen that sweeps across on hover */
 html[data-theme="aurora"] .bcard::after{
@@ -1124,12 +1618,12 @@ html[data-theme="aurora"] .bcard::after{
   background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.09) 50%,transparent 58%);
   transform:translateX(-115%);transition:transform .75s ease;
 }
-html[data-theme="aurora"] .bcard:hover::after{transform:translateX(115%)}
+@media(hover:hover){ html[data-theme="aurora"] .bcard:hover::after{transform:translateX(115%)} }
 
 /* ── the hero: full glass, lit from within ────────────────────────────── */
 html[data-theme="aurora"] .bcard.hero{
   border:1px solid var(--line2);border-radius:22px;margin-bottom:14px;
-  padding:24px 22px;backdrop-filter:blur(26px) saturate(1.5);
+  padding:20px 78px 20px 16px;backdrop-filter:blur(26px) saturate(1.5);
   background:linear-gradient(135deg,rgba(124,58,237,.24),rgba(34,211,238,.13) 55%,rgba(255,255,255,.05));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 24px 60px -28px rgba(77,232,255,.55);
 }
@@ -1143,18 +1637,9 @@ html[data-theme="aurora"] .bcard.hero::before{      /* soft halo behind the scor
 html[data-theme="aurora"] .bcard.hero .rank{
   color:var(--acc);text-shadow:0 0 22px rgba(77,232,255,.65);
 }
-/* the big numbers still get the glass gradient, but it is built FROM the score
-   tier rather than from the theme accent — a 74% and a 51% must not glow the
-   same colour just because they are both the largest thing on their screen */
-html[data-theme="aurora"] .bcard.hero .pct,
-html[data-theme="aurora"] .vbig{
-  background:linear-gradient(120deg,#FFFFFF 6%,var(--tier-c,var(--acc)) 68%);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-  -webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 26px color-mix(in srgb,var(--tier-c,var(--acc)) 40%,transparent));
-}
-html[data-theme="aurora"] .bcard.hero .pct span{-webkit-text-fill-color:var(--ink3)}
-html[data-theme="aurora"] .vbig span{-webkit-text-fill-color:var(--ink3)}
+/* The glass-gradient headline number is retired with .pct/.vbig — the dial's
+   digits sit ON a club-coloured disc when the game resolves, and a gradient
+   text-fill there fought the fill instead of glowing over the background. */
 
 /* ── chips: lit capsules ──────────────────────────────────────────────── */
 html[data-theme="aurora"] .chip{
@@ -1164,12 +1649,23 @@ html[data-theme="aurora"] .chip{
 html[data-theme="aurora"] .chip.up{background:var(--acc-dim);box-shadow:inset 0 0 0 1px var(--acc-line)}
 html[data-theme="aurora"] .chip.down{background:var(--bad-dim);box-shadow:inset 0 0 0 1px rgba(255,107,138,.34)}
 html[data-theme="aurora"] .chip.warn{background:var(--warn-dim);box-shadow:inset 0 0 0 1px rgba(255,196,107,.34)}
-html[data-theme="aurora"] .bcard.hero .chip.up{
-  background:linear-gradient(120deg,var(--acc),#8FF3FF);color:var(--acc-on);
-  box-shadow:0 0 20px rgba(77,232,255,.45);
+/* the card's monochrome rule, restated where Aurora can hear it — these
+   selectors are the same weight as the ones above, so without them the glass
+   chips kept their cyan/red/amber and only the flat themes went club-hued */
+html[data-theme="aurora"] .bcard .chip.up,
+html[data-theme="aurora"] .bcard .chip.down,
+html[data-theme="aurora"] .bcard .chip.warn{
+  background:var(--tc-dim);box-shadow:inset 0 0 0 1px var(--tc-line);color:var(--tc);
+}
+html[data-theme="aurora"] .bcard.hero .chip.up,
+html[data-theme="aurora"] .bcard.hero .chip.down,
+html[data-theme="aurora"] .bcard.hero .chip.warn{
+  background:color-mix(in srgb,var(--tc) 22%,transparent);color:var(--tc);
+  box-shadow:inset 0 0 0 1px var(--tc-line);
 }
 html[data-theme="aurora"] .tag{border-radius:999px;backdrop-filter:blur(6px)}
 html[data-theme="aurora"] .tag.live{box-shadow:0 0 14px rgba(255,107,138,.4)}
+html[data-theme="aurora"] .bcard .tag.live{box-shadow:0 0 14px var(--tc-dim)}
 
 /* ── bars and marks animate in ────────────────────────────────────────── */
 html[data-theme="aurora"] .meter{border-radius:999px;background:rgba(255,255,255,.09)}
@@ -1183,7 +1679,6 @@ html[data-theme="aurora"] .bcard.stagger .meter i{
 @keyframes growX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 html[data-theme="aurora"] .strip i{border-radius:2px;transition:background .2s}
 html[data-theme="aurora"] .strip i.h{background:var(--ink3)}
-html[data-theme="aurora"] .bcard.hero .strip i.h,
 html[data-theme="aurora"] .dbody .strip i.h{background:var(--acc);box-shadow:0 0 8px rgba(77,232,255,.6)}
 html[data-theme="aurora"] .wfbar{border-radius:999px;background:rgba(255,255,255,.08)}
 html[data-theme="aurora"] .wfbar i{border-radius:999px;transform-origin:left;animation:growX .85s var(--spring) both .1s}
@@ -1220,12 +1715,20 @@ html[data-theme="aurora"] .scell{padding-left:14px}
    backdrop never captures anything, so the .82 was just 18% transparency with no
    blur behind it and the rows scrolled visibly THROUGH the column names. Solid,
    at the same tone the translucent version was aiming for. */
+/* Ties with `tr.grp th` at (0,1,2) and wins on source order — deliberately:
+   the solid background IS the fix described above, and the border-bottom it
+   would also have imposed is undone on the next line. The padding-left only
+   reaches EMPTY group cells, since `tr.grp th:not(:empty)` outranks both. */
 html[data-theme="aurora"] th{
   background:#080a14;border-bottom:1px solid var(--line2);padding-left:14px;
 }
 /* ...and this rule must not reach the group band, which wants no rule beneath
    it — the band and the column names are one header, not two stacked slabs. */
 html[data-theme="aurora"] tr.grp th{border-bottom:0}
+/* Ties with `tr.band td` at (0,1,2) and wins on source order. Harmless as it
+   stands — the band label picks up the same 14px the data cells get, so the
+   two still align, which is the only thing that rule's padding was protecting.
+   Worth knowing before anyone changes either side. */
 html[data-theme="aurora"] td{border-color:var(--line);padding-left:14px}
 html[data-theme="aurora"] tbody tr{transition:background .18s}
 html[data-theme="aurora"] tbody tr:hover{background:var(--surf2)}
@@ -1281,6 +1784,12 @@ html[data-theme="aurora"] .chart .pt{
   fill:var(--acc);animation:popIn .4s var(--spring) backwards;animation-delay:1.1s;
 }
 @keyframes popIn{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:none}}
+/* the band and daily charts share the curve's outcome-dot treatment — but the
+   :not(.off) is load-bearing: an over-tolerance gap is the one red thing on
+   those charts and the theme must not repaint it accent-blue. */
+html[data-theme="aurora"] .chart .actdot:not(.off){
+  fill:var(--acc);filter:drop-shadow(0 0 5px rgba(77,232,255,.45));
+}
 html[data-theme="aurora"] .toast{
   border-radius:999px;background:linear-gradient(120deg,var(--acc),#8FF3FF);color:var(--acc-on);
   box-shadow:0 0 30px rgba(77,232,255,.5);
@@ -1294,6 +1803,18 @@ html[data-theme="aurora"] .toast{
 html[data-theme="aurora"] .meter.t-hi i {background:linear-gradient(90deg,color-mix(in srgb,var(--tier-hi) 55%,var(--violet)),var(--tier-hi))}
 html[data-theme="aurora"] .meter.t-mid i{background:linear-gradient(90deg,color-mix(in srgb,var(--tier-mid) 55%,var(--violet)),var(--tier-mid))}
 html[data-theme="aurora"] .meter.t-lo i {background:linear-gradient(90deg,var(--violet),var(--tier-lo))}
+/* ── settled rows, Aurora ─────────────────────────────────────────────────
+   Aurora paints scores and meters with tier-derived gradients at a
+   specificity the base settled rules cannot reach, so a resolved row kept
+   glowing its forecast colour and the ✓ had nothing to be the only colour ON.
+   Same rule as the base theme, restated where Aurora can hear it: once the
+   game is answered, the row goes quiet and the mark speaks. */
+html[data-theme="aurora"] [data-out] .meter i,
+html[data-theme="aurora"] .meter.settled i{background:rgba(255,255,255,.30)}
+/* the mark itself must never inherit the text-fill trick above, or a ✓ inside
+   a gradient-clipped number renders invisible. Colour comes from the base
+   stamp rules — restating it here painted the glyph the disc's own green. */
+html[data-theme="aurora"] .res{-webkit-text-fill-color:currentColor;filter:none}
 html[data-theme="aurora"] .mini.t-hi {background:var(--tier-hi-dim);border-color:var(--tier-hi-line);color:var(--tier-hi)}
 html[data-theme="aurora"] .mini.t-mid{background:var(--tier-mid-dim);border-color:var(--tier-mid-line);color:var(--tier-mid)}
 html[data-theme="aurora"] .mini.t-lo {background:var(--tier-lo-dim);border-color:var(--tier-lo-line);color:var(--ink2)}
@@ -1305,9 +1826,9 @@ html[data-theme="aurora"] .mini.t-lo:hover{background:var(--surf2);border-color:
 html[data-theme="aurora"] #main{animation:viewIn .38s var(--spring)}
 @keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media(max-width:600px){
-  html[data-theme="aurora"] .bcard.hero{padding:16px 14px;border-radius:18px}
+  html[data-theme="aurora"] .bcard.hero{padding:14px 50px 14px 10px;border-radius:18px}
   html[data-theme="aurora"] .bcard.hero::before{width:180px;height:180px;right:-14%}
-  html[data-theme="aurora"] .bcard{padding-left:10px;padding-right:10px}
+  html[data-theme="aurora"] .bcard{padding-left:9px;padding-right:38px}
 }
 </style>
 </head>
@@ -1322,6 +1843,20 @@ html[data-theme="aurora"] #main{animation:viewIn .38s var(--spring)}
     </svg></em> Mochi <small>calibrated hit indicator</small></div>
     <nav class="nav" id="nav" aria-label="Views"></nav>
     <div class="hspace"></div>
+    <!-- Phone-only global search. It sits between the brand and the icons
+         because that is the one slot a thumb reaches without leaving the
+         header, and because on a phone the nav has already moved to the tab
+         bar, so the middle is free. Hidden entirely on desktop, where every
+         view carries its own filter row. -->
+    <div class="qs" id="qswrap">
+      <label class="qsfield">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+        <input id="qsq" type="search" autocomplete="off" placeholder="Batter, pitcher, team"
+               aria-label="Search batters, pitchers and teams" aria-expanded="false"
+               aria-controls="qsres" role="combobox">
+        <button class="qsx" id="qsx" type="button" aria-label="Close search">&times;</button>
+      </label>
+    </div>
     <select class="dsel" id="dsel" aria-label="Slate date" hidden></select>
     <button class="iconbtn" id="btnStar" title="Watchlist" aria-label="Watchlist">
       <svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/></svg></button>
@@ -1338,6 +1873,7 @@ html[data-theme="aurora"] #main{animation:viewIn .38s var(--spring)}
 
 <nav class="tabbar" id="tabbar" aria-label="Views"></nav>
 
+<div class="qsres" id="qsres" role="listbox" aria-label="Search results" hidden></div>
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dtitle" hidden></aside>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -1473,10 +2009,25 @@ function teamCSS(){
 const tc = (t, fallback='var(--ink2)') => `var(--tc-${String(t||'').toUpperCase()},${fallback})`;
 const tb = (t, fallback='var(--ink4)') => `var(--tb-${String(t||'').toUpperCase()},${fallback})`;
 const teamSpan = (t, cls='tm') => `<span class="${cls}" style="color:${tc(t)}">${esc(t)}</span>`;
-/** "ATH @ MIN" → both clubs in their own colour. */
-function matchupHTML(m){
+/** "ATH @ MIN" with only ONE club in colour: the batter's own, when `own` is
+    given. Colouring both made the away code and the home code equally loud in
+    a line that exists to say who THIS hitter plays for and who he is facing —
+    two hues, and the eye had to read the letters to work out which was which.
+    The opponent drops to the same ink as the rest of the meta line, so the one
+    coloured thing in it is the same colour as the dial beside it. Without
+    `own` (the drawer, where the batter is already named above) both stay
+    coloured, since neither is "the other one" there. */
+function matchupHTML(m, own){
   const parts = String(m||'').split('@').map(s=>s.trim());
-  return parts.length===2 ? `${teamSpan(parts[0])} <span class="at">@</span> ${teamSpan(parts[1])}` : esc(m);
+  if(parts.length!==2) return esc(m);
+  const O = String(own||'').toUpperCase();
+  /* When `own` is given, neither code carries an inline colour: the batter's
+     takes the card's --tc and the opponent's takes ink, both from CSS. That
+     is what lets a settled miss drain the club code along with everything
+     else — an inline style is the one thing the drain cannot reach. */
+  const one = t => !O ? teamSpan(t)
+    : `<span class="tm ${t.toUpperCase()===O?'own':'opp'}">${esc(t)}</span>`;
+  return `${one(parts[0])} <span class="at">@</span> ${one(parts[1])}`;
 }
 
 /* ── club badges ──────────────────────────────────────────────────────────
@@ -1508,16 +2059,10 @@ function teamBadge(t, cls=''){
     aria-label="${esc(T)}" title="${esc(T)} · ${AL.has(T)?'American':'National'} League"
     ><svg class="bdgs" viewBox="0 0 100 100" aria-hidden="true">${BDG_SHAPE[lg]}</svg><i>${esc(T)}</i></span>`;
 }
-/** The same badge blown up as a watermark behind a row, so the club reads from
-    the shape of the card before you get to any text. Replaces the baseball that
-    used to sit behind the hero — a ball is true of all 270 rows and therefore
-    identifies none of them, which is exactly the wrong thing to spend the one
-    background layer on. */
-function teamMark(t, cls=''){
-  const T = String(t||'').toUpperCase();
-  if(!T) return '';
-  return `<span class="tmark ${AL.has(T)?'al':'nl'} ${cls}" style="${badgeVars(T)}" aria-hidden="true"><i>${esc(T)}</i></span>`;
-}
+/* teamMark() — the club badge blown up as a row watermark — was deleted
+   2026-07-27. It occupied the card's one background layer at ~7% opacity to
+   say something the club-coloured dial now says in full strength, and the
+   rank took its place on the right. Recover from git history if needed. */
 
 /** fetch with a hard timeout — a hung statsapi call must never hang the UI. */
 async function get(url,{timeout=9000,json=false,text=false}={}){
@@ -1566,13 +2111,20 @@ const N = v => { if(v===''||v==null) return null; const n=+v; return isNaN(n)?nu
    2 · domain model — one slate row becomes one batter
    ══════════════════════════════════════════════════════════════════════ */
 function toBatter(r){
+  // The form string, plus the same thing as a number. The table sorts on
+  // `b[key]` directly, and the strip replaced a sortable Hit% column — a
+  // column you cannot sort by is a column the table lost. Count, not rate:
+  // it is the read of the mark actually on screen, and a rate would put a
+  // 1-for-1 return-from-injury above a genuine 8-of-10 run.
+  const last10 = (r.last5||'').replace(/[^01]/g,'');
   return {
     raw:r,
     batterId:r.batter_id, name:r.name, team:r.team, hand:r.batter_hand,
     slot:N(r.slot), gamePk:r.game_pk, matchup:r.matchup, startTime:r.start_time,
     gameState:r.game_state, confirmed:(r.lineup_source||'')==='live',
     p:N(r.p_hit), base:N(r.base_p_hit), delta:N(r.matchup_delta),
-    hasHit:r.has_hit==='True', last10:(r.last5||'').replace(/[^01]/g,''),
+    hasHit:r.has_hit==='True', last10,
+    l10hits: last10 ? [...last10.slice(-10)].filter(c=>c==='1').length : null,
     // batter form
     bHit:N(r.b_hit_rate), bXba:N(r.b_xba), bHard:N(r.b_hardhit), bBabip:N(r.b_babip),
     bK:N(r.b_k_rate), bGames:N(r.b_n_games), bRest:N(r.b_days_rest), bPA:N(r.b_avg_pa),
@@ -1598,8 +2150,13 @@ function toBatter(r){
     on its own; percentile within the slate is what makes a batter stand out. */
 function slateStats(bs){
   const st = {};
+  /* The reason engine needs the first dozen; the rest are here because the
+     drawer's stat grids state every cell's place in the field too (see
+     SVAL_DIR / scellHTML). Same slate, one ranking — a number cannot mean one
+     thing in the Why list and another six rows further down. */
   const cols = {p:'p',base:'base',delta:'delta',bHit:'bHit',bXba:'bXba',bHard:'bHard',bK:'bK',
-                pCsw:'pCsw',pHard:'pHard',pRating:'pRating',bPA:'bPA',bQ3:'bQ3',pH9:'pH9'};
+                pCsw:'pCsw',pHard:'pHard',pRating:'pRating',bPA:'bPA',bQ3:'bQ3',pH9:'pH9',
+                bBabip:'bBabip',pEra:'pEra',pWhip:'pWhip',pK9:'pK9',pBb9:'pBb9',pAvgBf:'pAvgBf'};
   for(const c in cols){
     const v = bs.map(b=>b[c]).filter(x=>x!=null).sort((a,b)=>a-b);
     st[c] = v.length ? {min:v[0], max:v[v.length-1], med:v[Math.floor(v.length/2)], sorted:v} : null;
@@ -1611,6 +2168,46 @@ function slateStats(bs){
     return s.sorted.length<2 ? .5 : lo/(s.sorted.length-1);
   };
   return st;
+}
+
+/** Which end of each stat is good FOR THE HITTER. +1 = higher is better for
+    him, -1 = lower is. Orientation is the whole point: a raw percentile would
+    paint a 1.90-ERA ace green on the page of the batter who has to face him.
+    A stat absent from this map gets no colour rather than a guessed one. */
+const SVAL_DIR = {
+  bHit:+1, bXba:+1, bHard:+1, bPA:+1, bQ3:+1, bK:-1,
+  // the arm's damage allowed helps him; its dominance does not
+  pEra:+1, pWhip:+1, pH9:+1, pHard:+1,
+  pAvgBf:+1,   // a deeper outing is a third look at the same arm
+  pCsw:-1, pK9:-1, pRating:-1,
+  /* BABIP is the one stat here whose good end is genuinely arguable — a .343
+     is either a hitter finding holes or one about to regress, which is why the
+     caption calls it a luck check. It gets ranked and railed but stays ink:
+     0 means "state where he sits, claim nothing about whether that is good".
+     BB/9 is the same argument (command, but a walk is not a hit) and it only
+     appears as K/9's caption, so it is left off the map entirely. */
+  bBabip:0
+};
+/** One stat cell of a drawer grid, carrying its rank in tonight's field.
+    `col` is a slateStats column; pass `raw` null (or an unmapped col) and the
+    cell renders exactly as it did before — no rail, no colour, no claim. */
+function scell(lab, val, sub, col, raw){
+  const dir = SVAL_DIR[col];
+  const p = (dir!=null && raw!=null && S.st) ? S.st.pctl(col, raw) : null;
+  if(p == null) return `<div class="scell"><div class="slab">${lab}</div>
+    <div class="sval">${val}</div><div class="ssub">${sub}</div></div>`;
+  const q = dir < 0 ? 1-p : p;                       // q: 1 = best for him
+  const cls = !dir ? 'q-mid' : q >= .68 ? 'q-hi' : q <= .32 ? 'q-lo' : 'q-mid';
+  /* The caption already carries a unit or a sample size, so the rank joins it
+     rather than taking a fourth line — and it is only spelled out at the ends,
+     which is where "top 12% of the slate" tells you something. */
+  const rank = !dir ? `higher than ${Math.round(q*100)}% of the slate`
+             : q >= .68 ? `top ${Math.max(1,Math.round((1-q)*100))}% of slate`
+             : q <= .32 ? `bottom ${Math.max(1,Math.round(q*100))}% of slate` : '';
+  return `<div class="scell"><div class="slab">${lab}</div>
+    <div class="sval ${cls}">${val}</div>
+    <div class="ssub">${sub}${sub&&rank?' · ':''}${rank}</div>
+    <div class="srail ${cls}" title="${Math.round(q*100)}th percentile among tonight's batters${dir?', oriented toward this hitter':''}"><i style="width:${(q*100).toFixed(1)}%"></i></div></div>`;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1745,6 +2342,31 @@ function evidence(b, st){
     }
   }
   // ── context only — real information, explicitly not model signal ────────
+  // park leverage — how much tonight's venue is likely to matter FOR HIM.
+  // Measured 2026-07-26 (diagnose_park_power_signal.py, holdout n=9,845): the
+  // slope of the hit outcome on park_factor across hard-hit terciles is
+  // 0.126 / 0.151 / 0.461, and the swing from a bottom-quartile park to a
+  // top-quartile one is 0.7pt (low power) / 2.2pt (mid) / 3.3pt (high).
+  // Deliberately NOT a model input: on the residual the interaction is t=1.63
+  // against a permutation null of 1.96 (p=0.10), i.e. HistGBM already reads it
+  // off park_factor and b_hardhit, which are both in FEATURES. So this is the
+  // rare context item whose ingredients ARE trained on — the note says so.
+  // Both tails are shown; "the venue barely matters for this bat" is as useful
+  // a read as the opposite, and suppressing it would make the chip's presence
+  // alone imply "good park news".
+  if(b.park!=null && Math.abs(b.park-1)>=.02 && b.bHard!=null){
+    const ph = rel('bHard', b.bHard);
+    if(ph!=null && (ph>=.68 || ph<=.32)){
+      const hi = ph>=.68, up = b.park>1;
+      add({ k:'parklev', dir:0, s:0, ctx:true,
+            label: hi?'Park matters more for him':'Park matters less for him',
+            text: hi
+              ? `Hard-hit ${pct(b.bHard,1)} — top third of tonight's slate for power — into a ${up?'hitter':'pitcher'}'s park (${num(b.park,2)}). Bats like his have historically swung about ${up?'3pt up':'3pt down'} between the friendliest and harshest parks, three to four times what a contact bat moves.`
+              : `Hard-hit ${pct(b.bHard,1)} — bottom third of tonight's slate for power — so the ${num(b.park,2)} park is close to noise for him: that tercile has moved under a point between the friendliest and harshest venues.`,
+            val: hi?'HIGH':'LOW',
+            note:'Both halves of this are model inputs — the score already prices the park for his profile. This only says how much of tonight rides on the venue. An explicit interaction term was tested on 2026-07-26 and added nothing.' });
+    }
+  }
   // starter vs reliever split
   if(b.vsSP!=null && (b.paSP??0)>=50){
     const d = (b.vsRP!=null&&(b.paRP??0)>=50) ? b.vsSP-b.vsRP : null;
@@ -1801,9 +2423,9 @@ function verdict(b, ev, st){
    ~35% of picks scored under 55%; from 07-25 on the floor is ~0.47-0.50 and
    only ~7% land under 55%. So the settled record spans TWO model generations,
    and the bands below ~45 are the record of a model that can no longer produce
-   a score in them. They stay in the table — this is the Honesty tab — but they
-   are not the current model's calibration and must not be drawn as if they
-   were. Bump this when a change alters the emitted range again. */
+   a score in them. They stay on the page, dimmed — this is the Honesty tab —
+   but they are not the current model's calibration and must not be drawn on
+   the reliability curve as if they were. Bump this when a change alters the emitted range again. */
 const MODEL_ERA = '2026-07-25';
 /* The band range the reliability curve is drawn over: everything the current
    model actually emits, with headroom on both sides. Not a "good scores only"
@@ -1865,7 +2487,7 @@ async function calibration(){
       /* `live` = a band the CURRENT model can still land a score in; charted and
          counted in the headline. `pos` says which side a dead band fell off:
          'lo' is the pre-MODEL_ERA floor, 'hi' is the handful of >=80% scores no
-         slate has produced since 07-18. Both stay in the table. */
+         slate has produced since 07-18. Both stay on the page, dimmed. */
       bands:[...bands.entries()].sort((a,b)=>a[0]-b[0]).map(([k,v])=>({band:k,...v,act:v.h/v.n,pred:v.p/v.n,
         pos: k+.05<=CAL_LO ? 'lo' : k>=CAL_HI ? 'hi' : 'in', live: k+.05>CAL_LO && k<CAL_HI})),
       days:[...days.entries()].sort((a,b)=>b[0].localeCompare(a[0])).map(([k,v])=>({date:k,...v,act:v.h/v.n,pred:v.p/v.n}))
@@ -1888,10 +2510,11 @@ function bandFor(cal,p){
    5 · data loading
    ══════════════════════════════════════════════════════════════════════ */
 const S = {                                   // app state
-  view:'today', batters:[], st:null, cal:null, modified:null,
+  view:'today', batters:[], st:null, cal:null, modified:null, batShowAll:false, watchShowAll:false,
   live:{}, bullpen:null, odds:null, pitcherLog:null,
   filters:{q:'',team:'',game:'',slot:'',lineup:'',sort:'p',dir:-1},
   stars:store.get('stars',[]), snap:null, drawerIdx:-1, drawerList:[],
+  gamelog:{},   // per-gamePk finished-game logs, fetched lazily on drawer open
   lsort:store.get('lsort','strength'),      // how the Teams tab orders its lineups
   lq:'',                                    // Teams tab search — team, player, or arm
   date:'', dates:[],    // '' = tonight's live slate; else a slates/<date>.csv archive
@@ -2003,6 +2626,93 @@ async function loadLive(){
     });
     S.live = m;
   }catch(e){ /* silent: live data is an enhancement, never a dependency */ }
+  await refreshHits();
+}
+/* ── live outcomes ───────────────────────────────────────────────────────
+   has_hit in the CSV is frozen at whatever the last slate run saw — usually
+   pre-game — so the mark the whole app resolves around would otherwise sit
+   empty all night and fill in at the morning rebuild, long after anyone
+   cared. One boxscore per started game fills it in on the ticker's own 45s
+   cycle: live games every tick, a final game once (its answer cannot
+   change). Client-side statsapi, same host as the ticker and the drawer's
+   game log, so the public mirror gets it too. A hit that lands mid-session
+   goes into S._justHit, which is what outMark() reads to pop the stamp in
+   exactly once — and a watched batter's hit gets said out loud. */
+const hitsCache = {};   // gamePk -> {batterId: got a hit}; a final's map never changes
+let hitsPrimed = false, hitsSlate = null;
+async function refreshHits(){
+  if(S.date) return;                  // archives carry their own outcomes
+  const started = [...new Set(S.batters.map(b=>b.gamePk))]
+    .filter(pk=>/^(Live|Final)$/.test(S.live[pk]?.abstract||''));
+  const fetchPks = started.filter(pk=>S.live[pk].abstract==='Live' || !hitsCache[pk]);
+  await Promise.all(fetchPks.map(async pk=>{
+    try{
+      const {body} = await get(`https://statsapi.mlb.com/api/v1/game/${pk}/boxscore`,{json:true,timeout:12000});
+      const hit = {};
+      for(const side of ['away','home']){
+        const ps = body.teams?.[side]?.players||{};
+        for(const k in ps){
+          const st = ps[k].stats?.batting;
+          if(st && st.plateAppearances>0) hit[String(ps[k].person.id)] = st.hits>0;
+        }
+      }
+      hitsCache[pk] = hit;
+    }catch(e){ /* one game failing must not cost the rest */ }
+  }));
+  // News is a transition observed on the SAME slate we last looked at — the
+  // first pass of a session (or of a freshly reloaded slate) is baseline, so
+  // opening the page at 10pm does not pop-and-toast four hours of history.
+  const news = hitsPrimed && hitsSlate===S.batters;
+  const landed = [];
+  for(const b of S.batters){
+    const m = hitsCache[b.gamePk]; if(!m) continue;
+    if(m[String(b.batterId).replace(/\.0$/,'')] && !b.hasHit){ b.hasHit = true; landed.push(b); }
+  }
+  hitsPrimed = true; hitsSlate = S.batters;
+  if(landed.length && news){
+    (S._justHit ??= new Set());
+    landed.forEach(b=>S._justHit.add(key(b)));
+    const starred = landed.filter(isStarred);
+    if(starred.length) toast(`✓ ${starred.map(b=>b.name).join(' · ')} — hit`, 3200);
+  }
+}
+/** Finished-game log — the outcome side of the drawer's pre-game case.
+    Fetched once per gamePk, on drawer open only (a slate can hold 15 games;
+    fetching all of them up front to decorate rows nobody opens is waste).
+    Keyed by gamePk, never batter — doubleheaders share every other field.
+    Works on archives and the public mirror alike: statsapi boxscores are
+    historical and the call is client-side, same host as the live ticker. */
+async function loadGameLog(pk){
+  if(S.gamelog[pk]) return S.gamelog[pk];
+  S.gamelog[pk] = {status:'loading'};
+  try{
+    const [bx, pbp] = await Promise.all([
+      get(`https://statsapi.mlb.com/api/v1/game/${pk}/boxscore`,{json:true,timeout:12000}),
+      get(`https://statsapi.mlb.com/api/v1/game/${pk}/playByPlay`,{json:true,timeout:12000})
+    ]);
+    const players={};
+    for(const side of ['away','home']){
+      const ps=bx.body.teams?.[side]?.players||{};
+      for(const k in ps){
+        const st=ps[k].stats?.batting;
+        if(st && st.plateAppearances>0) players[String(ps[k].person.id)]={
+          ab:st.atBats, h:st.hits, r:st.runs, rbi:st.rbi, bb:st.baseOnBalls,
+          k:st.strikeOuts, hr:st.homeRuns, d2:st.doubles, d3:st.triples, pas:[]
+        };
+      }
+    }
+    for(const pl of (pbp.body.allPlays||[])){
+      const p = players[String(pl.matchup?.batter?.id||'')];
+      // isComplete skips half-inning-ending baserunning plays (CS, pickoffs)
+      // that carry a batter matchup but are not that batter's plate appearance
+      if(!p || !pl.result?.event || pl.about?.isComplete===false) continue;
+      p.pas.push({ inn:pl.about?.inning, ev:pl.result.event,
+        hit:/^(single|double|triple|home run)/i.test(pl.result.event),
+        pit:pl.matchup?.pitcher?.fullName||'' });
+    }
+    S.gamelog[pk] = {status:'ok', players};
+  }catch(e){ S.gamelog[pk] = {status:'err'}; }   // drawer degrades to pre-game view
+  return S.gamelog[pk];
 }
 let liveTimer=null;
 function scheduleLive(){
@@ -2045,7 +2755,126 @@ function meter(b){
   const s=S.st.p; if(!s) return '';
   const span=(s.max-s.min)||1;
   const w=clamp((b.p-s.min)/span,0,1)*100, med=clamp((s.med-s.min)/span,0,1)*100;
-  return `<span class="meter ${tcls(b.p)}" role="img" aria-label="${pct(b.p,1)}, slate median ${pct(s.med,1)}"><i style="width:${w.toFixed(1)}%"></i><b style="left:${med.toFixed(1)}%"></b></span>`;
+  /* A settled row keeps the bar — where the score sat in the field is still
+     true — but drops the tier colour, because that colour is the FORECAST
+     speaking and the forecast has been answered. See outcomeOf(). */
+  const o = outcomeOf(b);
+  return `<span class="meter ${o?'settled':tcls(b.p)}" role="img" aria-label="${pct(b.p,1)}, slate median ${pct(s.med,1)}"><i style="width:${w.toFixed(1)}%"></i><b style="left:${med.toFixed(1)}%"></b></span>`;
+}
+/** ── the dial — the score drawn as completeness ─────────────────────────
+    One circle per batter, ONE hue: the better tonight's case, the more of
+    the circle is filled, and a recorded hit floods the whole thing solid.
+    Replaced the pct+meter pair on cards and the drawer's bare number
+    (2026-07-27, client direction). The table keeps digits+meter — a data
+    grid has no room for a circle.
+
+    Inside-out: ring 1 is the meter bent round (faint track = tonight's
+    slate span, arc = his score, notch = the median — same field semantics
+    as the linear meter, so a near-closed circle means "top of the field",
+    never "sure thing"); the thin whisker outside it spans base→final score,
+    the matchup delta as an arc length — faint when the matchup TOOK score
+    away; the outer ring is the L10 form strip in ten segments, oldest →
+    newest ending at 12 o'clock. The core carries the two-digit score and
+    nothing else — no rank, no team, no marks; the card already says those.
+
+    Resolution, same rule as everywhere, said by colour alone: a hit eats
+    the whole geometry (a solid green disc — the answer replaces the
+    forecast), a miss drains every ring to ink. Tier hues retire on this
+    element: quantity of green does the work the three colours did. */
+function dialHTML(b){
+  const f=S.st?.p; if(!f || b.p==null) return '';
+  /* Drawn in a fixed 100-unit viewBox and scaled by CSS, so the rendered
+     size is `--ds` and lives entirely in the stylesheet — one dial function,
+     every size, and a media query can shrink it for a phone. (It used to
+     take a px size and write --ds inline, which no media query could then
+     override — that is why the phone kept the desktop's dials.)
+
+     ONE stroke width for all three rings. Weight was doing a second job at
+     the start — a thick score arc beside a thin form ring read as "the fat
+     one matters" rather than as two facts — so emphasis is carried by RADIUS
+     alone and the rings read as one instrument.
+
+     THREE rings fit at uniform width only because the geometry gave up some
+     stroke to pay for it: 7 units instead of 8.5, spaced 10.5 apart. That
+     leaves a core hole of 35 units against digits set at .24em of --ds —
+     about 29 units of glyph, an 18% margin that holds at every size in the
+     .sdial table, down to the 46px tail row. This is the constraint that
+     dropped the matchup ring the first time; it is why the digits are .24em
+     and not .27em now. */
+  const U=100, c=50, sw=7, rScore=42, rForm=31.5, rMatch=21;
+  const P=(r,deg)=>{const a=(deg-90)*Math.PI/180; return [c+r*Math.cos(a), c+r*Math.sin(a)];};
+  const A=(r,a0,a1)=>{ if(a1-a0>=359.9) a1=a0+359.9;
+    const s=P(r,a0), e=P(r,a1);
+    return `M${s[0].toFixed(1)} ${s[1].toFixed(1)} A${r} ${r} 0 ${a1-a0>180?1:0} 1 ${e[0].toFixed(1)} ${e[1].toFixed(1)}`; };
+  /* ── the scale the arcs are drawn on ──────────────────────────────────
+     Tonight's own min/max, PADDED by 8% of the range at each end. Two things
+     that domain has to do at once.
+
+     It is slate-relative rather than 0–100 because that is what separates
+     batters: p_hit lives in a narrow band (50–77% on this slate), so an
+     absolute scale squeezes all 270 into 96 degrees and the top ten into 25,
+     with 181 degrees filled on every dial and the top 82 unreachable. On
+     tonight's own range those become 360 and 95. Nothing is lost — the digits
+     in the core are the absolute number, and the slate span is printed in the
+     ribbon.
+
+     The padding is why the leader's ring no longer closes. On a bare min/max
+     the top batter renders a complete circle EVERY night whether he is at 77%
+     or 62%, which reads as "maxed out" rather than "first of 270", and the
+     floor renders as an empty ring that looks like missing data. 8% costs
+     about 8% of the discrimination and buys back both ends. */
+  const PAD=.08, lo=f.min-(f.max-f.min)*PAD, hi=f.max+(f.max-f.min)*PAD;
+  const span=v=>clamp((v-lo)/((hi-lo)||1),0,1)*360;
+  const out=outcomeOf(b);
+  /* The club's own colour, not a tier colour — the dial is the identity
+     column, so the hue says WHOSE player this is and the amount of it says
+     how good tonight's case is. --tc-* is the contrast-corrected step
+     (4.5:1 on the current theme's background), which is what makes thirty
+     brand hues survivable as thin arcs and legible under the core's digits.
+
+     TWO states, not three. A hit used to flood the dial with a solid disc;
+     it read well and it ate the rings, which are the reason this is a dial
+     and not a badge. Now the geometry is always drawn and a settled row only
+     changes whether it is lit. */
+  const club = tc(b.team,'var(--ink2)');
+  const col = out==='miss' ? 'var(--ink4)' : club;
+  // Square stroke ends throughout — rounded caps smear into blobs at row
+  // size, and the caps' extra length lies about the arc's true sweep.
+  let svg=`<svg viewBox="0 0 ${U} ${U}" aria-hidden="true">`;
+  // outer — the score across tonight's field, on its own span (not 0–100),
+  // with the slate median notched on it
+  svg+=`<path d="${A(rScore,0,359.9)}" stroke="var(--surf3)" stroke-width="${sw}" fill="none"/>`;
+  svg+=`<path d="${A(rScore,0,span(b.p))}" stroke="${col}" stroke-width="${sw}" fill="none"/>`;
+  const m0=P(rScore-sw*.62,span(f.med)), m1=P(rScore+sw*.62,span(f.med));
+  svg+=`<line x1="${m0[0].toFixed(1)}" y1="${m0[1].toFixed(1)}" x2="${m1[0].toFixed(1)}" y2="${m1[1].toFixed(1)}" stroke="var(--ink2)" stroke-width="2" opacity=".75"/>`;
+  // middle — the L10 strip in ten segments, oldest to newest
+  const form=(b.last10||'').slice(-10).padStart(10,'0');
+  for(let i=0;i<10;i++){
+    svg+=`<path d="${A(rForm,i*36+4,(i+1)*36-4)}" stroke="${form[i]==='1'?col:'var(--surf3)'}" stroke-width="${sw}" fill="none"/>`;
+  }
+  /* inner — the matchup, as the arc between where his form alone put him and
+     where tonight's opponent/park/slot leaves him. It rides the SAME field
+     scale as the score ring, which is what makes the track under it honest
+     and lets the two arcs be compared by eye: the inner arc's far end lands
+     at the same angle as the outer arc's end. Its LENGTH is the delta.
+     A gain is lit, a loss is left at track tone — the drawer prints the
+     signed number, so this only has to say which way and roughly how much.
+     Under ~2° there is nothing to see but a stroke cap lying about a sweep. */
+  svg+=`<path d="${A(rMatch,0,359.9)}" stroke="var(--surf3)" stroke-width="${sw}" fill="none" opacity=".55"/>`;
+  if(b.delta!=null && b.base!=null){
+    const a0=span(b.base), a1=span(b.p);
+    if(Math.abs(a1-a0)>2)
+      svg+=`<path d="${A(rMatch,Math.min(a0,a1),Math.max(a0,a1))}" stroke="${b.delta>=0?col:'var(--ink4)'}" stroke-width="${sw}" fill="none"/>`;
+  }
+  svg+='</svg>';
+  /* The core carries the two digits and nothing else — no rank, no team
+     code, no ✓/✗. aria-label carries what the rings say for anyone who
+     cannot see them, and states the outcome outright, since two visual
+     states cannot say "hit" the way three could. */
+  const vc= out==='miss' ? 'var(--ink3)' : 'var(--ink)';
+  const dl = b.delta!=null ? `, matchup ${b.delta>=0?'+':''}${(b.delta*100).toFixed(1)}` : '';
+  return `<span class="sdial" role="img" aria-label="${esc(b.team||'')} ${pct(b.p,1)}${dl}${out ? out==='hit'?', recorded a hit':', game ended with no hit' : ''}">${svg}<span class="dc">
+    <span class="dv num${out?'':' anim'}" style="color:${vc}">${Math.round(b.p*100)}</span></span></span>`;
 }
 /** The lineup slot drawn as a scorecard diamond. The batting order is one of
     the few numbers here that is a baseball object rather than a statistic, and
@@ -2054,11 +2883,16 @@ function meter(b){
 const slotDiamond = s => s
   ? `<span class="dia" title="Bats ${s} in the order" role="img" aria-label="bats ${s}"><i>${s}</i></span>`
   : `<span class="muted">slot TBD</span>`;
-function stripHTML(l10){
-  if(!l10) return '<span class="muted" style="font-size:11px">no recent games</span>';
+/** The last-10 form strip. `cls` picks the size — '' is the row strip, 'lg'
+    the drawer's. Both render the same box width for the same number of
+    games, so the strip anchors a column wherever it appears. */
+function stripHTML(l10, cls){
+  const c = 'strip'+(cls?' '+cls:'');
+  if(!l10) return `<span class="${c} none" role="img" aria-label="no recent games" title="No recent games logged">—</span>`;
   const s=l10.slice(-10);
-  return `<span class="strip" role="img" aria-label="hit in ${[...s].filter(c=>c==='1').length} of last ${s.length}">`+
-    [...s].map(c=>`<i class="${c==='1'?'h':'n'}"></i>`).join('')+`</span>`;
+  const lab = `hit in ${[...s].filter(x=>x==='1').length} of last ${s.length}`;
+  return `<span class="${c}" role="img" aria-label="${lab}" title="Last ${s.length} games — ${lab}">`+
+    [...s].map(x=>`<i class="${x==='1'?'h':'n'}"></i>`).join('')+`</span>`;
 }
 function lineupTag(b){
   return b.confirmed ? `<span class="tag conf">confirmed</span>` : `<span class="tag est">projected</span>`;
@@ -2067,11 +2901,39 @@ const isFinal = b => /final|game over/i.test(S.live[b.gamePk]?.state||b.gameStat
 /** True once every game has ended — then "final" is a property of the slate,
     not of each batter, and belongs in the ribbon instead of on 270 cards. */
 const slateOver = () => S.batters.length>0 && S.batters.every(isFinal);
+/** ── the outcome, decided in ONE place ────────────────────────────────
+    Three states, never two: he hit, his game ended without one, or it is
+    still open. A live game with no hit yet is NOT a miss, which is why a
+    bare `!hasHit` is never enough. Everywhere a batter appears — shortlist
+    row, table row, batting order, game strip, drawer — reads this function
+    and draws the same mark, so ✓ and ✗ mean exactly one thing each.
+    An archived CSV carries whatever game_state it was written with (usually
+    pre-game), so any archive from a past day counts as settled wholesale —
+    the same rule the archive ribbon and the drawer already use. */
+function outcomeOf(b){
+  if(b.hasHit) return 'hit';
+  return (isFinal(b) || (!!S.date && S.date < TODAY())) ? 'miss' : '';
+}
+/** The mark itself. Rendered beside the SCORE, never beside the name: the
+    score is the claim the outcome answers, and a ✓ floating next to a name
+    was an ornament stuck on a forecast row rather than the row's own state. */
+const outMark = (o,b) => o
+  ? `<i class="res ${o}${b&&S._justHit?.has(key(b))?' pop':''}" role="img" aria-label="${o==='hit'?'recorded a hit':'no hit'}"
+       title="${o==='hit'?'Recorded a hit':'Game ended with no hit'}">${o==='hit'?'✓':'✗'}</i>`
+  : '';
+/** The tracked state, as a mark on the name — see .wmk. starBtn() is the
+    control; this is the fact, said wherever the batter's name is. */
+const watchMark = b => isStarred(b)
+  ? `<i class="wmk" role="img" aria-label="on your watchlist" title="On your watchlist">${icon(ICONS.watch)}</i>`
+  : '';
 function stateTag(b){
   const g=S.live[b.gamePk], s=(g?.state||b.gameState||'');
-  if(b.hasHit) return `<span class="tag hit">hit ✓</span>`;
+  /* Outcome used to be said here, as a solid green `hit ✓` pill on the name
+     line. It is gone: the row now RESOLVES (see .bcard[data-out]) instead of
+     wearing a badge, and a "final" tag on a resolved row said nothing the ✓/✗
+     had not already said. What is left is the one state the score cannot
+     carry — a game still running, and how far into it. */
   if(/progress|live/i.test(s)) return `<span class="tag live">${esc(g?.inning?(g.half||'')+' '+g.inning:'live')}</span>`;
-  if(/final|game over/i.test(s) && !slateOver()) return `<span class="tag">final</span>`;
   return '';
 }
 function chipFor(e){
@@ -2097,18 +2959,19 @@ function batterCard(b, rank, hero, idx, lite){
   // One chip per phone row, two on a wide one. A chip that wraps onto its own
   // line costs a whole row of height, which is how nine top-tier cards became
   // three thumb-scrolls; the rest of the evidence is one tap away in the drawer.
-  const top = lite ? [] : ev.signal.filter(e=>e.s>=2).slice(0, hero ? (narrow?2:3) : (narrow?1:2));
+  // ONE chip on a phone, hero included. The phone card puts the strip and the
+  // chip on the same line as the matchup, so a second chip does not cost a
+  // little width — it costs the row its two-line shape. The hero used to get
+  // two (three before that); the drawer holds the full ranked list either way.
+  // The L10 strip used to open this row and take ~82px of it, which is why a
+  // phone got exactly ONE chip. The strip is the dial's inner ring now, so the
+  // width comes back to the evidence — see .bwhy.
+  const top = lite ? [] : ev.signal.filter(e=>e.s>=2).slice(0, narrow?2 : hero?3:2);
   // 'est' is already stated by the PROJECTED tag on the name line — repeating
   // it as a chip costs a whole row on a phone and says nothing new. It stays
   // in the drawer's Context list, where it explains the consequence.
   const flags = lite ? [] : ev.context.filter(e=>e.warn && e.k!=='est').slice(0,1);
   const r = rankOf(b);
-  const p = pct(b.p,1).replace('%','');
-  // The identity column always carries a rank now, so "#5 of 270" beside the
-  // score would repeat the 5 already on the row. Keep it only on the hero,
-  // whose big stylised 1 does not read as a number and where "of 270" is the
-  // part actually worth saying.
-  const showRank = r && hero;
   // --i drives the staggered entrance in the Aurora theme. Capped at 14 so a
   // 270-row list does not end with a nine-second cascade.
   const pos = rank ?? idx ?? 0;
@@ -2118,20 +2981,20 @@ function batterCard(b, rank, hero, idx, lite){
   // "whose player is this" from the shape, the rank answers "where does he
   // stand". Two answers, one glance, one column — which is why the matchup no
   // longer has to mark the batter's own side.
-  return `<div class="brow${cls}"><button class="bcard${cls}${pos<20?' stagger':''}" data-k="${key(b)}" style="--i:${stagger};--tc:${tc(b.team,'var(--line2)')}">
-    ${teamMark(b.team)}
-    <span class="bid">${teamBadge(b.team, lite?'bg-sm':'')}<span class="rank num">${rank!=null?rank:(r?'#'+r:'')}${hero?'<b>RANK</b>':''}</span></span>
-    <span class="bmain">
-      <span class="bname">${esc(b.name)} ${lite?'':lineupTag(b)} ${stateTag(b)}</span>
-      <span class="bmeta">${matchupHTML(b.matchup)} · ${slotDiamond(b.slot)} · vs ${esc(b.pit||'TBD')}${lite||narrow?'':` ${gradePill(b.pGrade)}`}</span>
-      ${lite?'':`<span class="bwhy">${top.map(chipFor).join('')}${flags.map(chipFor).join('')}${stripHTML(b.last10)}</span>`}
-    </span>
-    <span class="bscore">
-      <span class="pct ${tcls(b.p)}">${p}<span>%</span></span>
-      ${meter(b)}
-      ${showRank?`<span class="slaterank">#${r} of ${S.batters.length}</span>`:''}
-    </span>
-  </button>${starBtn(b)}</div>`;
+  /* The outcome is a state of the ROW, not a badge on it: once the game is
+     settled the score stops wearing its tier colour (that colour is the
+     forecast talking, and the forecast has been answered) and the ✓/✗ becomes
+     the only coloured thing on the row. So green means "high score" on an open
+     row and "he hit" on a settled one — never both at once, never on the same
+     row. `data-out` drives all of it from one attribute. */
+  const out = outcomeOf(b);
+  return `<div class="brow${cls}${isStarred(b)?' starred':''}"><button class="bcard${cls}${pos<20?' stagger':''}" data-k="${key(b)}"${out?` data-out="${out}"`:''} style="--i:${stagger};--tc:${out==='miss' ? 'var(--ink4)' : tc(b.team,'var(--ink2)')}">
+    <span class="brank num" aria-hidden="true">${rank!=null?rank:(r||'')}</span>
+    <span class="bid">${dialHTML(b)}</span>
+    <span class="bname">${esc(b.name)}${watchMark(b)}${lite?'':' '+lineupTag(b)}${stateTag(b)?' '+stateTag(b):''}</span>
+    <span class="bmeta">${matchupHTML(b.matchup, b.team)} · ${slotDiamond(b.slot)} · vs ${esc(b.pit||'TBD')}${lite||narrow?'':` ${gradePill(b.pGrade)}`}</span>
+    ${lite?'':`<span class="bwhy"><span class="bchips">${top.map(chipFor).join('')}${flags.map(chipFor).join('')}</span></span>`}
+  </button>${starBtn(b)}<span class="swipeact" aria-hidden="true"><span class="ring">${icon(ICONS.watch)}</span></span></div>`;
 }
 /* ══════════════════════════════════════════════════════════════════════
    7 · views
@@ -2152,16 +3015,18 @@ function ribbon(){
   const ago = when ? Math.round((Date.now()-when)/60000) : null;
   const over = slateOver();
   const stale = ago!=null && ago>360;
-  const cell = (label,value,cls='') => `<div class="rcell"><div class="lbl">${label}</div><div class="rv ${cls}">${value}</div></div>`;
-  return `<div class="ribbon">
-    ${cell(`<span class="dot ${live?'live':''}"></span>Games`, games)}
-    ${cell('Confirmed', `${conf}<small> / ${bs.length}</small>`)}
-    ${S.st.p?cell('Median', `${pct(S.st.p.med,0).replace('%','')}<small>%</small>`):''}
-    ${S.st.p?cell('Range', `${pct(S.st.p.min,0).replace('%','')}–${pct(S.st.p.max,0).replace('%','')}<small>%</small>`):''}
-    ${S.date ? cell('Slate', dateLabel(S.date).replace(' · preview','<small> preview</small>'))
-             : (ago!=null?cell('Scored', `${ago<60?ago+'<small>m</small>':Math.round(ago/60)+'<small>h</small>'} ago`, stale?'warn':''):'')}
-    ${over&&!S.date?cell('Status','FINAL','warn'):''}
-  </div>`;
+  const n = v => `<b>${v}</b>`;
+  const bits = [];
+  bits.push(`${n(games)} game${games===1?'':'s'}`);
+  bits.push(conf===bs.length ? `all ${n(bs.length)} lineups confirmed`
+                             : `${n(conf)} of ${n(bs.length)} confirmed`);
+  if(S.st.p) bits.push(`median ${n(pct(S.st.p.med,0))}, spanning `
+    + n(`${pct(S.st.p.min,0).replace('%','')}–${pct(S.st.p.max,0)}`));
+  if(S.date) bits.push(dateLabel(S.date));
+  else if(ago!=null) bits.push(`<span class="${stale?'warn':''}">scored `
+    + `${ago<60?ago+'m':Math.round(ago/60)+'h'} ago</span>`);
+  if(over && !S.date) bits.push('<span class="warn">final</span>');
+  return `<p class="ribbon"><span class="dot ${live?'live':''}"></span>${bits.join(' · ')}</p>`;
 }
 
 /* ── Today ─────────────────────────────────────────────────────────── */
@@ -2173,7 +3038,9 @@ function viewToday(){
   // space. The snapshot machinery (S.snap) stays, in case a quieter use for
   // it appears; recover the section itself from git history.
 
-  const bandNote = b => { const bd=bandFor(S.cal,b?.p); return bd&&bd.n>60 ? `<span class="muted">history: this band has landed <span class="num">${pct(bd.act,1)}</span> over ${bd.n.toLocaleString()} picks</span>` : ''; };
+  // Reads as a sentence, not a fragment: the note used to open mid-thought
+  // with a lowercase "history:" and no clause in front of it.
+  const bandNote = b => { const bd=bandFor(S.cal,b?.p); return bd&&bd.n>60 ? `<span class="muted">Scores in this band have landed <span class="num">${pct(bd.act,1)}</span> across ${bd.n.toLocaleString()} settled picks.</span> ` : ''; };
 
   /* Three weights inside one shortlist, because ten equally-loud cards give the
      eye nowhere to land: the top name, then the handful still genuinely in the
@@ -2184,14 +3051,14 @@ function viewToday(){
 
   return `${ribbon()}
   <section class="sec lead">
-    <div class="sec-h"><h2>${S.date?'Shortlist':"Tonight's shortlist"}</h2><p>Highest calibrated hit probability on the slate</p>
+    <div class="sec-h plain"><h2>${S.date?'Shortlist':"Tonight's shortlist"}</h2><p>Highest calibrated hit probability on the slate</p>
       <button class="lnk" data-go="batters">All ${S.batters.length} →</button></div>
     <div class="blist">${lead.map((b,i)=>batterCard(b,i+1,i===0)).join('')}</div>
     ${tail.length?`<div class="grp-h"><span class="lbl">Also on the shortlist</span><span class="rule"></span>
       <span class="lbl soft">${pct(tail[tail.length-1].p,1).replace('%','')}–${pct(tail[0].p,1)}</span></div>
     <div class="blist tail">${tail.map((b,i)=>batterCard(b,i+lead.length+1,false,null,true)).join('')}</div>`:''}
     <p class="note">
-      ${bandNote(short[0])} · Ranking is by the model score alone; open any batter for the evidence behind it.
+      ${bandNote(short[0])}Ranking is by the model score alone; open any batter for the evidence behind it.
     </p>
   </section>
   <section class="sec sub">
@@ -2330,11 +3197,9 @@ function gameStrip(){
         ${teamBadge(h.team,'bg-sm')}</span>
       <span class="gsbats">${(()=>{
         // Once the game is underway, each name answers its own question: ✓ he
-        // hit, ✗ his game ended without one. A live game with no hit yet shows
-        // nothing — still undecided is not a miss.
-        const mark=b=>b.hasHit?'<i class="gshit" title="recorded a hit">✓</i>'
-                     :x.fin?'<i class="gsmiss" title="no hit">✗</i>':'';
-        const one=b=>`<b>${esc(b.name)}</b> <span class="num">${pct(b.p,0)}</span>${mark(b)}`;
+        // hit, ✗ his game ended without one. Same outcomeOf()/outMark() pair
+        // the rows and the batting orders use — one vocabulary, no dialects.
+        const one=b=>`<b>${esc(b.name)}</b> <span class="num">${pct(b.p,0)}</span>${outMark(outcomeOf(b),b)}`;
         return x.hot
           ? x.hotBats.slice(0,4).map(one).join('<span class="gsdot">·</span>')
             + (x.hot>4?`<span class="gsmore">+${x.hot-4} more</span>`:'')
@@ -2376,6 +3241,13 @@ function filtered(){
    the bands are not new information, they are the existing colour coding made
    findable. Only meaningful when the list is ordered by score: banding a
    name-sorted list would cut it into stripes that mean nothing. */
+/* Rendering a few hundred batter rows at once makes a view heavy for no reason
+   — the tail is rarely what anyone came to see. Any long batter list caps its
+   initial render here and offers the rest behind one click. Filters and search
+   still act on the FULL list, so narrowing always finds everyone, and the cap
+   is skipped when the remainder would be trivial. */
+const LIST_CAP = 30;
+
 const TIER_LABEL = {hi:'70% and up', mid:'55 – 70%', lo:'Under 55%'};
 function tierBands(list, sortedByScore){
   if(!sortedByScore) return null;
@@ -2390,6 +3262,9 @@ function tierBands(list, sortedByScore){
 
 function viewBatters(){
   const f=S.filters, list=filtered();
+  const capped = !S.batShowAll && list.length > LIST_CAP+15;
+  const shown = capped ? list.slice(0,LIST_CAP) : list;
+  const hidden = list.length - shown.length;
   const teams=[...new Set(S.batters.map(b=>b.team))].sort();
   const games=[...new Map(S.batters.map(b=>[b.gamePk,b.matchup])).entries()];
   /* Four groups, in reading order: WHO the batter is, what the MODEL says,
@@ -2402,7 +3277,7 @@ function viewBatters(){
     ['','#','c rk'],
     ['name','Batter',''],['team','Tm','c'],['slot','Slot','c'],
     ['p','Score','sch g1'],['base','Form','r'],['delta','Matchup','r'],
-    ['bHit','Hit%','r g1 dim'],['bXba','xBA','r dim'],['bK','K%','r dim'],
+    ['l10hits','L10','c g1'],['bXba','xBA','r dim'],['bK','K%','r dim'],
     ['pit','Pitcher','g1'],['pRating','Arm','r dim'],['bPA','PA/g','r dim'],
     ['','','c']
   ];
@@ -2410,9 +3285,9 @@ function viewBatters(){
   const groups=[[1,''],[3,'Who'],[3,'Model score'],[3,'Batter form'],[3,'The arm'],[1,'']];
   // one <col> per column, in the same order — the widths live in the
   // stylesheet so the table can be table-layout:fixed (see .tblwrap)
-  const colgroup = ['rk','name','tm','slot','score','form','mu','hit','xba','k','pit','arm','pa','star']
+  const colgroup = ['rk','name','tm','slot','score','form','mu','l10','xba','k','pit','arm','pa','star']
     .map(c=>`<col class="c-${c}">`).join('');
-  const bands = tierBands(list, f.sort==='p');
+  const bands = tierBands(shown, f.sort==='p');
   const bandRow = (bd,span) => `<tr class="band"><td colspan="${span}">
     <span class="lbl">${TIER_LABEL[bd.tier]||''}</span>
     <span class="rule"></span><span class="lbl soft">${bd.n} ${bd.n===1?'batter':'batters'}</span></td></tr>`;
@@ -2428,7 +3303,7 @@ function viewBatters(){
       <button data-lu="conf" aria-pressed="${f.lineup==='conf'}">Confirmed</button>
       <button data-lu="est" aria-pressed="${f.lineup==='est'}">Projected</button>
     </div>
-    <span class="muted" style="font-size:12.5px">${list.length} shown</span>
+    <span class="muted" style="font-size:12.5px">${capped?`top ${shown.length} of ${list.length}`:`${list.length} shown`}</span>
   </div>
   <div class="tblwrap" style="display:none" id="tbl">
     <table><colgroup>${colgroup}</colgroup><thead>
@@ -2436,17 +3311,21 @@ function viewBatters(){
       <tr>${cols.map(([k,l,a])=> k===''
       ? `<th class="${a}" ${l?'':'aria-label="Watchlist"'}>${l}</th>`   // rank + star: nothing to sort by
       : `<th class="sortable ${a}" data-sort="${k}" ${f.sort===k?`aria-sort="${f.dir<0?'descending':'ascending'}"`:''}>${l}</th>`).join('')}</tr></thead>
-    <tbody>${list.map((b,i)=>{
+    <tbody>${shown.map((b,i)=>{
       const d=b.delta;
-      return bandAt(i).map(bd=>bandRow(bd,cols.length)).join('')+`<tr data-k="${key(b)}">
+      /* the same row-resolution rule the cards follow: a settled score drops
+         its tier colour and wears the mark; data-out lets the shared
+         [data-out="miss"] recede rule reach the table too */
+      const o=outcomeOf(b);
+      return bandAt(i).map(bd=>bandRow(bd,cols.length)).join('')+`<tr data-k="${key(b)}"${o?` data-out="${o}"`:''}>
         <td class="c rk num">${rankOf(b)??''}</td>
-        <td class="nm"><span class="nmw"><b>${esc(b.name)}</b>${b.confirmed?'':'<span class="tag est">est</span>'}${stateTag(b)}</span></td>
+        <td class="nm"><span class="nmw"><b>${esc(b.name)}</b>${watchMark(b)}${b.confirmed?'':'<span class="tag est">est</span>'}${stateTag(b)}</span></td>
         <td class="c">${teamBadge(b.team,'bg-sm')}</td>
         <td class="c">${b.slot?slotDiamond(b.slot):'—'}</td>
-        <td class="sc g1"><b class="num ${tcls(b.p)}">${pct(b.p,1)}</b>${meter(b)}</td>
+        <td class="sc g1"><b class="num ${o?'':tcls(b.p)}">${pct(b.p,1)}${outMark(o,b)}</b>${meter(b)}</td>
         <td class="r num">${pct(b.base,1)}</td>
         <td class="r num" style="color:${d>0?'var(--tier-hi)':d<0?'var(--bad)':'var(--ink3)'}">${d==null?'—':(d>0?'+':'')+(d*100).toFixed(1)}</td>
-        <td class="r num g1 dim">${pct(b.bHit,1)}</td>
+        <td class="c g1">${stripHTML(b.last10,'sm')}</td>
         <td class="r num dim">${num(b.bXba,3)}</td>
         <td class="r num dim">${pct(b.bK,1)}</td>
         <td class="ell g1">${esc(b.pit||'TBD')} ${gradePill(b.pGrade||'?')}</td>
@@ -2455,12 +3334,13 @@ function viewBatters(){
         <td class="r">${starBtn(b,'tstar')}</td>
       </tr>`;}).join('')}</tbody></table>
   </div>
-  <div class="blist" id="cards">${list.map((b,i)=>
+  <div class="blist" id="cards">${shown.map((b,i)=>
     bandAt(i).map(bd=>`<div class="grp-h"><span class="lbl">${TIER_LABEL[bd.tier]||''}</span>
       <span class="rule"></span><span class="lbl soft">${bd.n}</span></div>`).join('')
     // Full weight for the top tier, lite for everything below it — the same
     // "the tail is a list" move Today's shortlist makes, applied to all 270.
-    + batterCard(b,null,false,i, bands ? tierOf(b.p)!=='hi' : false)).join('')}</div>`;
+    + batterCard(b,null,false,i, bands ? tierOf(b.p)!=='hi' : false)).join('')}</div>
+  ${hidden>0?`<button class="lnk" id="morebat" style="display:block;margin:16px auto 0">Show all ${list.length} batters (${hidden} more) →</button>`:''}`;
 }
 
 /* ── Games ─────────────────────────────────────────────────────────── */
@@ -2584,11 +3464,11 @@ function sortLineups(ls, how){
 /** The lineup average placed against the other lineups, the same way meter()
     places a batter against the other batters. A 61% average says nothing until
     you know the thirty of them run 52–68. */
-function luMeter(v, s){
+function luMeter(v, s, settled){
   if(v==null) return '';
   const span=(s.max-s.min)||1;
   const w=clamp((v-s.min)/span,0,1)*100, med=clamp((s.med-s.min)/span,0,1)*100;
-  return `<span class="meter ${tcls(v)}" role="img"
+  return `<span class="meter ${settled?'settled':tcls(v)}" role="img"
     aria-label="${pct(v,1)} average, median lineup ${pct(s.med,1)}"><i style="width:${w.toFixed(1)}%"></i><b style="left:${med.toFixed(1)}%"></b></span>`;
 }
 
@@ -2605,15 +3485,26 @@ function lineupCard(lu, rank, n, scale){
       <option value="">${alt&&alt.live?'Auto · whoever is pitching':'Probable starter'}</option>${armOptions(lu.cands, manualPid)}</select>` : '';
   const era = alt ? alt.p_era : arm.pEra;
   const st = S.st.p;
+  /* A settled lineup card resolves the same way a batter row does. Its average
+     is a forecast, and once every bat in it has an answer the forecast is no
+     longer the headline — "5 of 9 got a hit" is. The tier colour goes with it,
+     so a finished card cannot be mistaken for one still in play. */
+  const luFin = bs.length>0 && bs.every(b=>!!outcomeOf(b));
+  const luHits = bs.filter(b=>outcomeOf(b)==='hit').length;
   const order = bs.map(b=>{
     const pv = pFor(b,alt);
     const w = st ? clamp((pv-st.min)/((st.max-st.min)||1),0,1)*100 : 0;
-    return `<button class="${tcls(pv)}${alt?(alt.live?' alt livearm':' alt'):''}" data-k="${key(b)}"
+    // Same three states as every other surface, drawn the same way: the mark
+    // lives in its own fixed column so nine percentages stay in one line down
+    // the card, whether or not the game has settled.
+    const o = outcomeOf(b);
+    return `<button class="${o?'':tcls(pv)}${alt?(alt.live?' alt livearm':' alt'):''}" data-k="${key(b)}"${o?` data-out="${o}"`:''}
         title="${esc(b.name)} — open the full evidence">
       ${slotDiamond(b.slot)}
-      <span class="ordn"><b>${esc(b.name)}</b>${b.confirmed?'':' <span class="tag est">est</span>'}${b.hasHit?' <span class="tag hit">hit ✓</span>':''}</span>
+      <span class="ordn"><b>${esc(b.name)}</b>${watchMark(b)}${b.confirmed?'':' <span class="tag est">est</span>'}</span>
       <span class="obar"><i style="width:${w.toFixed(1)}%"></i></span>
       <span class="ordp">${pct(pv,0)}</span>
+      <span class="ordo">${outMark(o,b)}</span>
     </button>`;
   }).join('');
   const scoreTxt = (g.away!=null&&g.home!=null) ? `${g.awayAbbr||''} ${g.away}–${g.home} ${g.homeAbbr||''}` : '';
@@ -2631,12 +3522,14 @@ function lineupCard(lu, rank, n, scale){
     </div>
 
     <div class="lu-top">
-      <div class="lu-avg ${tcls(lu.avg)}">${pct(lu.avg,0).replace('%','')}<span>%</span></div>
+      <div class="lu-avg ${luFin?'settled':tcls(lu.avg)}">${pct(lu.avg,0).replace('%','')}<span>%</span></div>
       <div class="lu-side">
-        <b>#${rank} of ${n}</b> lineups tonight, by the average score of the ${bs.length} bats.
-        Best bat <b>${esc(lu.best.name)} ${pct(pFor(lu.best,alt),0)}</b>.${
-          alt?` <span class="delta ${lu.swing>=0?'up':'down'}">${lu.swing>=0?'+':''}${(lu.swing*100).toFixed(1)}</span> against this arm.`:''}
-        ${luMeter(lu.avg, scale)}
+        ${luFin?`<b class="lu-res">${luHits} of ${bs.length}</b> got a hit. The pre-game read had this
+          lineup <b>#${rank} of ${n}</b>, by the average score of the nine.`
+        :`<b>#${rank} of ${n}</b> lineups tonight, by the average score of the ${bs.length} bats.
+          Best bat <b>${esc(lu.best.name)} ${pct(pFor(lu.best,alt),0)}</b>.${
+          alt?` <span class="delta ${lu.swing>=0?'up':'down'}">${lu.swing>=0?'+':''}${(lu.swing*100).toFixed(1)}</span> against this arm.`:''}`}
+        ${luMeter(lu.avg, scale, luFin)}
       </div>
     </div>
 
@@ -2714,12 +3607,21 @@ function viewWatch(){
   if(!list.length) return `${ribbon()}<div class="empty">
     Nothing on the watchlist yet.<br><span style="font-size:12.5px">Tap the ☆ on any batter — in the shortlist, the table, or the drawer — to follow them through the night.
     <button class="lnk" data-go="today" style="display:block;margin:10px auto 0">Back to tonight's shortlist →</button></span></div>`;
-  const done=list.filter(b=>b.hasHit).length;
-  const settledStates=list.filter(b=>/final|game over/i.test(S.live[b.gamePk]?.state||b.gameState||'')).length;
+  // The list's own scoreboard — this is the tab the outcome exists FOR, so
+  // the header keeps the running answer: landed, finished without, still open.
+  const done=list.filter(b=>outcomeOf(b)==='hit').length;
+  const missed=list.filter(b=>outcomeOf(b)==='miss').length;
+  const open=list.length-done-missed;
+  // Same cap as Batters (LIST_CAP). The counts above stay whole-list — a
+  // watchlist you can't see all of at once still has to report its real score.
+  const capped = !S.watchShowAll && list.length > LIST_CAP+15;
+  const shown = capped ? list.slice(0,LIST_CAP) : list;
+  const hidden = list.length - shown.length;
   return `${ribbon()}
   <section class="sec">
-    <div class="sec-h"><h2>Watchlist</h2><p><b class="num">${done}</b> of ${list.length} have a hit${settledStates?` · ${settledStates} final`:''}</p></div>
-    <div class="blist">${list.map((b,i)=>batterCard(b,i+1)).join('')}</div>
+    <div class="sec-h"><h2>Watchlist</h2><p><b class="num">${done}</b> of ${list.length} have a hit${missed?` · <b class="num">${missed}</b> finished without`:''}${open?` · <b class="num">${open}</b> still open`:''}${capped?` · showing top ${shown.length}`:''}</p></div>
+    <div class="blist">${shown.map((b,i)=>batterCard(b,i+1)).join('')}</div>
+    ${hidden>0?`<button class="lnk" id="morewatch" style="display:block;margin:16px auto 0">Show all ${list.length} (${hidden} more) →</button>`:''}
   </section>`;
 }
 
@@ -2749,6 +3651,71 @@ function reliabilitySVG(cal){
     <text x="${x(.472)}" y="${y(.503)}" fill="var(--ink3)">perfect</text>
   </svg>`;
 }
+/* Score bands as a dumbbell chart. One row per band: a tick where the model
+   said the rate would be, a dot where it landed, a bar spanning the two. The
+   table this replaced made you subtract two percentages per row to find the
+   only thing the section is about — here the gap IS the bar's length, and the
+   rows sort themselves visually because a band that overstates leans left. */
+function bandsSVG(cal){
+  const rows=cal.bands; if(!rows.length) return '';
+  const vals=rows.flatMap(b=>[b.pred,b.act]);
+  const lo=Math.floor(Math.min(...vals)*20)/20, hi=Math.ceil(Math.max(...vals)*20)/20;
+  const W=660, RH=27, TOP=22, BOT=36, L=104, R=132;
+  const H=TOP+rows.length*RH+BOT;
+  const x=v=>L+(v-lo)/(hi-lo)*(W-L-R), cy=i=>TOP+i*RH+RH/2;
+  const ticks=[]; for(let t=lo;t<=hi+1e-9;t+=.05) ticks.push(+t.toFixed(2));
+  return `<svg class="chart tall" viewBox="0 0 ${W} ${H}" role="img" aria-label="Predicted versus actual hit rate for each score band">
+    ${ticks.map(t=>`<line class="grid" x1="${x(t).toFixed(1)}" y1="${TOP-6}" x2="${x(t).toFixed(1)}" y2="${H-BOT+4}"/>
+      ${Math.round(t*100)%10===0?`<text x="${x(t).toFixed(1)}" y="${H-BOT+18}" text-anchor="middle">${(t*100)|0}</text>`:''}`).join('')}
+    <text x="${((L+W-R)/2).toFixed(0)}" y="${H-6}" text-anchor="middle">hit rate %</text>
+    ${rows.map((b,i)=>{
+      const gap=(b.act-b.pred)*100, off=b.live&&Math.abs(gap)>4, y=cy(i);
+      const label=b.pos==='hi'?pct(b.band,0)+'+':pct(b.band,0)+'–'+pct(b.band+.05,0);
+      const tag=b.pos==='lo'?'retired':b.pos==='hi'?'off-scale':'';
+      return `<g class="${b.live?'':'dead'}"><title>${esc(label)} — said ${pct(b.pred,1)}, landed ${pct(b.act,1)} (${gap>0?'+':''}${gap.toFixed(1)}pt, ${b.n.toLocaleString()} picks)${
+        b.pos==='lo'?` · retired: below the current model's floor, pre-${esc(cal.era)} picks only`
+       :b.pos==='hi'?' · off-scale: above 80%, no slate has produced one since 2026-07-18':''}</title>
+      <text class="rlab" x="${L-14}" y="${y+3.5}" text-anchor="end">${label}</text>
+      <line class="gapbar${off?' off':''}" x1="${x(b.pred).toFixed(1)}" y1="${y}" x2="${x(b.act).toFixed(1)}" y2="${y}"/>
+      <line class="predtick" x1="${x(b.pred).toFixed(1)}" y1="${y-7}" x2="${x(b.pred).toFixed(1)}" y2="${y+7}"/>
+      <circle class="actdot${off?' off':''}" cx="${x(b.act).toFixed(1)}" cy="${y}" r="4.6"/>
+      <text class="rn" x="${W-R+16}" y="${y+3.5}">${b.n.toLocaleString()}${tag?'  '+tag:''}</text></g>`;
+    }).join('')}
+  </svg>`;
+}
+/* The same grammar over time: the dashed line is the run of nightly claims,
+   each dot is that night's actual rate hung off it, and dot size is how many
+   picks the night carried — a wild-looking miss on a 12-pick slate should not
+   read as loudly as a flat one on 300. */
+function daysSVG(days){
+  if(!days.length) return '';
+  const d=[...days].reverse();                    // cal.days is newest-first
+  const vals=d.flatMap(v=>[v.pred,v.act]);
+  const lo=Math.max(0,Math.floor(Math.min(...vals)*10)/10-.05);
+  const hi=Math.min(1,Math.ceil(Math.max(...vals)*10)/10+.05);
+  const W=660,H=280,L=40,R=16,T=16,B=42;
+  const x=i=>L+(i+.5)/d.length*(W-L-R), y=v=>H-B-(v-lo)/(hi-lo)*(H-B-T);
+  const ticks=[]; for(let t=Math.ceil(lo*20)/20;t<=hi+1e-9;t+=.05) ticks.push(+t.toFixed(2));
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Predicted versus actual hit rate for each of the last 14 days">
+    <text x="0" y="9">hit rate %</text>
+    ${ticks.map(t=>`<line class="grid" x1="${L}" y1="${y(t).toFixed(1)}" x2="${W-R}" y2="${y(t).toFixed(1)}"/>
+      ${Math.round(t*100)%10===0?`<text x="${L-8}" y="${(y(t)+3).toFixed(1)}" text-anchor="end">${(t*100)|0}</text>`:''}`).join('')}
+    <path class="predline" d="${d.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(v.pred).toFixed(1)}`).join('')}"/>
+    ${d.map((v,i)=>{
+      const gap=(v.act-v.pred)*100, off=Math.abs(gap)>8;
+      return `<g><title>${esc(v.date)} — said ${pct(v.pred,1)}, landed ${pct(v.act,1)} (${gap>0?'+':''}${gap.toFixed(1)}pt, ${v.n} picks)</title>
+      <line class="gapbar${off?' off':''}" x1="${x(i).toFixed(1)}" y1="${y(v.pred).toFixed(1)}" x2="${x(i).toFixed(1)}" y2="${y(v.act).toFixed(1)}"/>
+      <circle class="actdot${off?' off':''}" cx="${x(i).toFixed(1)}" cy="${y(v.act).toFixed(1)}" r="${clamp(Math.sqrt(v.n)/2.6,3,8).toFixed(1)}"/>
+      <text x="${x(i).toFixed(1)}" y="${H-B+18}" text-anchor="middle">${esc(String(v.date).slice(5))}</text></g>`;
+    }).join('')}
+  </svg>`;
+}
+/* `pred` matches how each chart actually draws the claim — a tick per row on
+   the band chart, one dashed run across the daily one. A legend that shows a
+   mark the chart doesn't contain is worse than no legend. */
+const CHART_LEGEND = (tol,pred)=>`<div class="clegend">
+  <span><i class="${pred}"></i>predicted</span><span><i class="dot"></i>actual</span>
+  <span><i class="bar"></i>gap</span><span><i class="bar off"></i>gap over ${tol}pt</span></div>`;
 function viewHonesty(){
   const cal=S.cal;
   if(!cal) return `<div class="empty">Loading the settled-picks record…</div>`;
@@ -2761,7 +3728,7 @@ function viewHonesty(){
   const eraNote = `<div class="truth" style="margin-top:12px">${icon(ICONS.info)}<div>The record spans two
     model generations. The <b>${esc(cal.era)}</b> retrain (FEATURES 21 → 14) lifted the score floor from
     ~30% to ~47%, so the <b class="num">${deadLo.toLocaleString()}</b> picks below the 45 band came from a model
-    that can no longer produce a score there — they stay in the table below but are not charted.
+    that can no longer produce a score there — they are dimmed in the band chart below and kept off this curve.
     ${deadHi?`The <b class="num">${deadHi.toLocaleString()}</b> picks above 80% are off the top of the scale the
     same way — no slate has produced one since 2026-07-18 — but the 75–80 band below them is
     <b>not</b> retired: the current model still scores there, and it is the worst-calibrated band on the page.`:''}
@@ -2798,29 +3765,15 @@ function viewHonesty(){
     </div>
   </section>
   <section class="sec">
-    <div class="sec-h"><h2>Score bands</h2><p>What a score in each band has actually done — every band, including the ones off either end of the current model's range</p></div>
-    <div class="tblwrap fit"><table><thead><tr><th>Band</th><th class="r">Picks</th><th class="r">Predicted</th><th class="r">Actual</th><th class="r">Gap</th><th>Calibration</th></tr></thead>
-    <tbody>${cal.bands.map(b=>{
-      const gap=(b.act-b.pred)*100, w=clamp(Math.abs(gap)/12,0,1)*100;
-      // Dead bands stay — this is the Honesty tab — but dimmed and labelled with
-      // WHICH end they fell off, so their gap isn't read as the current model's.
-      const label = b.pos==='lo' ? ['retired',"Below the current model's floor — pre-"+cal.era+" picks only"]
-                  : b.pos==='hi' ? ['off-scale','Above 80% — no slate has produced one since 2026-07-18']
-                  : null;
-      return `<tr style="cursor:default${b.live?'':';opacity:.5'}"><td class="num">${b.pos==='hi'?pct(b.band,0)+'+':pct(b.band,0)+'–'+pct(b.band+.05,0)}
-          ${label?`<span class="tag" title="${esc(label[1])}">${label[0]}</span>`:''}</td>
-        <td class="r num">${b.n.toLocaleString()}</td><td class="r num">${pct(b.pred,1)}</td>
-        <td class="r num"><b>${pct(b.act,1)}</b></td>
-        <td class="r num" style="color:${b.live&&Math.abs(gap)>4?'var(--bad)':'var(--ink2)'}">${gap>0?'+':''}${gap.toFixed(1)}</td>
-        <td><span class="meter" style="width:100px"><i style="width:${w}%;background:${b.live&&Math.abs(gap)>4?'var(--bad)':'var(--s3)'}"></i></span></td></tr>`;
-    }).join('')}</tbody></table></div>
+    <div class="sec-h"><h2>Score bands</h2><p>What a score in each band has actually done. The bar is the gap between claim and outcome — every band, including the ones off either end of the current model's range, which are dimmed</p></div>
+    <div style="padding:2px 0 0">${bandsSVG(cal)}${CHART_LEGEND(4,'tick')}
+      <p class="muted" style="font-size:12.5px;margin-top:12px">The number beside each bar is how many settled picks
+        that band rests on, and it varies by more than an order of magnitude — a long bar on a few hundred picks is a
+        thinner claim than a short one on several thousand. Each row carries its exact figures as a tooltip.</p></div>
   </section>
   <section class="sec">
-    <div class="sec-h"><h2>Last 14 days</h2><p>Daily predicted vs actual</p></div>
-    <div class="tblwrap fit"><table><thead><tr><th>Date</th><th class="r">Picks</th><th class="r">Predicted</th><th class="r">Actual</th><th class="r">Gap</th></tr></thead>
-    <tbody>${recent.map(d=>{const gap=(d.act-d.pred)*100;return `<tr style="cursor:default"><td class="num">${esc(d.date)}</td>
-      <td class="r num">${d.n}</td><td class="r num">${pct(d.pred,1)}</td><td class="r num"><b>${pct(d.act,1)}</b></td>
-      <td class="r num" style="color:${Math.abs(gap)>8?'var(--bad)':'var(--ink2)'}">${gap>0?'+':''}${gap.toFixed(1)}</td></tr>`;}).join('')}</tbody></table></div>
+    <div class="sec-h"><h2>Last 14 days</h2><p>The dashed line is what the model claimed each night; the dot is what happened, sized by how many picks that slate carried</p></div>
+    <div style="padding:2px 0 0">${daysSVG(recent)}${CHART_LEGEND(8,'dash')}</div>
   </section>`;
 }
 
@@ -2872,6 +3825,39 @@ function renderDrawer(){
   const starred=S.stars.includes(key(b));
   const log=S.pitcherLog?.[String(b.pitId).replace(/\.0$/,'')]||null;
 
+  /* Once the game is final the drawer leads with what happened; the pre-game
+     case stays below it, frozen, so the two can be read against each other.
+     The log loads lazily — kick the fetch here and re-render on arrival,
+     guarded so a closed drawer or a stepped-to different batter is a no-op. */
+  /* isFinal covers the live slate; an archived CSV carries whatever
+     game_state it was written with (usually pre-game), so any archive from a
+     past day counts as final wholesale — same rule as the archive ribbon. */
+  /* Same rule outcomeOf() applies, named here because the drawer needs the
+     boolean itself for the "What happened" section, not just the mark. */
+  const fin = !!outcomeOf(b) || isFinal(b) || (!!S.date && S.date < TODAY());
+  const gl = fin ? S.gamelog[b.gamePk] : null;
+  if(fin && !gl) loadGameLog(b.gamePk).then(()=>{
+    if(!$('#drawer').hidden && S.drawerList[S.drawerIdx]===b) renderDrawer();
+  });
+  const me = gl?.status==='ok' ? gl.players[String(b.batterId).replace(/\.0$/,'')] : null;
+  const happened = !fin ? '' : `
+    <div class="sec-h"><h2>What happened</h2><p>${
+      gl?.status==='ok' ? (me ? `Final — ${me.h>0 ? `${me.h} hit${me.h>1?'s':''} ${outMark('hit')}` : `no hit ${outMark('miss')}`}` : 'Final — did not bat')
+      : gl?.status==='err' ? 'Final — game log unavailable' : 'Final — loading the game log…'}</p></div>
+    ${me?`<div class="sgrid" style="margin-bottom:6px">
+      <div class="scell"><div class="slab">Line</div><div class="sval">${me.h}-${me.ab}</div><div class="ssub">H-AB</div></div>
+      <div class="scell"><div class="slab">XBH</div><div class="sval">${me.d2+me.d3+me.hr}</div><div class="ssub">${me.hr?me.hr+' HR':'extra bases'}</div></div>
+      <div class="scell"><div class="slab">R / RBI</div><div class="sval">${me.r} / ${me.rbi}</div><div class="ssub">runs · driven in</div></div>
+      <div class="scell"><div class="slab">BB / K</div><div class="sval">${me.bb} / ${me.k}</div><div class="ssub">walks · strikeouts</div></div>
+    </div>
+    ${me.pas.length?`<div class="tblwrap" style="box-shadow:none;margin-bottom:8px"><table>
+      <thead><tr><th>Inn</th><th>Result</th><th>Against</th></tr></thead>
+      <tbody>${me.pas.map(pa=>`<tr style="cursor:default">
+        <td class="num">${pa.inn??''}</td>
+        <td${pa.hit?' style="color:var(--tier-hi);font-weight:650"':''}>${esc(pa.ev)}</td>
+        <td class="num">${esc(pa.pit)}</td></tr>`).join('')}</tbody></table></div>`:''}
+    <p class="muted" style="font-size:12px;margin:0 0 16px">Everything below is the pre-game case, frozen as of first pitch.</p>`:''}`;
+
   const evRow=e=>`<div class="evrow">
     <span class="evarrow ${e.ctx?'flat':e.dir>0?'up':e.dir<0?'down':'flat'}">${e.ctx?'·':e.dir>0?'↑':e.dir<0?'↓':'·'}</span>
     <span><span class="evlab">${esc(e.label)}${e.ctx?' <span class="tag">context</span>':''}</span>
@@ -2882,10 +3868,10 @@ function renderDrawer(){
     <span class="evnum">${esc(e.val??'')}</span></div>`;
 
   $('#drawer').innerHTML=`
-  <div class="dhead" style="--tc:${tc(b.team,'var(--line2)')}">
+  <div class="dhead" style="--tc:${tc(b.team,'var(--line2)')}"${fin?` data-out="${outcomeOf(b)}"`:''}>
     <div style="min-width:0">
-      <div class="dtitle" id="dtitle">${esc(b.name)}</div>
-      <div class="dsub">${teamSpan(b.team)} · ${matchupHTML(b.matchup)} · ${esc(b.startTime||'')} ${b.slot?`· ${slotDiamond(b.slot)}`:''} ${lineupTag(b)} ${stateTag(b)}</div>
+      <div class="dtitle" id="dtitle">${esc(b.name)}${watchMark(b)}${outMark(outcomeOf(b),b)}</div>
+      <div class="dsub">${matchupHTML(b.matchup)} · ${esc(b.startTime||'')} ${b.slot?`· ${slotDiamond(b.slot)}`:''} ${lineupTag(b)} ${stateTag(b)}</div>
     </div>
     <div class="dnav">
       <button class="iconbtn" id="dprev" ${S.drawerIdx<=0?'disabled style="opacity:.3;transform:rotate(180deg)"':'style="transform:rotate(180deg)"'} aria-label="Previous batter">${icon(ICONS.chev)}</button>
@@ -2894,9 +3880,10 @@ function renderDrawer(){
     </div>
   </div>
   <div class="dbody">
+    ${happened}
     <div class="verdict">
       <div class="vtop">
-        <div class="vbig ${tcls(b.p)}">${pct(b.p,1).replace('%','')}<span>%</span></div>
+        ${dialHTML(b)}
         <div class="vside">
           Chance of <b>at least one hit</b> ${S.date?'that day':'tonight'} — ${v.where}.<br>
           <span class="muted">${esc(v.lead.charAt(0).toUpperCase()+v.lead.slice(1))}.</span>
@@ -2914,33 +3901,33 @@ function renderDrawer(){
     ${ev.context.length?`<div class="sec-h" style="margin-top:20px"><h2>Context</h2><p>Real information the model does not train on</p></div>
     <div class="ev">${ev.context.map(evRow).join('')}</div>`:''}
 
-    <div class="sec-h" style="margin-top:20px"><h2>Form</h2><p>Last 10 games — filled means he got a hit</p></div>
+    <div class="sec-h" style="margin-top:20px"><h2>Form</h2><p>Last 10 games — filled means he got a hit. Green stats favour him tonight, red work against him, each against the rest of the slate.</p></div>
     <div style="padding:2px 0 0">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <span style="transform:scale(1.6);transform-origin:left center;display:inline-block">${stripHTML(b.last10)}</span>
-        <span class="muted" style="font-size:12.5px;margin-left:8px">${b.last10?`hit in ${[...b.last10.slice(-10)].filter(c=>c==='1').length} of last ${Math.min(10,b.last10.length)}`:'no recent games'}</span>
+        ${stripHTML(b.last10,'lg')}
+        <span class="muted" style="font-size:12.5px">${b.last10?`hit in ${[...b.last10.slice(-10)].filter(c=>c==='1').length} of last ${Math.min(10,b.last10.length)}`:'no recent games'}</span>
       </div>
       <div class="sgrid" style="margin-top:12px">
-        <div class="scell"><div class="slab">Hit rate</div><div class="sval">${pct(b.bHit,1)}</div><div class="ssub">last ${b.bGames??'—'} g</div></div>
-        <div class="scell"><div class="slab">xBA</div><div class="sval">${num(b.bXba,3)}</div><div class="ssub">expected</div></div>
-        <div class="scell"><div class="slab">Hard-hit</div><div class="sval">${pct(b.bHard,1)}</div><div class="ssub">contact</div></div>
-        <div class="scell"><div class="slab">BABIP</div><div class="sval">${num(b.bBabip,3)}</div><div class="ssub">luck check</div></div>
-        <div class="scell"><div class="slab">K rate</div><div class="sval">${pct(b.bK,1)}</div><div class="ssub">strikeouts</div></div>
-        <div class="scell"><div class="slab">PA / game</div><div class="sval">${num(b.bPA,2)}</div><div class="ssub">${b.slot?'slot '+b.slot:''}</div></div>
+        ${scell('Hit rate', pct(b.bHit,1),  `last ${b.bGames??'—'} g`, 'bHit',   b.bHit)}
+        ${scell('xBA',      num(b.bXba,3),  'expected',                'bXba',   b.bXba)}
+        ${scell('Hard-hit', pct(b.bHard,1), 'contact',                 'bHard',  b.bHard)}
+        ${scell('BABIP',    num(b.bBabip,3),'luck check',              'bBabip', b.bBabip)}
+        ${scell('K rate',   pct(b.bK,1),    'strikeouts',              'bK',     b.bK)}
+        ${scell('PA / game',num(b.bPA,2),   b.slot?'slot '+b.slot:'',  'bPA',    b.bPA)}
       </div>
     </div>
 
-    <div class="sec-h" style="margin-top:20px"><h2>The arm</h2><p>${esc(b.pit||'TBD')} · ${esc(b.pitHand||'?')}HP · ${esc(b.pRole||'SP')}</p></div>
+    <div class="sec-h" style="margin-top:20px"><h2>The arm</h2><p>${esc(b.pit||'TBD')} · ${esc(b.pitHand||'?')}HP · ${esc(b.pRole||'SP')} — read green as good for the hitter, not for the pitcher.</p></div>
     <div style="padding:2px 0 0">
       <div class="sgrid">
-        <div class="scell"><div class="slab">Grade</div><div class="sval">${esc(b.pGrade||'—')}</div><div class="ssub">rating ${b.pRating??'—'}</div></div>
-        <div class="scell"><div class="slab">ERA</div><div class="sval">${num(b.pEra,2)}</div><div class="ssub">${esc(b.pIp||'')} IP</div></div>
-        <div class="scell"><div class="slab">WHIP</div><div class="sval">${num(b.pWhip,2)}</div><div class="ssub">baserunners</div></div>
-        <div class="scell"><div class="slab">H / 9</div><div class="sval">${num(b.pH9,1)}</div><div class="ssub">hits allowed</div></div>
-        <div class="scell"><div class="slab">CSW</div><div class="sval">${pct(b.pCsw,1)}</div><div class="ssub">called+whiff</div></div>
-        <div class="scell"><div class="slab">Hard-hit</div><div class="sval">${pct(b.pHard,1)}</div><div class="ssub">allowed</div></div>
-        <div class="scell"><div class="slab">K / 9</div><div class="sval">${num(b.pK9,1)}</div><div class="ssub">BB/9 ${num(b.pBb9,1)}</div></div>
-        <div class="scell"><div class="slab">Batters faced</div><div class="sval">${num(b.pAvgBf,1)}</div><div class="ssub">per start</div></div>
+        ${scell('Grade',        esc(b.pGrade||'—'),`rating ${b.pRating??'—'}`,'pRating',b.pRating)}
+        ${scell('ERA',          num(b.pEra,2),  `${esc(b.pIp||'')} IP`,     'pEra',   b.pEra)}
+        ${scell('WHIP',         num(b.pWhip,2), 'baserunners',              'pWhip',  b.pWhip)}
+        ${scell('H / 9',        num(b.pH9,1),   'hits allowed',             'pH9',    b.pH9)}
+        ${scell('CSW',          pct(b.pCsw,1),  'called+whiff',             'pCsw',   b.pCsw)}
+        ${scell('Hard-hit',     pct(b.pHard,1), 'allowed',                  'pHard',  b.pHard)}
+        ${scell('K / 9',        num(b.pK9,1),   `BB/9 ${num(b.pBb9,1)}`,    'pK9',    b.pK9)}
+        ${scell('Batters faced',num(b.pAvgBf,1),'per start',                'pAvgBf', b.pAvgBf)}
       </div>
       ${b.useFb!=null?`<div style="margin-top:12px">
         <div class="slab" style="margin-bottom:6px">Pitch mix vs his production against it</div>
@@ -3036,21 +4023,49 @@ function countUp(el, target, dur){
   const t0 = performance.now();
   (function step(now){
     const k = Math.min(1, (now-t0)/dur), e = 1-Math.pow(1-k,3);
-    node.nodeValue = (target*e).toFixed(1);
+    node.nodeValue = String(Math.round(target*e));   // dial digits are integers
     if(k < 1) requestAnimationFrame(step);
   })(t0);
 }
 function animateNumbers(){
   if(document.documentElement.dataset.theme !== 'aurora') return;
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  $$('.bcard.hero .pct, .vbig').forEach(el=>{
+  /* requestAnimationFrame does not fire in a background tab, so a page that
+     loaded while hidden was left showing the 0 the animation starts from —
+     the headline score, permanently wrong, until something re-rendered. The
+     animation is decoration; the number is not. Skip it and keep the value.
+     Open dials only (`.anim`), and only the hero's and the drawer's — 270
+     row dials counting up at once is noise, not an entrance. */
+  if(document.hidden) return;
+  $$('.bcard.hero .dv.anim, #drawer .dv.anim').forEach(el=>{
     const v = parseFloat(el.firstChild && el.firstChild.nodeValue);
     if(isNaN(v)) return;
-    el.firstChild.nodeValue = '0.0';
+    el.firstChild.nodeValue = '0';
     countUp(el, v, 950);
   });
 }
 
+/** ── the page takes tonight's colour ────────────────────────────────────
+    Today's background gradients are keyed to the club of the slate's
+    top-ranked batter, so the home page looks different on a night the best
+    bat is a Reds one than on a night it is a Dodgers one. It is decoration
+    with a fact underneath: the hue is the same one the hero's dial is
+    wearing, six inches above, which is what keeps it from reading as a
+    random theme change.
+
+    --slate-tc is set on <html> rather than on an element, because the
+    gradient lives on body::before and a fixed-position pseudo-element cannot
+    inherit from anything inside #main. Cleared off Today so the other views
+    keep the theme's own palette — a page ABOUT one batter can wear his club,
+    a page about 30 lineups cannot. */
+function paintSlateHue(){
+  const r=document.documentElement;
+  const top = S.view==='today' && S.batters.length
+    ? [...S.batters].sort((a,b)=>b.p-a.p)[0] : null;
+  const t = top && String(top.team||'').toUpperCase();
+  if(t && getComputedStyle(r).getPropertyValue('--tb-'+t)) r.style.setProperty('--slate-tc', `var(--tb-${t})`);
+  else r.style.removeProperty('--slate-tc');
+}
 function render(){
   renderNav();
   renderFooter();
@@ -3068,8 +4083,12 @@ function render(){
     console.error(e);
   }
   applyResponsiveTable();
+  paintSlateHue();
   wireView();
   animateNumbers();
+  // a just-landed mark pops exactly once: the class was baked into this
+  // paint, and clearing the set here keeps the next render from replaying it
+  S._justHit?.clear();
 }
 /** Desktop gets the dense table; phones get the card list. Never a squeezed table.
     The threshold is 1120 rather than 900 because the table declares 1040px of
@@ -3082,15 +4101,270 @@ function applyResponsiveTable(){
   t.style.display = wide?'block':'none';
   c.style.display = wide?'none':'grid';
 }
+/* ── swipe-left to watch (phone) ────────────────────────────────────────
+   Delegated on #main once, not re-bound per render, because the list is
+   rebuilt wholesale on every star toggle. Three rules keep a horizontal
+   gesture from fighting a vertical list:
+     1. The axis is LOCKED on the first move that clears 6px and never
+        reverts, so a diagonal thumb-flick down the page scrolls and does not
+        drag a row halfway open.
+     2. preventDefault fires only on an x-locked move — calling it on every
+        touchmove would kill scrolling outright.
+     3. A completed drag stamps `swipedAt`, and the card's click handler
+        ignores clicks for 400ms after: on iOS a drag that starts on a
+        <button> still delivers a click, which would open the drawer of the
+        row you just starred. */
+const SWIPE_MAX = 76, SWIPE_ARM = 44;
+let swipedAt = 0;
+function initSwipe(){
+  const main = $('#main');
+  const phone = () => matchMedia('(max-width:600px)').matches;
+  let sw = null;
+  const end = () => {
+    if(!sw) return;
+    const {row, dx} = sw; sw = null;
+    row.classList.remove('swiping');
+    row.style.removeProperty('--sx');
+    row.style.removeProperty('--sp');
+    if(dx <= -SWIPE_ARM){
+      swipedAt = Date.now();
+      const st = row.querySelector('[data-star]');
+      if(st) toggleStar(st.dataset.star, st.dataset.name);   // re-renders the list
+    } else if(dx < 0) swipedAt = Date.now();
+    row.classList.remove('armed');
+  };
+  main.addEventListener('touchstart', e=>{
+    if(!phone() || e.touches.length>1) return;
+    const row = e.target.closest('.brow'); if(!row) return;
+    sw = {row, x:e.touches[0].clientX, y:e.touches[0].clientY, dx:0, axis:null, armed:false};
+  }, {passive:true});
+  main.addEventListener('touchmove', e=>{
+    if(!sw) return;
+    const dx = e.touches[0].clientX - sw.x, dy = e.touches[0].clientY - sw.y;
+    if(sw.axis===null){
+      if(Math.abs(dx)<6 && Math.abs(dy)<6) return;
+      sw.axis = Math.abs(dx) > Math.abs(dy)+3 ? 'x' : 'y';
+      if(sw.axis==='x') sw.row.classList.add('swiping');
+      else { sw = null; return; }
+    }
+    e.preventDefault();
+    /* Past the commit point the row keeps moving at 35% of the finger, so the
+       threshold is felt as a DETENT and not only seen as a colour change —
+       the drag going heavy is the same information the ring is drawing, in
+       the channel the thumb is already paying attention to. */
+    const pull = Math.max(0, -dx);
+    sw.dx = -Math.min(SWIPE_MAX, pull<=SWIPE_ARM ? pull : SWIPE_ARM + (pull-SWIPE_ARM)*.35);
+    sw.row.style.setProperty('--sx', sw.dx.toFixed(1)+'px');
+    sw.row.style.setProperty('--sp', Math.min(1, pull/SWIPE_ARM).toFixed(3));
+    const armed = pull >= SWIPE_ARM;
+    if(armed !== sw.armed){
+      sw.armed = armed;
+      sw.row.classList.toggle('armed', armed);
+      // Android/Chrome only — iOS Safari has no Vibration API, so the ring and
+      // the detent have to carry this on a phone. Never fires on release.
+      if(armed) navigator.vibrate?.(12);
+    }
+  }, {passive:false});
+  main.addEventListener('touchend', end, {passive:true});
+  main.addEventListener('touchcancel', end, {passive:true});
+}
+
+/* ── swipe the drawer to change batter ──────────────────────────────────
+   Under 760px the drawer is a full-height sheet, and paging it sideways is
+   the idiom that shape already implies. The ‹ › buttons stay: a gesture is
+   never the only way to do something here, and they are also the only path
+   a keyboard has.
+
+   Swipe LEFT for the next batter — the content travels the way your finger
+   does, the same direction a page turns.
+
+   Three things it must not do. It must not steal a vertical scroll, so the
+   axis is locked on the first committed movement and a vertical gesture
+   hands the drawer back to its own scrolling. It must not steal a sideways
+   drag from a table that can actually scroll — the drawer holds several with
+   overflow-x:auto — so a gesture starting inside one that has somewhere to
+   go is left alone. And it must not page past either end, so the last batter
+   pulls at a quarter weight and springs back rather than going nowhere in
+   silence.
+
+   Listeners sit on #drawer itself, which renderDrawer() refills but never
+   replaces, so they survive every batter change without rebinding. */
+/* ── global search ──────────────────────────────────────────────────────
+   One field that answers across views instead of inside one. Each existing
+   filter row only searches its own tab — the Batters field cannot find a
+   lineup, the Teams field cannot open a batter — so on a phone, where the
+   nav is a tab bar and switching costs a trip, "where is this player" took
+   knowing which tab held him first.
+
+   Three kinds of answer, in the order a slate is usually read: a BATTER
+   opens his drawer where he stands; a PITCHER routes to Batters filtered to
+   the arm, which is the list of everyone facing him tonight; a CLUB routes
+   to Teams filtered to its lineup. The routing is the point — the result is
+   not a link to a view, it is the question already answered.
+
+   Matching is prefix-first: a query that starts a word outranks one that
+   merely appears inside it, so "mar" puts Marte above Mangum-adjacent noise
+   rather than ordering by whatever the slate happened to sort by. */
+function qsMatches(q){
+  q=q.trim().toLowerCase();
+  if(q.length<2) return null;
+  const starts=(t)=>{ t=String(t||'').toLowerCase();
+    return t.startsWith(q) || t.split(/[\s.\-']+/).some(w=>w.startsWith(q)); };
+  const has=(t)=>String(t||'').toLowerCase().includes(q);
+  const rank=(t)=>starts(t)?0:1;
+  const batters=S.batters.filter(b=>has(b.name))
+    .sort((a,b)=>rank(a.name)-rank(b.name) || b.p-a.p).slice(0,6);
+  const pitSeen=new Map();
+  for(const b of S.batters){
+    if(!b.pit || !has(b.pit) || pitSeen.has(b.pit)) continue;
+    pitSeen.set(b.pit, {name:b.pit, team:b.matchup||'', n:S.batters.filter(x=>x.pit===b.pit).length});
+  }
+  const pitchers=[...pitSeen.values()].sort((a,b)=>rank(a.name)-rank(b.name)).slice(0,4);
+  const teamSeen=new Map();
+  for(const b of S.batters){
+    if(!b.team || !has(b.team) || teamSeen.has(b.team)) continue;
+    teamSeen.set(b.team, {team:b.team, n:S.batters.filter(x=>x.team===b.team).length});
+  }
+  const teams=[...teamSeen.values()].sort((a,b)=>rank(a.team)-rank(b.team)).slice(0,4);
+  return {q, batters, pitchers, teams, total:batters.length+pitchers.length+teams.length};
+}
+function qsClose(){
+  const r=$('#qsres'); if(r) r.hidden=true;
+  const i=$('#qsq'); if(i) i.setAttribute('aria-expanded','false');
+  document.body.style.overflow='';
+}
+function qsRender(){
+  const inp=$('#qsq'), res=$('#qsres'); if(!inp||!res) return;
+  const m=qsMatches(inp.value);
+  if(!m){ qsClose(); return; }
+  const hl=t=>{ const i=String(t).toLowerCase().indexOf(m.q); if(i<0) return esc(t);
+    return esc(String(t).slice(0,i))+'<mark>'+esc(String(t).slice(i,i+m.q.length))+'</mark>'+esc(String(t).slice(i+m.q.length)); };
+  let h='';
+  if(m.batters.length) h+=`<div class="qsh">Batters</div>`+m.batters.map(b=>
+    `<button class="qsitem" role="option" data-qsb="${esc(key(b))}">
+      <span class="qsn">${hl(b.name)}</span>
+      <span class="qsm">${esc(b.team)} · ${Math.round(b.p*100)}</span></button>`).join('');
+  if(m.pitchers.length) h+=`<div class="qsh">Pitchers</div>`+m.pitchers.map(p=>
+    `<button class="qsitem" role="option" data-qsp="${esc(p.name)}">
+      <span class="qsn">${hl(p.name)}</span>
+      <span class="qsm">${p.n} bats</span></button>`).join('');
+  if(m.teams.length) h+=`<div class="qsh">Lineups</div>`+m.teams.map(t=>
+    `<button class="qsitem" role="option" data-qst="${esc(t.team)}">
+      <span class="qsn">${hl(t.team)}</span>
+      <span class="qsm">${t.n} bats</span></button>`).join('');
+  if(!m.total) h=`<div class="qsempty">Nothing on tonight's slate matches “${esc(m.q)}”.</div>`;
+  res.innerHTML=h;
+  res.hidden=false;
+  inp.setAttribute('aria-expanded','true');
+  document.body.style.overflow='hidden';
+}
+function initGlobalSearch(){
+  const inp=$('#qsq'), res=$('#qsres'), bar=$('.hbar'), wrap=$('#qswrap'), x=$('#qsx');
+  if(!inp||!res||!bar) return;
+  const open=on=>{ bar.classList.toggle('qson', on); if(!on){ inp.value=''; qsClose(); } };
+  /* The collapsed field is 32px of icon with a zero-width input inside it, so
+     the tap has to be caught on the wrapper and handed to the input — tapping
+     "the magnifier" must not depend on hitting a control that is not there
+     yet. Pointerdown rather than click: on iOS a click that lands while the
+     element is still growing can miss it. */
+  wrap.addEventListener('pointerdown', e=>{
+    if(bar.classList.contains('qson') || e.target.closest('#qsx')) return;
+    e.preventDefault(); open(true); inp.focus();
+  });
+  x.addEventListener('click', e=>{ e.preventDefault(); open(false); inp.blur(); });
+  inp.addEventListener('input', qsRender);
+  inp.addEventListener('focus', ()=>{ open(true); qsRender(); });
+  /* Collapse on blur only when nothing was typed. Blur also fires when the
+     finger lands on a RESULT, and closing there would unmount the row before
+     its click resolved — so a query keeps the field open and the result
+     handler is what closes it. */
+  inp.addEventListener('blur', ()=>{ if(!inp.value.trim()) setTimeout(()=>open(false),120); });
+  inp.addEventListener('keydown', e=>{ if(e.key==='Escape'){ open(false); inp.blur(); } });
+  res.addEventListener('click', e=>{
+    const el=e.target.closest('.qsitem'); if(!el) return;
+    inp.value=''; inp.blur(); qsClose(); $('.hbar')?.classList.remove('qson');
+    if(el.dataset.qsb!=null){
+      /* opened against the whole slate by score, so the drawer's ‹ › and its
+         swipe still page through a real ranking rather than a search result
+         set that stops after six */
+      openDrawer(el.dataset.qsb, [...S.batters].sort((a,b)=>b.p-a.p));
+    } else if(el.dataset.qsp!=null){
+      S.filters={...S.filters, q:el.dataset.qsp, team:'', game:'', slot:''};
+      go('batters');
+    } else if(el.dataset.qst!=null){
+      S.lq=el.dataset.qst; go('teams');
+    }
+  });
+}
+
+function initDrawerSwipe(){
+  const d=$('#drawer');
+  const sheet=()=>matchMedia('(max-width:759px)').matches;
+  const ARM=58, MAX=104;
+  let g=null;
+  const pane=()=>d.querySelector('.dbody');
+  /* a scrollable-x ancestor owns the gesture, but only while it still has
+     room to move in the direction being dragged */
+  const ownsX=(el,dir)=>{
+    for(let n=el; n && n!==d; n=n.parentElement){
+      if(n.scrollWidth>n.clientWidth+1 && /auto|scroll/.test(getComputedStyle(n).overflowX)){
+        const room = dir<0 ? n.scrollWidth-n.clientWidth-n.scrollLeft : n.scrollLeft;
+        if(room>1) return true;
+      }
+    }
+    return false;
+  };
+  const paint=x=>{ const p=pane(); if(p) p.style.transform = x ? `translateX(${x.toFixed(1)}px)` : ''; };
+  const reset=()=>{ const p=pane(); if(p){ p.style.transition=''; p.style.transform=''; } g=null; };
+  d.addEventListener('touchstart', e=>{
+    if(d.hidden || !sheet() || e.touches.length>1) return;
+    if(!S.drawerList || S.drawerList.length<2) return;
+    g={x:e.touches[0].clientX, y:e.touches[0].clientY, dx:0, axis:null, commit:false, target:e.target};
+  }, {passive:true});
+  d.addEventListener('touchmove', e=>{
+    if(!g) return;
+    const dx=e.touches[0].clientX-g.x, dy=e.touches[0].clientY-g.y;
+    if(g.axis===null){
+      if(Math.abs(dx)<8 && Math.abs(dy)<8) return;
+      // vertical, or a table with somewhere left to scroll: not ours
+      if(Math.abs(dx)<=Math.abs(dy)+4 || ownsX(g.target, dx)){ g=null; return; }
+      g.axis='x';
+      const p=pane(); if(p) p.style.transition='none';
+    }
+    e.preventDefault();
+    const end = (dx>0 && S.drawerIdx<=0) || (dx<0 && S.drawerIdx>=S.drawerList.length-1);
+    const pull=Math.abs(dx);
+    const eased = pull<=ARM ? pull : ARM+(pull-ARM)*.35;
+    g.commit = !end && pull>=ARM;
+    g.dx = Math.sign(dx) * Math.min(MAX, end ? pull*.25 : eased);
+    paint(g.dx);
+  }, {passive:false});
+  const release=()=>{
+    if(!g) return;
+    if(g.axis!=='x'){ g=null; return; }
+    const commit=g.commit, dir=g.dx<0?1:-1;
+    const p=pane();
+    if(commit){ reset(); stepDrawer(dir); return; }
+    if(p) p.style.transition='transform .18s ease';
+    paint(0);
+    const t=setTimeout(reset,200); g=null; void t;
+  };
+  d.addEventListener('touchend', release, {passive:true});
+  d.addEventListener('touchcancel', release, {passive:true});
+}
+
 function wireView(){
   $$('[data-k]').forEach(el=>el.addEventListener('click',ev=>{
     ev.stopPropagation();
+    if(Date.now()-swipedAt < 400) return;   // that click is the tail of a swipe
     const list = S.view==='batters' ? filtered() : S.view==='watch'
       ? S.batters.filter(b=>S.stars.includes(key(b))).sort((a,b)=>b.p-a.p)
       : [...S.batters].sort((a,b)=>b.p-a.p);
     openDrawer(el.dataset.k, list);
   }));
   $$('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
+  const mb=$('#morebat'); if(mb) mb.addEventListener('click',()=>{ S.batShowAll=true; render(); });
+  const mw=$('#morewatch'); if(mw) mw.addEventListener('click',()=>{ S.watchShowAll=true; render(); });
   const back=$('#dback'); if(back) back.addEventListener('click',()=>goDate(''));
   $$('[data-star]').forEach(el=>el.addEventListener('click',ev=>{
     ev.stopPropagation();          // a table star sits INSIDE tr[data-k]
@@ -3124,7 +4398,7 @@ function wireView(){
     shared links already exist, so it keeps resolving. */
 const VIEW_ALIAS = {games:'teams'};
 const resolveView = v => VIEW_ALIAS[v] || v;
-function go(v){ v=resolveView(v); if(!VIEWS.some(x=>x.id===v)) return; S.view=v; location.hash=v; window.scrollTo(0,0); render(); }
+function go(v){ v=resolveView(v); if(!VIEWS.some(x=>x.id===v)) return; S.view=v; S.batShowAll=false; S.watchShowAll=false; location.hash=v; window.scrollTo(0,0); render(); }
 
 /* theme — Dugout (auto/light/dark), the legacy dashboard's own palette, plus
    Aurora. The ids `light`/`dark` are load-bearing: applyTheme('auto') writes
@@ -3155,6 +4429,13 @@ $('#btnStar').onclick=()=>go('watch');
 $('#dsel').onchange=e=>goDate(e.target.value);
 $('#btnReload').onclick=async()=>{ delete once.cal; toast('Reloading…'); await boot(true); };
 window.addEventListener('resize',applyResponsiveTable);
+/* batterCard decides how many chips to print from window.innerWidth, so a
+   card built on a desktop keeps three chips after a rotation into phone
+   width unless the list is rebuilt. Only on an actual breakpoint CROSS —
+   re-rendering 270 rows on every pixel of a desktop drag is not free. */
+{ const mq = matchMedia('(max-width:600px)');
+  const onCross = () => { render(); if(!$('#drawer').hidden) renderDrawer(); };
+  mq.addEventListener ? mq.addEventListener('change',onCross) : mq.addListener(onCross); }
 window.addEventListener('hashchange',()=>{ const h=resolveView(location.hash.slice(1)); if(h&&h!==S.view) go(h); });
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape' && !$('#drawer').hidden) return closeDrawer();
@@ -3190,6 +4471,9 @@ async function boot(force){
   loadJSON('bullpen_preview.json').then(d=>{ S.bullpen=d; if(S.view==='teams') render(); });
   calibration().then(c=>{ S.cal=c; render(); }).catch(()=>{ /* mirror may not ship picks_log */ });
 }
+initSwipe();   // delegated on #main, which outlives every render
+initDrawerSwipe();   // delegated on #drawer, which renderDrawer() refills but never replaces
+initGlobalSearch();  // header field + results sheet, both outside #main
 boot();
 </script>
 </body>
