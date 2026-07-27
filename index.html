@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -26,69 +26,112 @@
    "bad", one amber for "unconfirmed / caution". Everything else is
    greyscale, which is what makes the accent mean something.
 
-   Two theme families ship (2026-07-26, replacing the two Broadcast themes):
+   ONE theme family ships, in two lightnesses (2026-07-27): AURORA, dark and
+   light. The two Dugout palettes — the retired dashboard's black field and
+   its grey daylight twin, ported here 2026-07-26 — were deleted the same day
+   Aurora light landed. They existed to keep the look of the dashboard mochi
+   replaced, and that dashboard is gone; what remained was three palettes to
+   check every new surface against, of which the one nobody used was always
+   the one that got skipped. Their values are in git history.
 
-     DUGOUT (dark / light) — the legacy dashboard's own palette, lifted
-       token-for-token out of hit-dugout.html. True black field, pure white
-       type, a single steel blue (#2389E2) carrying every call-to-attention,
-       and the green/orange/grey score semantics the client already reads
-       fluently. `auto` resolves to one of these two, so the DEFAULT look of
-       this app is now the look of the dashboard it replaced.
-     AURORA — unchanged, glass and depth, further down the file.
+   The ids stay `dark` and `light` because applyTheme('auto') writes one of
+   those names based on the OS setting; renaming them breaks Auto. `<html>`
+   carries data-theme="dark" statically so the first paint is already a theme
+   — every structural rule in this file is written `html[data-theme] …`, and
+   before 2026-07-27 those rules were `html[data-theme="aurora"] …` and the
+   page flashed the un-glassed base look until the script ran.
 
-   The two ids stay `dark` and `light` because applyTheme('auto') writes one
-   of those names based on the OS setting; renaming them breaks Auto.
+   Aurora's own rules — glass, depth, motion — live in one block at the END
+   of this file and are shared by both lightnesses. Everything that has to
+   differ between them is a TOKEN, defined twice here. That is a rule, not a
+   convention: a hex literal in that block is a bug the light theme cannot
+   fix, which is exactly how the light theme's first draft ended up with
+   invisible cards (white glass fills) and an invisible hover sheen.
    ═══════════════════════════════════════════════════════════════════════ */
 :root{
-  /* ── DUGOUT DARK ────────────────────────────────────────────────────────
-     Surfaces are legacy's field/surf/raised (#000 → #0C0C0D → #17181A) with
-     two extra steps interpolated, since this app separates more panels than
-     the old one did. Greys are cool-neutral on purpose: legacy chose them so
-     the page reads modern rather than muddy next to the orange. */
-  --bg:#000000; --bg2:#0A0A0B; --surf:#0C0C0D; --surf2:#17181A; --surf3:#212328;
-  --line:#1C1F24; --line2:#2A2D33; --rule:#3B3F47;
+  /* ── AURORA DARK ────────────────────────────────────────────────────────
+     A near-black violet field, not a true black: the ambient gradients need
+     something to sit in. Surfaces are translucent WHITE, so a panel is the
+     field seen through frost rather than a lighter grey — which is why
+     --surf and friends are rgba and cannot be used where an opaque tone is
+     required (see --th-bg, and the .res glyph's use of --bg). */
+  --bg:#05060C; --bg2:#0A0C16; --surf:rgba(255,255,255,.045); --surf2:rgba(255,255,255,.07);
+  --surf3:rgba(255,255,255,.11);
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.16); --rule:rgba(255,255,255,.26);
   --grph:29px;            /* height of the column-group band above a header */
-  /* type — legacy's chalk white and sage grey */
-  --ink:#FFFFFF; --ink2:#949AA3; --ink3:#6E747E; --ink4:#4A4F58;
-  /* accent — steel blue, 5.8:1 on the black field, safe as text without a
-     lighter twin. It replaced legacy's hot orange (#FF6B00) on 2026-07-27:
-     black plus that exact orange is another site's identity, and Mochi was
-     wearing it. Blue is the one substitution that had to be MEASURED rather
-     than picked, because --tier-lo is itself a cool blue-grey (#949AA3) —
-     see the tier block below for what that ruled out. */
-  --acc:#2389E2;        /* FILLS only — backgrounds, solid rules */
-  --acc-txt:#2389E2;    /* text / icons / strokes — must pass on the page bg */
-  --acc-line:rgba(35,137,226,.36);
-  --acc-ink:#55A5EC; --acc-on:#00121F; --acc-dim:rgba(35,137,226,.14);
-  --bad:#FF2D46; --bad-dim:rgba(255,45,70,.14);
-  --warn:#FFB800; --warn-dim:rgba(255,184,0,.13);
+  --ink:#F2F2FA; --ink2:#A9A9C8; --ink3:#7A7A9C; --ink4:#54547A;
+  --acc:#4DE8FF;        /* FILLS only — backgrounds, solid rules */
+  --acc-txt:#7BEFFF;    /* text / icons / strokes — must pass on the page bg */
+  --acc-line:rgba(77,232,255,.36);
+  --acc-ink:#7BEFFF; --acc-on:#04141A; --acc-dim:rgba(77,232,255,.13);
+  --bad:#FF6B8A; --bad-dim:rgba(255,107,138,.14);
+  --warn:#FFC46B; --warn-dim:rgba(255,196,107,.13);
   /* score ramp — sequential, single hue, for magnitude only */
-  --s1:#04182B; --s2:#0A3355; --s3:#1560A0; --s4:#2389E2;
+  --s1:#173042; --s2:#1F5E77; --s3:#2E9DB8; --s4:#4DE8FF;
+  /* the accent, the warn and the bad as bare channel triples, for the glows
+     and hairlines that need the same hue at a dozen different alphas. A
+     `rgba(var(--acc-rgb),.45)` is the only way those can follow the theme —
+     `color-mix` cannot be used inside a `drop-shadow()` in Safari 17. */
+  --acc-rgb:77,232,255; --bad-rgb:255,107,138; --warn-rgb:255,196,107; --violet-rgb:167,139,250;
   /* ── score tiers ───────────────────────────────────────────────────────
-     Ported back from the legacy dashboard (2026-07-26) because the colour was
+     Ported from the legacy dashboard (2026-07-26) because the colour was
      doing real work there: it sorts a screen of numbers into "worth a look /
      middling / skip" before you have read a single digit, which the bare
-     greyscale ramp never did. Thresholds are legacy's: .70 / .55, and under
-     Dugout the values are legacy's literal --good / --amber / --sage. The mid
-     tier deliberately IS the accent here, exactly as it was in the old
-     dashboard — most of a slate lands in that band, and the client reads the
-     resulting wash of accent as "ordinary", not as an alarm.
+     greyscale ramp never did. Thresholds are legacy's: .70 / .55.
 
-     Which is exactly why swapping the accent had to clear the GREY, not just
-     the background. --tier-lo is a cool blue-grey, so a calm steel blue put
-     mid and lo at a normal-vision ΔE of 10–12 against a floor of 15 — two
-     tiers telling most of the slate apart by a difference you cannot see.
-     Measured with the dataviz validator over a 502-colour sweep; #2389E2 is
-     the tone that clears it (ΔE 16.0 normal, 13.1 CVD), and it beats the old
-     orange on colour-blind separation, which only ever WARNed at 7.7. */
-  --tier-hi:#00D46A;  --tier-hi-dim:rgba(0,212,106,.14);  --tier-hi-line:rgba(0,212,106,.42);
-  --tier-mid:#2389E2; --tier-mid-dim:rgba(35,137,226,.13); --tier-mid-line:rgba(35,137,226,.40);
-  --tier-lo:#949AA3;  --tier-lo-dim:rgba(148,154,163,.10);--tier-lo-line:rgba(148,154,163,.30);
+     The tier ramp is the one place this app spends three colours at once, so
+     it is the one place that has to be MEASURED rather than picked — two
+     tiers that tell most of a slate apart by a difference the eye cannot
+     find are worse than no colour at all. Floor is ΔE 15 normal-vision, 7
+     under deuteranopia. Green / amber / grey-violet clears both here by a
+     wide margin; the light values below were measured to the same bar. */
+  --tier-hi:#3DF5A6;  --tier-hi-dim:rgba(61,245,166,.14); --tier-hi-line:rgba(61,245,166,.40);
+  --tier-mid:#FFC46B; --tier-mid-dim:rgba(255,196,107,.14);--tier-mid-line:rgba(255,196,107,.38);
+  --tier-lo:#9C9CC4;  --tier-lo-dim:rgba(156,156,196,.10); --tier-lo-line:rgba(156,156,196,.28);
+  --hit-disc:#3DF5A6;     /* == --tier-hi here; see the light block */
   /* pitcher grade ramp — describes the ARM, not the batter's edge, which is
      why it is a separate scale from the tiers above (a grade-A arm is a bad
      night for the hitter). Legacy's five-stop ramp, unchanged. */
-  --grade-a:#00D46A; --grade-b:#8CE04A; --grade-c:#FFB800; --grade-d:#FF8A1F; --grade-f:#FF2D46;
-  --seam:#FF2D46;       /* baseball lacing — legacy's --live red */
+  --grade-a:#3DF5A6; --grade-b:#A6F06A; --grade-c:#FFC46B; --grade-d:#FF9E5E; --grade-f:#FF6B8A;
+  --seam:#FF6B8A;       /* baseball lacing — legacy's --live red */
+  --violet:#A78BFA;     /* the field's own hue, borrowed by the meters */
+  --rg:18px;            /* glass corner radius */
+  --spring:cubic-bezier(.22,1,.36,1);
+  /* ── the glass, as tokens ───────────────────────────────────────────────
+     Every value the Aurora block would otherwise hardcode. Dark builds its
+     surfaces by adding white; light builds them by adding OPACITY to white
+     and its shadows by adding ink — which is why these are whole gradients
+     and whole shadows rather than a colour plus a shared alpha. */
+  /* the ambient field's three hues — violet, cyan, fuchsia. These ARE the
+     identity, and they are the one thing light restates rather than reuses:
+     mixing a saturated DARK hue into white darkens as it colours, so on a
+     light page these three would eat text contrast long before they read as
+     colour. Light uses pastel-bright siblings at more than twice the opacity
+     instead — same hues, chroma without the luminance cost. */
+  --field-1:#7C3AED; --field-2:#22D3EE; --field-3:#E879F9;
+  --field-op:.42;         /* ambient gradient strength */
+  --field-blur:28px;
+  --grain-op:.5;
+  --chrome:rgba(8,10,20,.55);      /* header */
+  --chrome2:rgba(8,10,20,.68);     /* tab bar */
+  --chrome3:rgba(8,10,20,.78);     /* drawer */
+  --scrim-c:rgba(3,4,10,.62);
+  --th-bg:#080A14;        /* pinned table header — MUST be opaque, see the rule */
+  --glass:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));
+  --glass-hi:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03));
+  --glass-lite:linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,.006));
+  --glass-lite-hi:linear-gradient(180deg,rgba(255,255,255,.034),rgba(255,255,255,.011));
+  --edge:inset 0 1px 0 rgba(255,255,255,.06);
+  --sheen:rgba(255,255,255,.09);
+  --hero-glass:linear-gradient(135deg,rgba(124,58,237,.24),rgba(34,211,238,.13) 55%,rgba(255,255,255,.05));
+  --hero-edge:inset 0 1px 0 rgba(255,255,255,.16);
+  --hero-lift:0 24px 60px -28px rgba(77,232,255,.55);
+  --lift:0 10px 30px -14px rgba(77,232,255,.45);
+  --lift-lu:0 14px 36px -18px rgba(77,232,255,.5);
+  --track:rgba(255,255,255,.09);          /* empty bar */
+  --track-settled:rgba(255,255,255,.30);  /* a bar whose game is answered */
+  --acc-grad:linear-gradient(120deg,var(--acc),#8FF3FF);
+  --chip-tint:16%; --chip-tint-hero:22%;   /* see .bcard's --tc-dim */
   /* ── type faces ────────────────────────────────────────────────────────
      Legacy's three, doing legacy's three jobs. The split is the point: when
      --disp and --mono were the same face, every surface read as a debug
@@ -106,36 +149,164 @@
   /* type scale — deliberate jumps, not a gentle ramp */
   --t-hero:60px; --t-xl:38px; --t-lg:27px; --t-md:20px; --t-bd:16px;
   --t-sm:13px; --t-xs:11.5px; --t-mi:10px;
-  --shadow:none;
   --safe-b:env(safe-area-inset-bottom,0px);
 }
-/* ── DUGOUT LIGHT ────────────────────────────────────────────────────────
-   Legacy's light variant: cool neutral greys rather than cream, so daylight
-   is the same product rather than a different one. Surface ORDER is
-   preserved from the dark theme — --bg is the page and the darkest tone,
-   --surf is the most elevated — which is what row hover and the drawer rely
-   on. Accents darken to clear contrast on white. The blue has to go further
-   than a simple darkening: light's --tier-lo (#5C6470) is a cool blue-grey
-   too, and the calm mid-blues all landed at ΔE 10–13.5 against it, so the
-   accent here is a deeper, more saturated step (ΔE 16.8) rather than the
-   dark theme's tone shifted down. */
+/* ── AURORA LIGHT (2026-07-27) ───────────────────────────────────────────
+   The same product in daylight, not a second product. Three things had to be
+   INVERTED rather than lightened, and each one was a visible bug first:
+
+   · Surfaces. Dark builds a panel by adding white to the field; light builds
+     one by making white more OPAQUE over it. So --surf climbs .66 -> .86
+     rather than .045 -> .07, and the ORDER still holds: --bg is the page,
+     --surf is the most elevated. Row hover and the drawer depend on that.
+   · --surf3 is the "empty track" tone (meters, form strips, skeletons, the
+     .srail). It is the one surface that must go DARKER than the page — an
+     unfilled meter made of white over white is not there at all.
+   · Shadows and the hover sheen. On dark both are white light; here both are
+     ink — except the card lifts, which are CYAN over an ink underlay. A
+     neutral grey shadow under glass on a tinted page reads as grime. And a
+     white sheen sweeping across a white card is invisible, which is how the
+     light theme shipped its first draft with no hover feedback at all.
+
+   THE FIRST DRAFT READ AS DEAD, and the cause is worth keeping written down:
+   every colour had been pushed to 4.5:1 as though all of them were text.
+   Most are not. A dial ring, a meter, an order bar, the score rail and a
+   club accent bar are GRAPHICS — they owe 3:1, and dragging them to text
+   contrast is what turned PIT's gold into brown and every dial on the page
+   into the same dark ring. Hence --tg-*, the club colour at 3:1, emitted by
+   teamCSS() beside the 4.5:1 --tc-*, and following the --acc/--acc-txt split
+   this file already used. On DARK the two collapse, because the search that
+   fits a colour to a background walks it AWAY from that background: on a
+   near-black field that BRIGHTENS a hue, so 4.5 costs nothing there. Only
+   light pays.
+
+   The TIERS went further, by decision rather than by measurement (client,
+   2026-07-27): their text floor is 3:1 too, which is what buys mid a real
+   amber instead of a brown or a rust. Below AA at that size, deliberately —
+   the reasoning is in the light block, and it is the one number here that is
+   a judgement call rather than a constraint. Because text and graphics now
+   share a floor, tier colour is ONE value per lightness again.
+
+   Contrast grades, then: club is --tc-x at 4.5 and --tg-x at 3, the accent is
+   --acc-txt at 4.5 and --acc at 3, the tiers are a single value at 3, and
+   --hit-disc is 4.5 because a ✓ in --bg is drawn on it. (Written -x rather
+   than -* on purpose: a star followed by the slash of a token path closes a
+   CSS comment, and doing exactly that here silently dropped both palettes.)
+
+   MEASURED, not picked (ΔE floor 15 normal / 7 deuteranopic between tiers):
+     TEXT     ink2 7.1  ink3 5.7  acc-txt 5.5  bad 4.9  warn 4.6
+     GRAPHIC  acc 3.4   club --tg-* 3.0 by construction
+     TIERS    hi 3.47  mid 3.12  lo 3.70  on --bg
+              hi 3.33  mid 3.00  lo 3.56  on --surf over the hottest field
+                                          lobe, which is where they land
+              ΔE hi/mid 84  mid/lo 89  hi/lo 66   CVD 85 / 81 / 14
+   --ink4 is 3.0:1 and stays there deliberately — it is the empty-cell tone,
+   the same decorative role it has on dark, and it never carries a value.
+   --warn keeps its 4.6 and no longer equals tier-mid: it is 9–10px chip and
+   tag text, too small to spend the same licence on, and "unconfirmed" and
+   "middling score" are different claims that may as well look different.
+
+   The ambient field is the constraint that fixes --field-op, and light does
+   not reuse dark's three hues: mixing a saturated DARK violet into white
+   darkens as it colours, so it ate text contrast long before it read as
+   colour (at .18 ink3 fell to 4.38 and the accent to 4.22, and .13 was all
+   it could carry — which is why the page looked washed). Light restates the
+   trio as pastel-bright siblings and runs them at .28, more than twice the
+   strength: at the hottest point of the violet lobe the page is #E2DAFD,
+   where ink3 reads 4.71 and acc-txt 4.55. That is the ceiling. Raise either
+   the opacity or the hues' saturation and both have to be re-measured. */
 html[data-theme="light"]{
-  /* --surf3 is the "empty track" tone (meters, form strips, skeletons). On a
-     white page it could sit just below white; against legacy's grey field it
-     has to go a step DARKER than --bg or an unfilled meter disappears. */
-  --bg:#E9EBEF; --bg2:#F1F3F6; --surf:#FFFFFF; --surf2:#F7F8FA; --surf3:#D8DDE4;
-  --line:#D7DBE1; --line2:#C3C9D2; --rule:#0B0D10;
-  --ink:#0B0D10; --ink2:#5C6470; --ink3:#7C8493; --ink4:#A3AAB6;
-  --acc:#0E5FD0; --acc-txt:#0E5FD0; --acc-line:rgba(14,95,208,.38);
-  --acc-ink:#0B4CA8; --acc-on:#FFFFFF; --acc-dim:rgba(14,95,208,.12);
-  --bad:#D80D26; --bad-dim:rgba(216,13,38,.10);
-  --warn:#B37400; --warn-dim:rgba(179,116,0,.12);
-  --s1:#DCE7F8; --s2:#A6C2EC; --s3:#4E86DC; --s4:#0E5FD0;
-  --tier-hi:#00994D;  --tier-hi-dim:rgba(0,153,77,.11);   --tier-hi-line:rgba(0,153,77,.38);
-  --tier-mid:#0E5FD0; --tier-mid-dim:rgba(14,95,208,.10); --tier-mid-line:rgba(14,95,208,.36);
-  --tier-lo:#5C6470;  --tier-lo-dim:rgba(92,100,112,.08); --tier-lo-line:rgba(92,100,112,.28);
-  --grade-a:#00994D; --grade-b:#4E9E1F; --grade-c:#B37400; --grade-d:#D95A00; --grade-f:#D80D26;
-  --seam:#D80D26;
+  --bg:#F4F5FC; --bg2:#EAECF8; --surf:rgba(255,255,255,.56); --surf2:rgba(255,255,255,.80);
+  --surf3:rgba(20,22,60,.11);
+  --line:rgba(20,22,60,.13); --line2:rgba(20,22,60,.22); --rule:rgba(20,22,60,.42);
+  --ink:#14152B; --ink2:#4E5170; --ink3:#5A5E86; --ink4:#8A8EAC;
+  /* --acc is a FILL and --acc-txt is text, and here the two are far apart on
+     purpose. The fill is a vivid cyan at 3.4:1 (graphic grade) and it carries
+     --acc-on, which is a near-black teal rather than white — the same trade
+     dark makes, and the reason a pressed segment or a toast reads as a lit
+     capsule instead of a dark slab. White on a cyan bright enough to look
+     alive is 3.6:1, so white was never an option; darkening the cyan until
+     white passed is what made the first light draft look switched off. */
+  --acc:#0891B2; --acc-txt:#0A6C86; --acc-line:rgba(8,145,178,.42);
+  --acc-ink:#0A6C86; --acc-on:#03191F; --acc-dim:rgba(8,145,178,.14);
+  --bad:#D01B48; --bad-dim:rgba(208,27,72,.11);
+  --warn:#B4530A; --warn-dim:rgba(180,83,10,.13);
+  --s1:#D8F0F7; --s2:#7FCADE; --s3:#2FA6C4; --s4:#0891B2;
+  --acc-rgb:8,145,178; --bad-rgb:208,27,72; --warn-rgb:180,83,10; --violet-rgb:139,92,246;
+  /* ── the tiers, at a 3:1 floor (client decision, 2026-07-27) ───────────
+     These carry TEXT — a score, a pill, a delta — and 3:1 is below AA for
+     text that size. That is deliberate and it is the whole reason mid is a
+     real AMBER: yellow hues have to go very dark to clear 4.5, so at that
+     floor mid could only ever be a brown (#9A5B00) or a rust (#B4530A), and
+     both read as mud on a light page. Do not "fix" these back up to 4.5
+     without saying what mid becomes.
+
+     Measured against the worst backdrop tier text can actually land on, which
+     is NOT --bg: it is --surf (.56 white) over the hottest field lobe, i.e.
+     #F2EFFE — tier colour only ever appears inside a glass panel. On --bg the
+     three read 3.47 / 3.12 / 3.70 and on that panel 3.33 / 3.00 / 3.56.
+     ΔE 84 / 89 / 66 normal-vision, 85 / 81 / 14 deuteranopic.
+
+     Because the floor is now the same 3:1 that graphics owe, tier colour is
+     back to ONE grade per lightness — the --tier-*-fill split that shipped
+     earlier today is gone. The CLUB split (--tc-* / --tg-*) stays: club
+     colour still carries names and chip labels at 4.5. */
+  --tier-hi:#059669;  --tier-hi-dim:rgba(5,150,105,.13);  --tier-hi-line:rgba(5,150,105,.42);
+  --tier-mid:#C87908; --tier-mid-dim:rgba(200,121,8,.15); --tier-mid-line:rgba(200,121,8,.42);
+  --tier-lo:#767CA8;  --tier-lo-dim:rgba(118,124,168,.11);--tier-lo-line:rgba(118,124,168,.32);
+  /* the hit disc is the ONE tier-green that still owes 4.5, because the ✓ on
+     it is drawn in --bg — a bright green disc loses its own glyph */
+  --hit-disc:#0E7A4F;
+  --grade-a:#0E7A4F; --grade-b:#4C7A12; --grade-c:#9A5B00; --grade-d:#C0430A; --grade-f:#D01B48;
+  --seam:#D01B48;
+  --violet:#8B5CF6;       /* fill only (meter gradients, the nav tint) */
+  /* ── the glass, in daylight ───────────────────────────────────────────
+     The tints below are where the light theme gets its life. Everything here
+     was one step paler in the first draft and the result read as switched
+     off: white glass on a white page, ink shadows, and a field so faint the
+     three aurora hues might as well not have been there. */
+  --field-1:#B79CFF; --field-2:#5AE0F5; --field-3:#F5A6FF;
+  --field-op:.28;         /* see the measurement above — this is a ceiling */
+  --field-blur:38px;      /* softer, because a pale lobe bands more visibly */
+  --grain-op:.30;
+  --chrome:rgba(248,249,255,.58);
+  --chrome2:rgba(248,249,255,.78);
+  --chrome3:rgba(250,250,255,.86);
+  --scrim-c:rgba(20,22,60,.30);
+  --th-bg:#F7F8FE;
+  /* The panels carry a faint cool cast rather than being pure white, AND they
+     are properly translucent — the aurora has to come through them, the way it
+     does on dark. Near-opaque white was the other half of why the first draft
+     read as dead: the field was only visible in the page margins, so the app
+     itself had no colour in it. Any alpha is safe here, because the binding
+     contrast case is the BARE field (measured above) and adding white to it
+     only improves the ratio. */
+  --glass:linear-gradient(180deg,rgba(255,255,255,.62),rgba(247,250,255,.34));
+  --glass-hi:linear-gradient(180deg,rgba(255,255,255,.86),rgba(250,252,255,.58));
+  --glass-lite:linear-gradient(180deg,rgba(255,255,255,.32),rgba(247,250,255,.16));
+  --glass-lite-hi:linear-gradient(180deg,rgba(255,255,255,.56),rgba(250,252,255,.32));
+  --edge:inset 0 1px 0 rgba(255,255,255,.9);
+  --sheen:rgba(20,22,60,.055);
+  --hero-glass:linear-gradient(135deg,rgba(139,92,246,.26),rgba(34,184,214,.22) 55%,rgba(255,255,255,.42));
+  --hero-edge:inset 0 1px 0 rgba(255,255,255,.95);
+  /* the lifts are CYAN with an ink underlay, not ink alone. A neutral grey
+     shadow under a glass card on a tinted page reads as grime; the tinted one
+     reads as light passing through it. The ink half keeps it legible as depth
+     where the field behind it happens to be pale. */
+  --hero-lift:0 24px 60px -30px rgba(8,145,178,.45),0 10px 30px -20px rgba(109,59,228,.26);
+  --lift:0 10px 30px -16px rgba(8,145,178,.42),0 4px 14px -10px rgba(20,22,60,.16);
+  --lift-lu:0 14px 36px -20px rgba(8,145,178,.40),0 5px 16px -12px rgba(20,22,60,.16);
+  --track:rgba(20,22,60,.12);
+  --track-settled:rgba(20,22,60,.32);
+  /* both stops hold --acc-on (near-black teal) at >=4.9:1, so the capsule can
+     brighten toward its far end instead of having to stay dark for white */
+  --acc-grad:linear-gradient(120deg,var(--acc),#22B8D6);
+  /* Plain cards run a lighter fill than dark's so a bright club's own --tc
+     label keeps 3:1 on its chip (16% put PIT gold at 2.25). The HERO keeps a
+     solid fill instead, because its label is --tk, the 4.5 grade — it does not
+     have to trade fill strength for legibility, which is the whole reason that
+     grade exists. */
+  --chip-tint:9%; --chip-tint-hero:20%;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
@@ -401,7 +572,6 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
   border:0;background:linear-gradient(90deg,var(--acc-dim),transparent 58%);
   border-radius:14px;align-items:center;
 }
-.bcard.hero .rank{font-size:var(--t-sm);color:var(--acc);font-weight:750;letter-spacing:-.02em;line-height:1}
 .bcard.hero .bname{font-size:var(--t-lg);font-weight:750;letter-spacing:-.035em}
 .bcard.hero .bmeta{font-size:var(--t-xs);margin-top:6px}
 .bcard.hero .bwhy{margin-top:13px}
@@ -541,7 +711,6 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .bcard.lite{padding:7px 40px 7px 10px;gap:0 14px;grid-template-columns:46px minmax(0,1fr)}
 .bcard.lite .bname{font-size:var(--t-sm);font-weight:650}
 .bcard.lite .bmeta{font-size:var(--t-mi);margin-top:2px;color:var(--ink4)}
-.bcard.lite .rank{font-size:var(--t-xs);color:var(--ink4)}
 .bcard.lite .dia{transform:scale(.85)}
 /* The identity column is the dial and nothing else. The club badge went
    first (the dial is drawn in the club's own colour, so the badge said the
@@ -549,7 +718,6 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
    was pinning the circle a few px off the card's left edge to make room for
    a number that reads better opposite it. See .brank. */
 .bid{display:grid;justify-items:center}
-.rank{font-family:var(--mono);font-size:var(--t-bd);font-weight:650;color:var(--ink4);text-align:center;letter-spacing:-.03em}
 .bname{min-width:0;display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-weight:700;font-size:var(--t-bd);letter-spacing:-.02em;line-height:1.2}
 .bmeta{font-size:var(--t-xs);color:var(--ink3);margin-top:4px;letter-spacing:.005em}
 /* ── team colour ─────────────────────────────────────────────────────
@@ -582,8 +750,19 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
    Scoped to .bcard on purpose. The table, the drawer, the game strip and the
    lineup cards keep the semantic palette — they are comparisons ACROSS clubs,
    where a per-club hue would say nothing and cost the meaning it replaced. */
-.bcard{--tc-dim:color-mix(in srgb,var(--tc) 15%,transparent);
-       --tc-line:color-mix(in srgb,var(--tc) 40%,transparent)}
+/* The tint and the hairline are graphics, so they mix from --tg (the 2:1 club
+   colour) and only the LABEL on top of them stays --tc. Mixing these from the
+   text-grade colour instead gave every chip the same grey-brown wash.
+
+   --chip-tint is a TOKEN because the tint compounds against the label: the
+   label owes its ratio to the chip's background, not to the page, so a fill
+   that is fine on dark can quietly eat a light label's contrast. At 16% a
+   bright club (PIT gold) put its own 10px label at 2.25:1 on light and 1.93:1
+   on the hero — under the 3:1 the tiers were granted, and invisible in a way
+   the dark theme never showed. Light runs a lighter fill and leans on the 42%
+   hairline for club identity instead; dark keeps the values it always had. */
+.bcard{--tc-dim:color-mix(in srgb,var(--tg,var(--tc)) var(--chip-tint),transparent);
+       --tc-line:color-mix(in srgb,var(--tg,var(--tc)) 42%,transparent)}
 /* evidence chips — outline on the list rows, solid on the hero, one hue */
 .bcard .chip.up,
 .bcard .chip.down,
@@ -592,7 +771,7 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .bcard .chip.out{background:transparent;color:var(--ink3);border-color:var(--line2)}
 .bcard.hero .chip.up,
 .bcard.hero .chip.down,
-.bcard.hero .chip.warn{background:var(--tc-dim);color:var(--tc);border-color:var(--tc-line)}
+.bcard.hero .chip.warn{background:var(--tc-dim);color:var(--tk,var(--tc));border-color:var(--tc-line)}
 /* lineup + live tags. `conf` stays ink: a confirmed lineup is the normal case
    and does not need a colour to say so — `est` and `live` are the exceptions,
    and an exception on a monochrome card is stated in the card's own hue. */
@@ -622,6 +801,12 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 /* ── score tiers ────────────────────────────────────────────────────────
    One rule, applied everywhere a probability is printed, so the same number
    is the same colour in the shortlist, the table, a game card and the drawer. */
+/* ── tier colour is ONE value per lightness ───────────────────────────────
+   Text and graphics share a 3:1 floor here (see the light palette for why and
+   for the measurements), so a score and the bar under it are the same colour.
+   The one exception is .res.hit, whose disc carries a glyph — that uses
+   --hit-disc and stays at 4.5. Club colour is the thing that IS two-graded:
+   --tc-* for labels at 4.5, --tg-* for rings and bars at 3. */
 .t-hi {color:var(--tier-hi);--tier-c:var(--tier-hi)}
 .t-mid{color:var(--tier-mid);--tier-c:var(--tier-mid)}
 .t-lo {color:var(--tier-lo);--tier-c:var(--tier-lo)}
@@ -674,8 +859,8 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
 .chip.out{border-color:var(--line2);color:var(--ink3)}
 /* The hero's chips used to be the exception that earned SOLID accent/red/
    amber. Those rules lived after the monochrome block and silently outranked
-   it, so on the Dugout themes the top row alone kept the old four-palette
-   look while every row under it went club-hued. The hero's solid treatment is
+   it, so the top row alone kept the old four-palette look while every row
+   under it went club-hued. The hero's solid treatment is
    in the monochrome block now, in --tc — one place, all weights. */
 .chip .k{font-family:var(--mono);font-size:9.5px;opacity:.8;letter-spacing:0}
 .tag{
@@ -720,7 +905,10 @@ details.truth .more{padding:0 16px 14px 44px;line-height:1.6;color:var(--ink2)}
   display:inline-grid;place-items:center;width:1.6em;height:1.6em;border-radius:50%}
 /* glyph colour is --bg, not --surf: every theme's --bg is a solid page tone
    (Aurora's --surf is translucent white, which vanished into the disc) */
-.res.hit{background:var(--tier-hi);color:var(--bg)}
+/* --hit-disc, not --tier-hi: the ✓ is drawn in --bg ON this disc, so it has to
+   stay dark enough to hold a near-white glyph even though the tier itself is
+   now a brighter 3:1 green */
+.res.hit{background:var(--hit-disc);color:var(--bg)}
 .res.miss{background:var(--bad-dim);color:var(--bad);opacity:.8}
 /* the moment it lands: a mark that arrived DURING this session pops in once.
    Decoration, killed wholesale by the prefers-reduced-motion block. */
@@ -984,11 +1172,20 @@ td.sc b{font-size:var(--t-bd)}
 .lus{display:grid;gap:0}
 @media(min-width:900px){ .lus{grid-template-columns:1fr 1fr;gap:0 34px} }
 .lu{position:relative;padding:17px 0 18px 12px;border-bottom:1px solid var(--line);display:grid;gap:12px}
-/* the club rule, clipped to the identity line it belongs to — the card's full
+/* The club rule, clipped to the identity line it belongs to — the card's full
    height is mostly the batting order, and a rule down all of it reads as a
-   stray line rather than as this team's colour. */
-.lu::before{content:'';position:absolute;left:0;top:19px;height:30px;width:2px;border-radius:2px;
-  background:var(--tc,transparent);opacity:.8;pointer-events:none}
+   stray line rather than as this team's colour.
+
+   It sits ON the card's left border, and that is the whole point: it has to be
+   attached to an edge to read as an edge marker. Aurora used to inset it to
+   left:7px, which on a bordered 18px-radius panel put a 2px stub in the middle
+   of the padding, touching nothing — it read as a rendering fault rather than
+   as a club colour, which is exactly what went wrong with .dhead::before once
+   before. Flush and 3px wide, rounded only on the side facing into the card,
+   so it reads as a tab on the border. */
+.lu::before{content:'';position:absolute;left:0;top:20px;height:32px;width:3px;
+  border-radius:0 3px 3px 0;
+  background:var(--tg,var(--tc,transparent));opacity:.9;pointer-events:none}
 .lu-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .lu-rk{font-family:var(--mono);font-size:var(--t-mi);font-weight:750;color:var(--ink4);letter-spacing:.02em}
 .lu-tm{font-weight:750;font-size:var(--t-md);letter-spacing:-.03em;color:var(--tc,var(--ink))}
@@ -999,7 +1196,11 @@ td.sc b{font-size:var(--t-bd)}
 .lu-gs{font-family:var(--mono);font-size:var(--t-mi);font-weight:700;color:var(--ink2)}
 .lu-top{display:flex;align-items:flex-start;gap:14px}
 .lu-avg{font-family:var(--mono);font-size:var(--t-xl);font-weight:750;letter-spacing:-.055em;line-height:.9}
-.lu-avg span{font-size:var(--t-bd);color:var(--ink3);letter-spacing:0}
+/* letter-spacing applies AFTER the last character too, so the parent's -.055em
+   tracking was pulling the % 2.1px into the final digit — resetting the span's
+   own tracking to 0 does nothing about that, since the offending space belongs
+   to the 9. The margin gives it back and adds a hair of air. */
+.lu-avg span{font-size:var(--t-bd);color:var(--ink3);letter-spacing:0;margin-left:3px}
 /* settled: the average stops wearing the tier scale, same rule as a row */
 .lu-avg.settled{color:var(--ink2)}
 .lu-side .lu-res{color:var(--ink)}
@@ -1105,7 +1306,7 @@ td.sc b{font-size:var(--t-bd)}
    width, which put a 3px coloured bar hard against the top of the viewport
    with nothing to relate it to — it read as a rendering fault rather than as
    a team colour. Inset to the header's own padding it reads as a marker. */
-.dhead::before{content:'';position:absolute;left:20px;width:54px;top:0;height:3px;background:var(--tc,transparent);border-radius:0 0 2px 2px}
+.dhead::before{content:'';position:absolute;left:20px;width:54px;top:0;height:3px;background:var(--tg,var(--tc,transparent));border-radius:0 0 2px 2px}
 @media(max-width:600px){ .dhead::before{left:15px} }
 .dbody{overflow-y:auto;overflow-x:hidden;padding:20px;flex:1;overscroll-behavior:contain}
 /* ── the drawer is not the page ──────────────────────────────────────────
@@ -1119,7 +1320,7 @@ td.sc b{font-size:var(--t-bd)}
    The overflow-x:hidden above is the backstop: whatever a future panel puts in
    here, it can no longer drag the drawer sideways. */
 .dbody .tblwrap,
-html[data-theme="aurora"] .dbody .tblwrap{overflow-x:auto;overflow-y:hidden}
+html[data-theme] .dbody .tblwrap{overflow-x:auto;overflow-y:hidden}
 .dbody th{position:static;top:auto}
 /* `table-layout:fixed` exists for the Batters table, where declared widths are
    the only thing keeping thirteen columns from collapsing. Here it split six
@@ -1221,7 +1422,7 @@ html[data-theme="aurora"] .dbody .tblwrap{overflow-x:auto;overflow-y:hidden}
    the grid is coloured the colour has said nothing. */
 .srail.q-mid i{background:var(--ink4)}
 @media(max-width:700px){ .srail{right:12px} }
-html[data-theme="aurora"] .srail{left:14px}   /* aurora insets the cell */
+html[data-theme] .srail{left:14px}   /* aurora insets the cell */
 
 /* ── charts ─────────────────────────────────────────────────────────── */
 /* max-width, not just max-height: the honesty panel runs to 1124px on a wide
@@ -1388,7 +1589,28 @@ td.c .dia{vertical-align:middle}
   pointer-events:none;z-index:0;line-height:1;
   font-size:26px;font-weight:750;letter-spacing:-.05em;color:var(--ink4);
 }
-.bcard.hero .brank{font-size:52px;right:26px}
+/* ── the hero's rank is the one that is ABOUT something ────────────────────
+   Every other row's rank is an ordinal repeated 270 times and belongs at
+   --ink4, a watermark you read when you look for it. #1 is not that: it is the
+   answer to the question the whole view asks, and it sat in the palette's
+   faintest tone at 52px — the single largest dim thing on the page, which
+   reads as "de-emphasised" rather than "first".
+
+   It was supposed to be the accent all along. Aurora carried a
+   `.bcard.hero .rank { color: var(--acc); text-shadow: ... }` rule, plus four
+   more `.rank` rules elsewhere in this file, and `.rank` HAS NEVER EXISTED IN
+   THE DOM — the element has always been `.brank`. Five dead rules, one of them
+   the intended treatment for this exact numeral; all five deleted 2026-07-27.
+
+   --acc, not --acc-txt: at 52px (32px on a phone) this is large text, so the
+   3:1 fill grade is AA-compliant here without borrowing the text grade's
+   darker tone. The glow is the accent's own hue and does nothing on light,
+   where it lands under the numeral rather than around it — kept because it is
+   free and it is what makes the dark theme's 1 read as lit. */
+.bcard.hero .brank{
+  font-size:52px;right:26px;color:var(--acc);
+  text-shadow:0 0 22px rgba(var(--acc-rgb),.55);
+}
 /* the tail recedes — its rank goes with it */
 .bcard.lite .brank{font-size:17px;right:12px;color:var(--surf3)}
 /* a settled row's rank is a forecast's standing, and the forecast has been
@@ -1479,7 +1701,6 @@ td.c .dia{vertical-align:middle}
   .bcard.lite .sdial{--ds:40px}
   .bcard.hero .sdial{--ds:78px}
   .vtop .sdial{--ds:132px}
-  .rank{font-size:var(--t-sm)}
   /* the matchup gives up its width first — it is the one line here that
      degrades gracefully, and the drawer has all of it */
   .bmeta{margin-top:2px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1544,30 +1765,18 @@ td.c .dia{vertical-align:middle}
 
    Every animation is disabled wholesale by the prefers-reduced-motion
    block further up.
+
+   The palettes are NOT here — both lightnesses' tokens are at the top of the
+   file, next to each other, because that is the only way to see that they
+   answer the same list. Nothing below this line may state a colour literal,
+   with one deliberate exception: the ambient field's three gradient hues,
+   which ARE the identity and are shared by both lightnesses — light dials
+   them back with --field-op rather than restating them. See the theme header
+   for the three things light had to invert, each of which was a hardcoded
+   white in this block first.
    ═══════════════════════════════════════════════════════════════════════ */
-html[data-theme="aurora"]{
-  --bg:#05060C; --bg2:#0A0C16; --surf:rgba(255,255,255,.045); --surf2:rgba(255,255,255,.07);
-  --surf3:rgba(255,255,255,.11);
-  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.16); --rule:rgba(255,255,255,.26);
-  --ink:#F2F2FA; --ink2:#A9A9C8; --ink3:#7A7A9C; --ink4:#54547A;
-  --acc:#4DE8FF; --acc-txt:#7BEFFF; --acc-line:rgba(77,232,255,.36);
-  --acc-ink:#7BEFFF; --acc-on:#04141A; --acc-dim:rgba(77,232,255,.13);
-  --bad:#FF6B8A; --bad-dim:rgba(255,107,138,.14);
-  --warn:#FFC46B; --warn-dim:rgba(255,196,107,.13);
-  --s1:#173042; --s2:#1F5E77; --s3:#2E9DB8; --s4:#4DE8FF;
-  /* the tiers keep their meaning under glass — lifted in lightness so they
-     read against the violet field, not re-hued into the aurora palette */
-  --tier-hi:#3DF5A6;  --tier-hi-dim:rgba(61,245,166,.14); --tier-hi-line:rgba(61,245,166,.40);
-  --tier-mid:#FFC46B; --tier-mid-dim:rgba(255,196,107,.14);--tier-mid-line:rgba(255,196,107,.38);
-  --tier-lo:#9C9CC4;  --tier-lo-dim:rgba(156,156,196,.10); --tier-lo-line:rgba(156,156,196,.28);
-  --grade-a:#3DF5A6; --grade-b:#A6F06A; --grade-c:#FFC46B; --grade-d:#FF9E5E; --grade-f:#FF6B8A;
-  --seam:#FF6B8A;
-  --violet:#A78BFA; --glow:0 0 24px rgba(77,232,255,.30);
-  --rg:18px;              /* glass corner radius */
-  --spring:cubic-bezier(.22,1,.36,1);
-}
 /* ── the ambient field: two slow-drifting light sources behind everything ── */
-html[data-theme="aurora"] body::before{
+html[data-theme] body::before{
   content:'';position:fixed;inset:-12%;z-index:-2;pointer-events:none;
   /* --slate-tc is the top-ranked batter's club colour on Today, unset
      everywhere else, so each stop falls back to the theme's own hue. Mixed
@@ -1576,16 +1785,16 @@ html[data-theme="aurora"] body::before{
      `--tb-*` (the raw brand hex) is right here, not `--tc-*` — this is a
      20%-alpha field behind everything, not text that owes 4.5:1. */
   background:
-    radial-gradient(46vw 46vw at 22% 22%,color-mix(in srgb,var(--slate-tc,#7C3AED) 62%,#7C3AED) 0%,transparent 62%),
-    radial-gradient(40vw 40vw at 82% 26%,color-mix(in srgb,var(--slate-tc,#22D3EE) 45%,#22D3EE) 0%,transparent 64%),
-    radial-gradient(48vw 48vw at 58% 88%,color-mix(in srgb,var(--slate-tc,#E879F9) 55%,#E879F9) 0%,transparent 66%);
-  opacity:.42;
-  filter:blur(28px);
+    radial-gradient(46vw 46vw at 22% 22%,color-mix(in srgb,var(--slate-tc,var(--field-1)) 62%,var(--field-1)) 0%,transparent 62%),
+    radial-gradient(40vw 40vw at 82% 26%,color-mix(in srgb,var(--slate-tc,var(--field-2)) 45%,var(--field-2)) 0%,transparent 64%),
+    radial-gradient(48vw 48vw at 58% 88%,color-mix(in srgb,var(--slate-tc,var(--field-3)) 55%,var(--field-3)) 0%,transparent 66%);
+  opacity:var(--field-op);
+  filter:blur(var(--field-blur));
   transition:background .6s ease;
   animation:auroraDrift 28s ease-in-out infinite;
 }
-html[data-theme="aurora"] body::after{      /* grain, so the gradients don't band */
-  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+html[data-theme] body::after{      /* grain, so the gradients don't band */
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:var(--grain-op);
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");
 }
 @keyframes auroraDrift{
@@ -1595,54 +1804,54 @@ html[data-theme="aurora"] body::after{      /* grain, so the gradients don't ban
 }
 
 /* ── chrome: real glass, because it is fixed and cheap to blur ────────── */
-html[data-theme="aurora"] header{
-  background:rgba(8,10,20,.55);backdrop-filter:blur(22px) saturate(1.7);
+html[data-theme] header{
+  background:var(--chrome);backdrop-filter:blur(22px) saturate(1.7);
   border-bottom:1px solid var(--line);
 }
-html[data-theme="aurora"] .tabbar{
-  background:rgba(8,10,20,.68);backdrop-filter:blur(24px) saturate(1.7);
+html[data-theme] .tabbar{
+  background:var(--chrome2);backdrop-filter:blur(24px) saturate(1.7);
   border-top:1px solid var(--line);
 }
-html[data-theme="aurora"] .brand em{
-  color:var(--acc);filter:drop-shadow(0 0 8px rgba(77,232,255,.7));
+html[data-theme] .brand em{
+  color:var(--acc);filter:drop-shadow(0 0 8px rgba(var(--acc-rgb),.7));
 }
-html[data-theme="aurora"] .nav button{
+html[data-theme] .nav button{
   border-bottom:0;border-radius:999px;transition:color .2s,background .25s var(--spring);
 }
-html[data-theme="aurora"] .nav button[aria-current="page"]{
-  background:linear-gradient(120deg,rgba(77,232,255,.20),rgba(167,139,250,.20));
-  color:var(--ink);box-shadow:inset 0 0 0 1px var(--acc-line),0 0 18px rgba(77,232,255,.16);
+html[data-theme] .nav button[aria-current="page"]{
+  background:linear-gradient(120deg,rgba(var(--acc-rgb),.20),rgba(var(--violet-rgb),.20));
+  color:var(--ink);box-shadow:inset 0 0 0 1px var(--acc-line),0 0 18px rgba(var(--acc-rgb),.16);
 }
-html[data-theme="aurora"] .tabbar button[aria-current="page"]{
-  color:var(--acc);filter:drop-shadow(0 0 7px rgba(77,232,255,.55));
+html[data-theme] .tabbar button[aria-current="page"]{
+  color:var(--acc);filter:drop-shadow(0 0 7px rgba(var(--acc-rgb),.55));
 }
-html[data-theme="aurora"] .iconbtn{border-radius:11px;transition:background .2s,transform .2s var(--spring)}
-html[data-theme="aurora"] .iconbtn:hover{background:var(--surf2);transform:translateY(-1px)}
+html[data-theme] .iconbtn{border-radius:11px;transition:background .2s,transform .2s var(--spring)}
+html[data-theme] .iconbtn:hover{background:var(--surf2);transform:translateY(-1px)}
 
 /* The status line had a glass panel and a gradient-clipped numeral treatment
    here until 2026-07-26 — both removed with the strip itself. Aurora's glass
    is for things the page is about; provenance is not one of them. */
-html[data-theme="aurora"] .dot{box-shadow:0 0 10px var(--acc)}
+html[data-theme] .dot{box-shadow:0 0 10px var(--acc)}
 
 /* ── list rows: translucent fill + hairline, NO per-row blur ──────────── */
-html[data-theme="aurora"] .bcard{
+html[data-theme] .bcard{
   position:relative;overflow:hidden;border-bottom:0;
   border-radius:14px;margin-bottom:0;padding-left:12px;padding-right:52px;
-  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+  background:var(--glass);
+  box-shadow:var(--edge);
   transition:transform .3s var(--spring),box-shadow .3s,background .3s;
 }
 /* the tail keeps the glass idiom but at a fraction of the lift, so the eye
    reads it as one block of rows instead of six more competing cards */
-html[data-theme="aurora"] .bcard.lite{
+html[data-theme] .bcard.lite{
   border-radius:10px;margin-bottom:0;
-  background:linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,.006));
+  background:var(--glass-lite);
   box-shadow:none;
 }
-html[data-theme="aurora"] .bcard.lite::after{display:none}
-html[data-theme="aurora"] .gsrow{border-bottom-color:var(--line)}
-html[data-theme="aurora"] .gstrip{border-top-color:var(--line)}
-html[data-theme="aurora"] .bcard.stagger{
+html[data-theme] .bcard.lite::after{display:none}
+html[data-theme] .gsrow{border-bottom-color:var(--line)}
+html[data-theme] .gstrip{border-top-color:var(--line)}
+html[data-theme] .bcard.stagger{
   animation:riseIn .55s var(--spring) backwards;
   animation-delay:calc(var(--i,0) * 34ms);
 }
@@ -1672,9 +1881,9 @@ html[data-theme="aurora"] .bcard.stagger{
      as the card rising. The ring and the lighter fill already say "hovered",
      and neither of them moves anything. (The same transform was also the
      thing outranking the swipe gesture's own translateX on touch.) */
-  html[data-theme="aurora"] .bcard:hover{
-    background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03));
-    box-shadow:inset 0 0 0 1px var(--acc-line),0 10px 30px -14px rgba(77,232,255,.45);
+  html[data-theme] .bcard:hover{
+    background:var(--glass-hi);
+    box-shadow:inset 0 0 0 1px var(--acc-line),var(--lift);
   }
   /* The tail needs its own hover BACKGROUND, not just a ring. `.bcard:hover`
      and `.bcard.lite` are both (0,3,1) and the hover rule sits later, so a
@@ -1682,8 +1891,8 @@ html[data-theme="aurora"] .bcard.stagger{
      jump where a full card only goes .045 -> .085, or 1.9x. The rows that are
      meant to recede were lighting up HARDER than the ones above them. Same
      1.9x, from the tail's own resting tone. */
-  html[data-theme="aurora"] .bcard.lite:hover{
-    background:linear-gradient(180deg,rgba(255,255,255,.034),rgba(255,255,255,.011));
+  html[data-theme] .bcard.lite:hover{
+    background:var(--glass-lite-hi);
     box-shadow:inset 0 0 0 1px var(--acc-line);
   }
   /* The hero needs its own hover rule or it gets none. `.bcard.hero` and
@@ -1692,87 +1901,85 @@ html[data-theme="aurora"] .bcard.stagger{
      card lifting on hover while keeping its resting shadow and never showing
      the accent ring at all. Stating it at (0,4,1) settles it by weight
      instead of by luck. */
-  html[data-theme="aurora"] .bcard.hero:hover{
-    box-shadow:inset 0 0 0 1px var(--acc-line),0 24px 60px -28px rgba(77,232,255,.55);
+  html[data-theme] .bcard.hero:hover{
+    box-shadow:inset 0 0 0 1px var(--acc-line),var(--hero-lift);
   }
 }
 /* a sheen that sweeps across on hover */
-html[data-theme="aurora"] .bcard::after{
+html[data-theme] .bcard::after{
   content:'';position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.09) 50%,transparent 58%);
+  background:linear-gradient(105deg,transparent 42%,var(--sheen) 50%,transparent 58%);
   transform:translateX(-115%);transition:transform .75s ease;
 }
-@media(hover:hover){ html[data-theme="aurora"] .bcard:hover::after{transform:translateX(115%)} }
+@media(hover:hover){ html[data-theme] .bcard:hover::after{transform:translateX(115%)} }
 
 /* ── the hero: full glass, lit from within ────────────────────────────── */
-html[data-theme="aurora"] .bcard.hero{
+html[data-theme] .bcard.hero{
   border:1px solid var(--line2);border-radius:22px;margin-bottom:14px;
   padding:20px 78px 20px 16px;backdrop-filter:blur(26px) saturate(1.5);
-  background:linear-gradient(135deg,rgba(124,58,237,.24),rgba(34,211,238,.13) 55%,rgba(255,255,255,.05));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 24px 60px -28px rgba(77,232,255,.55);
+  background:var(--hero-glass);
+  box-shadow:var(--hero-edge),var(--hero-lift);
 }
-html[data-theme="aurora"] .bcard.hero::before{      /* soft halo behind the score */
+html[data-theme] .bcard.hero::before{      /* soft halo behind the score */
   content:'';position:absolute;right:-8%;top:50%;width:280px;height:280px;
   transform:translateY(-50%);pointer-events:none;border-radius:50%;
-  background:radial-gradient(circle,rgba(77,232,255,.30),transparent 66%);
+  background:radial-gradient(circle,rgba(var(--acc-rgb),.30),transparent 66%);
   animation:halo 6s ease-in-out infinite;
 }
 @keyframes halo{0%,100%{opacity:.45;transform:translateY(-50%) scale(.94)}50%{opacity:.85;transform:translateY(-50%) scale(1.06)}}
-html[data-theme="aurora"] .bcard.hero .rank{
-  color:var(--acc);text-shadow:0 0 22px rgba(77,232,255,.65);
-}
 /* The glass-gradient headline number is retired with .pct/.vbig — the dial's
    digits sit ON a club-coloured disc when the game resolves, and a gradient
    text-fill there fought the fill instead of glowing over the background. */
 
 /* ── chips: lit capsules ──────────────────────────────────────────────── */
-html[data-theme="aurora"] .chip{
+html[data-theme] .chip{
   border-radius:999px;backdrop-filter:blur(8px);
   transition:box-shadow .25s,transform .25s var(--spring);
 }
-html[data-theme="aurora"] .chip.up{background:var(--acc-dim);box-shadow:inset 0 0 0 1px var(--acc-line)}
-html[data-theme="aurora"] .chip.down{background:var(--bad-dim);box-shadow:inset 0 0 0 1px rgba(255,107,138,.34)}
-html[data-theme="aurora"] .chip.warn{background:var(--warn-dim);box-shadow:inset 0 0 0 1px rgba(255,196,107,.34)}
+html[data-theme] .chip.up{background:var(--acc-dim);box-shadow:inset 0 0 0 1px var(--acc-line)}
+html[data-theme] .chip.down{background:var(--bad-dim);box-shadow:inset 0 0 0 1px rgba(var(--bad-rgb),.34)}
+html[data-theme] .chip.warn{background:var(--warn-dim);box-shadow:inset 0 0 0 1px rgba(var(--warn-rgb),.34)}
 /* the card's monochrome rule, restated where Aurora can hear it — these
    selectors are the same weight as the ones above, so without them the glass
-   chips kept their cyan/red/amber and only the flat themes went club-hued */
-html[data-theme="aurora"] .bcard .chip.up,
-html[data-theme="aurora"] .bcard .chip.down,
-html[data-theme="aurora"] .bcard .chip.warn{
+   chips kept their cyan/red/amber while the rest of the row went club-hued */
+html[data-theme] .bcard .chip.up,
+html[data-theme] .bcard .chip.down,
+html[data-theme] .bcard .chip.warn{
   background:var(--tc-dim);box-shadow:inset 0 0 0 1px var(--tc-line);color:var(--tc);
 }
-html[data-theme="aurora"] .bcard.hero .chip.up,
-html[data-theme="aurora"] .bcard.hero .chip.down,
-html[data-theme="aurora"] .bcard.hero .chip.warn{
-  background:color-mix(in srgb,var(--tc) 22%,transparent);color:var(--tc);
+html[data-theme] .bcard.hero .chip.up,
+html[data-theme] .bcard.hero .chip.down,
+html[data-theme] .bcard.hero .chip.warn{
+  background:color-mix(in srgb,var(--tg,var(--tc)) var(--chip-tint-hero),transparent);
+  color:var(--tk,var(--tc));
   box-shadow:inset 0 0 0 1px var(--tc-line);
 }
-html[data-theme="aurora"] .tag{border-radius:999px;backdrop-filter:blur(6px)}
-html[data-theme="aurora"] .tag.live{box-shadow:0 0 14px rgba(255,107,138,.4)}
-html[data-theme="aurora"] .bcard .tag.live{box-shadow:0 0 14px var(--tc-dim)}
+html[data-theme] .tag{border-radius:999px;backdrop-filter:blur(6px)}
+html[data-theme] .tag.live{box-shadow:0 0 14px rgba(var(--bad-rgb),.4)}
+html[data-theme] .bcard .tag.live{box-shadow:0 0 14px var(--tc-dim)}
 
 /* ── bars and marks animate in ────────────────────────────────────────── */
-html[data-theme="aurora"] .meter{border-radius:999px;background:rgba(255,255,255,.09)}
-html[data-theme="aurora"] .meter i{
+html[data-theme] .meter{border-radius:999px;background:var(--track)}
+html[data-theme] .meter i{
   border-radius:999px;background:linear-gradient(90deg,var(--violet),var(--acc));
   transform-origin:left;}
-html[data-theme="aurora"] .bcard.stagger .meter i{
+html[data-theme] .bcard.stagger .meter i{
   animation:growX .9s var(--spring) both;
   animation-delay:calc(var(--i,0) * 34ms + 120ms);
 }
 @keyframes growX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-html[data-theme="aurora"] .strip i{border-radius:2px;transition:background .2s}
-html[data-theme="aurora"] .strip i.h{background:var(--ink3)}
-html[data-theme="aurora"] .dbody .strip i.h{background:var(--acc);box-shadow:0 0 8px rgba(77,232,255,.6)}
-html[data-theme="aurora"] .wfbar{border-radius:999px;background:rgba(255,255,255,.08)}
-html[data-theme="aurora"] .wfbar i{border-radius:999px;transform-origin:left;animation:growX .85s var(--spring) both .1s}
-html[data-theme="aurora"] .evbars i{border-radius:999px}
-html[data-theme="aurora"] .evbars i.on{background:var(--acc);box-shadow:0 0 8px rgba(77,232,255,.5)}
+html[data-theme] .strip i{border-radius:2px;transition:background .2s}
+html[data-theme] .strip i.h{background:var(--ink3)}
+html[data-theme] .dbody .strip i.h{background:var(--acc);box-shadow:0 0 8px rgba(var(--acc-rgb),.6)}
+html[data-theme] .wfbar{border-radius:999px;background:var(--track)}
+html[data-theme] .wfbar i{border-radius:999px;transform-origin:left;animation:growX .85s var(--spring) both .1s}
+html[data-theme] .evbars i{border-radius:999px}
+html[data-theme] .evbars i.on{background:var(--acc);box-shadow:0 0 8px rgba(var(--acc-rgb),.5)}
 
 /* ── panels ───────────────────────────────────────────────────────────── */
-html[data-theme="aurora"] .tblwrap,
-html[data-theme="aurora"] .ev,
-html[data-theme="aurora"] .sgrid{
+html[data-theme] .tblwrap,
+html[data-theme] .ev,
+html[data-theme] .sgrid{
   border:1px solid var(--line);border-radius:var(--rg);background:var(--surf);
   backdrop-filter:blur(14px);overflow:hidden;
 }
@@ -1781,18 +1988,18 @@ html[data-theme="aurora"] .sgrid{
    the viewport and drops it into the middle of the table. Same trap as the
    base stylesheet's overflow-x:auto. Round the header cells instead. */
 @media(min-width:1120px){
-  html[data-theme="aurora"] .tblwrap{overflow:visible}
+  html[data-theme] .tblwrap{overflow:visible}
   /* the corners belong to the FIRST header row — scoped that way because the
      Batters table has two, and rounding both drew a notch mid-header */
-  html[data-theme="aurora"] thead tr:first-child th:first-child{border-top-left-radius:var(--rg)}
-  html[data-theme="aurora"] thead tr:first-child th:last-child{border-top-right-radius:var(--rg)}
+  html[data-theme] thead tr:first-child th:first-child{border-top-left-radius:var(--rg)}
+  html[data-theme] thead tr:first-child th:last-child{border-top-right-radius:var(--rg)}
 }
-html[data-theme="aurora"] .ev{border-top:1px solid var(--line)}
-html[data-theme="aurora"] .evrow,
-html[data-theme="aurora"] .scell{border-color:var(--line)}
-html[data-theme="aurora"] .evrow{padding-left:14px;padding-right:14px;transition:background .2s}
-html[data-theme="aurora"] .evrow:hover{background:var(--surf2)}
-html[data-theme="aurora"] .scell{padding-left:14px}
+html[data-theme] .ev{border-top:1px solid var(--line)}
+html[data-theme] .evrow,
+html[data-theme] .scell{border-color:var(--line)}
+html[data-theme] .evrow{padding-left:14px;padding-right:14px;transition:background .2s}
+html[data-theme] .evrow:hover{background:var(--surf2)}
+html[data-theme] .scell{padding-left:14px}
 /* A pinned header has to be OPAQUE. This was rgba(8,10,20,.82) + a blur, on the
    theory that the glass treatment used on the real chrome would work here too —
    it does not: `backdrop-filter` on a table-cell inside the animated aurora
@@ -1803,80 +2010,82 @@ html[data-theme="aurora"] .scell{padding-left:14px}
    the solid background IS the fix described above, and the border-bottom it
    would also have imposed is undone on the next line. The padding-left only
    reaches EMPTY group cells, since `tr.grp th:not(:empty)` outranks both. */
-html[data-theme="aurora"] th{
-  background:#080a14;border-bottom:1px solid var(--line2);padding-left:14px;
+html[data-theme] th{
+  background:var(--th-bg);border-bottom:1px solid var(--line2);padding-left:14px;
 }
 /* ...and this rule must not reach the group band, which wants no rule beneath
    it — the band and the column names are one header, not two stacked slabs. */
-html[data-theme="aurora"] tr.grp th{border-bottom:0}
+html[data-theme] tr.grp th{border-bottom:0}
 /* Ties with `tr.band td` at (0,1,2) and wins on source order. Harmless as it
    stands — the band label picks up the same 14px the data cells get, so the
    two still align, which is the only thing that rule's padding was protecting.
    Worth knowing before anyone changes either side. */
-html[data-theme="aurora"] td{border-color:var(--line);padding-left:14px}
-html[data-theme="aurora"] tbody tr{transition:background .18s}
-html[data-theme="aurora"] tbody tr:hover{background:var(--surf2)}
-html[data-theme="aurora"] .lu{
+html[data-theme] td{border-color:var(--line);padding-left:14px}
+html[data-theme] tbody tr{transition:background .18s}
+html[data-theme] tbody tr:hover{background:var(--surf2)}
+html[data-theme] .lu{
   border:1px solid var(--line);border-radius:var(--rg);background:var(--surf);
   padding:16px 16px 16px 18px;margin-bottom:12px;transition:box-shadow .3s,transform .3s var(--spring);
 }
-html[data-theme="aurora"] .lu:hover{transform:translateY(-2px);box-shadow:0 14px 36px -18px rgba(77,232,255,.5)}
-html[data-theme="aurora"] .lu::before{left:7px;top:22px}
-html[data-theme="aurora"] .lu-arm{border-radius:10px}
-html[data-theme="aurora"] .mini{border-radius:999px;background:var(--surf2);border-color:var(--line);transition:all .2s var(--spring)}
-html[data-theme="aurora"] .mini:hover{background:var(--acc-dim);border-color:var(--acc-line);transform:translateY(-1px)}
-html[data-theme="aurora"] .field,
-html[data-theme="aurora"] .seg{border-radius:999px;background:var(--surf);backdrop-filter:blur(12px);border-color:var(--line)}
-html[data-theme="aurora"] .seg button{border-right-color:var(--line);transition:all .25s var(--spring)}
-html[data-theme="aurora"] .seg button[aria-pressed="true"]{
-  background:linear-gradient(120deg,var(--acc),#8FF3FF);color:var(--acc-on);
+html[data-theme] .lu:hover{transform:translateY(-2px);box-shadow:var(--lift-lu)}
+/* NOT inset — see .lu::before. The rule is flush to the panel's own border in
+   both lightnesses; only the vertical placement follows Aurora's padding. */
+html[data-theme] .lu::before{top:22px}
+html[data-theme] .lu-arm{border-radius:10px}
+html[data-theme] .mini{border-radius:999px;background:var(--surf2);border-color:var(--line);transition:all .2s var(--spring)}
+html[data-theme] .mini:hover{background:var(--acc-dim);border-color:var(--acc-line);transform:translateY(-1px)}
+html[data-theme] .field,
+html[data-theme] .seg{border-radius:999px;background:var(--surf);backdrop-filter:blur(12px);border-color:var(--line)}
+html[data-theme] .seg button{border-right-color:var(--line);transition:all .25s var(--spring)}
+html[data-theme] .seg button[aria-pressed="true"]{
+  background:var(--acc-grad);color:var(--acc-on);
 }
 /* A coloured border-LEFT on a rounded box bends round both corners and reads
    as a stray arc rather than a rule — it was the most obvious of the "odd
    coloured borders". Under Aurora the accent is carried by the tint and the
    icon instead, and the box keeps one even hairline all the way round. */
-html[data-theme="aurora"] .truth{
+html[data-theme] .truth{
   border:1px solid color-mix(in srgb,var(--warn) 26%,var(--line));border-left-width:1px;
   border-radius:var(--rg);background:var(--surf);backdrop-filter:blur(14px);
 }
-html[data-theme="aurora"] .vcheck{
+html[data-theme] .vcheck{
   border-radius:14px;border:1px solid var(--acc-line);border-left-width:1px;background:var(--acc-dim);
 }
-html[data-theme="aurora"] .empty{border-radius:var(--rg);background:var(--surf)}
+html[data-theme] .empty{border-radius:var(--rg);background:var(--surf)}
 
 /* ── drawer: heavy glass, spring entry ────────────────────────────────── */
-html[data-theme="aurora"] .drawer{
-  background:rgba(8,10,20,.78);backdrop-filter:blur(34px) saturate(1.6);
+html[data-theme] .drawer{
+  background:var(--chrome3);backdrop-filter:blur(34px) saturate(1.6);
   border-left:1px solid var(--line2);
   transition:transform .42s var(--spring);
 }
-html[data-theme="aurora"] .dhead{border-bottom:1px solid var(--line)}
-html[data-theme="aurora"] .scrim{background:rgba(3,4,10,.62);backdrop-filter:blur(3px)}
-html[data-theme="aurora"] .dbody > *{animation:riseIn .5s var(--spring) backwards}
-html[data-theme="aurora"] .dbody > *:nth-child(2){animation-delay:60ms}
-html[data-theme="aurora"] .dbody > *:nth-child(3){animation-delay:110ms}
-html[data-theme="aurora"] .dbody > *:nth-child(4){animation-delay:150ms}
-html[data-theme="aurora"] .dbody > *:nth-child(n+5){animation-delay:190ms}
+html[data-theme] .dhead{border-bottom:1px solid var(--line)}
+html[data-theme] .scrim{background:var(--scrim-c);backdrop-filter:blur(3px)}
+html[data-theme] .dbody > *{animation:riseIn .5s var(--spring) backwards}
+html[data-theme] .dbody > *:nth-child(2){animation-delay:60ms}
+html[data-theme] .dbody > *:nth-child(3){animation-delay:110ms}
+html[data-theme] .dbody > *:nth-child(4){animation-delay:150ms}
+html[data-theme] .dbody > *:nth-child(n+5){animation-delay:190ms}
 
 /* ── the reliability curve draws itself ───────────────────────────────── */
-html[data-theme="aurora"] .chart .curve{
-  stroke:var(--acc);filter:drop-shadow(0 0 6px rgba(77,232,255,.6));
+html[data-theme] .chart .curve{
+  stroke:var(--acc);filter:drop-shadow(0 0 6px rgba(var(--acc-rgb),.6));
   stroke-dasharray:1;stroke-dashoffset:1;animation:drawLine 1.7s ease-out .25s forwards;
 }
 @keyframes drawLine{to{stroke-dashoffset:0}}
-html[data-theme="aurora"] .chart .pt{
+html[data-theme] .chart .pt{
   fill:var(--acc);animation:popIn .4s var(--spring) backwards;animation-delay:1.1s;
 }
 @keyframes popIn{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:none}}
 /* the band and daily charts share the curve's outcome-dot treatment — but the
    :not(.off) is load-bearing: an over-tolerance gap is the one red thing on
    those charts and the theme must not repaint it accent-blue. */
-html[data-theme="aurora"] .chart .actdot:not(.off){
-  fill:var(--acc);filter:drop-shadow(0 0 5px rgba(77,232,255,.45));
+html[data-theme] .chart .actdot:not(.off){
+  fill:var(--acc);filter:drop-shadow(0 0 5px rgba(var(--acc-rgb),.45));
 }
-html[data-theme="aurora"] .toast{
-  border-radius:999px;background:linear-gradient(120deg,var(--acc),#8FF3FF);color:var(--acc-on);
-  box-shadow:0 0 30px rgba(77,232,255,.5);
+html[data-theme] .toast{
+  border-radius:999px;background:var(--acc-grad);color:var(--acc-on);
+  box-shadow:0 0 30px rgba(var(--acc-rgb),.5);
 }
 /* ── tiers, restated last ─────────────────────────────────────────────────
    The Aurora rules above are all more specific than the base .meter.t-hi /
@@ -1884,35 +2093,35 @@ html[data-theme="aurora"] .toast{
    theme repaints every bar and pill back to the one accent colour and the
    score tiers vanish under glass. Nothing below this line may set a .mini or
    .meter background. */
-html[data-theme="aurora"] .meter.t-hi i {background:linear-gradient(90deg,color-mix(in srgb,var(--tier-hi) 55%,var(--violet)),var(--tier-hi))}
-html[data-theme="aurora"] .meter.t-mid i{background:linear-gradient(90deg,color-mix(in srgb,var(--tier-mid) 55%,var(--violet)),var(--tier-mid))}
-html[data-theme="aurora"] .meter.t-lo i {background:linear-gradient(90deg,var(--violet),var(--tier-lo))}
+html[data-theme] .meter.t-hi i {background:linear-gradient(90deg,color-mix(in srgb,var(--tier-hi) 55%,var(--violet)),var(--tier-hi))}
+html[data-theme] .meter.t-mid i{background:linear-gradient(90deg,color-mix(in srgb,var(--tier-mid) 55%,var(--violet)),var(--tier-mid))}
+html[data-theme] .meter.t-lo i {background:linear-gradient(90deg,var(--violet),var(--tier-lo))}
 /* ── settled rows, Aurora ─────────────────────────────────────────────────
    Aurora paints scores and meters with tier-derived gradients at a
    specificity the base settled rules cannot reach, so a resolved row kept
    glowing its forecast colour and the ✓ had nothing to be the only colour ON.
    Same rule as the base theme, restated where Aurora can hear it: once the
    game is answered, the row goes quiet and the mark speaks. */
-html[data-theme="aurora"] [data-out] .meter i,
-html[data-theme="aurora"] .meter.settled i{background:rgba(255,255,255,.30)}
+html[data-theme] [data-out] .meter i,
+html[data-theme] .meter.settled i{background:var(--track-settled)}
 /* the mark itself must never inherit the text-fill trick above, or a ✓ inside
    a gradient-clipped number renders invisible. Colour comes from the base
    stamp rules — restating it here painted the glyph the disc's own green. */
-html[data-theme="aurora"] .res{-webkit-text-fill-color:currentColor;filter:none}
-html[data-theme="aurora"] .mini.t-hi {background:var(--tier-hi-dim);border-color:var(--tier-hi-line);color:var(--tier-hi)}
-html[data-theme="aurora"] .mini.t-mid{background:var(--tier-mid-dim);border-color:var(--tier-mid-line);color:var(--tier-mid)}
-html[data-theme="aurora"] .mini.t-lo {background:var(--tier-lo-dim);border-color:var(--tier-lo-line);color:var(--ink2)}
-html[data-theme="aurora"] .mini.t-hi:hover,
-html[data-theme="aurora"] .mini.t-mid:hover,
-html[data-theme="aurora"] .mini.t-lo:hover{background:var(--surf2);border-color:currentColor}
+html[data-theme] .res{-webkit-text-fill-color:currentColor;filter:none}
+html[data-theme] .mini.t-hi {background:var(--tier-hi-dim);border-color:var(--tier-hi-line);color:var(--tier-hi)}
+html[data-theme] .mini.t-mid{background:var(--tier-mid-dim);border-color:var(--tier-mid-line);color:var(--tier-mid)}
+html[data-theme] .mini.t-lo {background:var(--tier-lo-dim);border-color:var(--tier-lo-line);color:var(--ink2)}
+html[data-theme] .mini.t-hi:hover,
+html[data-theme] .mini.t-mid:hover,
+html[data-theme] .mini.t-lo:hover{background:var(--surf2);border-color:currentColor}
 
 /* view changes fade rather than snap */
-html[data-theme="aurora"] #main{animation:viewIn .38s var(--spring)}
+html[data-theme] #main{animation:viewIn .38s var(--spring)}
 @keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media(max-width:600px){
-  html[data-theme="aurora"] .bcard.hero{padding:14px 50px 14px 10px;border-radius:18px}
-  html[data-theme="aurora"] .bcard.hero::before{width:180px;height:180px;right:-14%}
-  html[data-theme="aurora"] .bcard{padding-left:9px;padding-right:38px}
+  html[data-theme] .bcard.hero{padding:14px 50px 14px 10px;border-radius:18px}
+  html[data-theme] .bcard.hero::before{width:180px;height:180px;right:-14%}
+  html[data-theme] .bcard{padding-left:9px;padding-right:38px}
 }
 </style>
 </head>
@@ -2078,19 +2287,69 @@ function readable(hex, bgLum, target){
     dark-on-light one. Emitting CSS (rather than colouring at render time)
     means the theme toggle re-colours everything for free — nothing re-renders. */
 function teamCSS(){
-  const BG_DARK = relLum([0,0,0]);                       // --bg, Dugout dark + Aurora
-  const BG_LIGHT = relLum([233/255,235/255,239/255]);    // --bg, Dugout light
-  const line = bg => Object.entries(TEAM_HEX)
-    .map(([t,hex])=>`--tc-${t}:${readable(hex,bg,4.5)}`).join(';');
+  const BG_DARK  = relLum([5/255,6/255,12/255]);         // --bg, Aurora dark
+  const BG_LIGHT = relLum([244/255,245/255,252/255]);    // --bg, Aurora light
+  const line = (bg,target,pre) => Object.entries(TEAM_HEX)
+    .map(([t,hex])=>`--${pre}-${t}:${readable(hex,bg,target)}`).join(';');
   // --tb-* is the club's ACTUAL brand hex, untouched by the contrast search.
   // A badge fill is a shape, not text, so it does not owe 4.5:1 — and forcing
   // the navies up to text contrast is what would make every badge look alike.
   const brand = Object.entries(TEAM_HEX).map(([t,hex])=>`--tb-${t}:${hex}`).join(';');
-  return `:root{${line(BG_DARK)};${brand}}\nhtml[data-theme="light"]{${line(BG_LIGHT)}}`;
+  /* THREE sets, not two, and the TARGETS DIFFER BY LIGHTNESS — read this
+     before changing a number:
+       --tc-x  club colour as TEXT (a team code, a chip label, a lineup name)
+       --tg-x  club colour as a GRAPHIC (the dial ring, the club rails)
+       --tb-x  raw brand hex, for fills that owe nothing (the badges)
+
+     The search walks a hex AWAY from the background. On DARK that BRIGHTENS a
+     brand colour, so a high target costs nothing and both grades sit at 4.5 —
+     --tg mirrors --tc there and nothing about dark depends on this split. On
+     LIGHT it DARKENS, and that is a hard arithmetic wall: 3:1 against a
+     near-white page forces luminance below .27, which is why PIT's gold came
+     out #BC8002 and every dial on the page looked like the same muddy ring.
+
+     Worth knowing, because it was tried: this is NOT an HSL artefact. Walking
+     OKLCH instead — holding hue, taking as much chroma as the gamut allows —
+     lands within a rounding error of the same values (PIT #BC8002 vs #BB8400,
+     chroma identical to three places) and is actively worse on dark, where it
+     costs the navies ~25% of their chroma. There is no colour-space trick
+     here. The only lever is the target.
+
+     So light's targets are lowered, by decision (client, 2026-07-27):
+       text    3:1 — matches the call made on the score tiers the same day.
+                     Below AA for the 11px team codes, deliberately. Note the
+                     20px .lu-tm lineup names ARE compliant at 3:1, since that
+                     is large text.
+       label   4.5 — --tk-x, for club colour used as a label ON a club-tinted
+                     surface. Contrast is owed to the surface, not the page, so
+                     this is a genuinely different question from --tc: the
+                     hero's glass is a violet/cyan gradient and therefore
+                     darker than a card, which put a bright club's 10px chip
+                     label at 1.93:1 there. Lowering the tint fixed the plain
+                     cards (2.25 -> 3.04) but could not fix the hero — a paler
+                     fill on a dark-ish surface makes the label worse, not
+                     better — so the hero takes the darker label instead and
+                     keeps its club-hued chips.
+       graphic 2:1 — at this floor 13 of 16 clubs resolve to their EXACT brand
+                     hex and only the brightest yellow moves at all (PIT
+                     #FDB827 -> #EA9F02). The ring is a redundant encoding —
+                     the score is printed in digits inside the dial — so the
+                     weakest arc-against-track case, PIT at 1.72, costs
+                     identification rather than data. */
+  const T_TXT = 4.5, T_GFX = 4.5, T_LBL = 4.5;   // dark: brightens, so no cost
+  const L_TXT = 3.0, L_GFX = 2.0, L_LBL = 4.5;   // light: darkens, so lowered
+  return `:root{${line(BG_DARK,T_TXT,'tc')};${line(BG_DARK,T_GFX,'tg')};`
+       + `${line(BG_DARK,T_LBL,'tk')};${brand}}\n`
+       + `html[data-theme="light"]{${line(BG_LIGHT,L_TXT,'tc')};`
+       + `${line(BG_LIGHT,L_GFX,'tg')};${line(BG_LIGHT,L_LBL,'tk')}}`;
 }
 /** Fall back to the normal ink colour for anything not in the map (a new club
     code, or a relocated one) rather than rendering an invisible element. */
 const tc = (t, fallback='var(--ink2)') => `var(--tc-${String(t||'').toUpperCase()},${fallback})`;
+/** the same club, at graphic contrast — for rings and bars, never for text */
+const tg = (t, fallback='var(--ink2)') => `var(--tg-${String(t||'').toUpperCase()},${fallback})`;
+/** ...and at label contrast, for a club label sitting ON a club-tinted surface */
+const tk = (t, fallback='var(--ink2)') => `var(--tk-${String(t||'').toUpperCase()},${fallback})`;
 const tb = (t, fallback='var(--ink4)') => `var(--tb-${String(t||'').toUpperCase()},${fallback})`;
 const teamSpan = (t, cls='tm') => `<span class="${cls}" style="color:${tc(t)}">${esc(t)}</span>`;
 /** "ATH @ MIN" with only ONE club in colour: the batter's own, when `own` is
@@ -2134,6 +2393,18 @@ const BDG_SHAPE = {
   al:'<circle cx="50" cy="50" r="47"/>',
   nl:'<path d="M3 3H97V63L50 97 3 63Z"/>'      // home plate, point down
 };
+/* The viewBox is PADDED, and it has to be: the outline is a stroke, a stroke
+   straddles its path, and both shapes above run to 3..97. At stroke-width 5.5
+   that puts the outer edge at 0.25..99.75 — inside an 0..100 box by a quarter
+   of a unit, which at a 28px render is 0.07px. An <svg> clips to its viewport
+   by default, so that quarter-unit is where the antialiasing ramp lives and it
+   got shaved off at every point where the shape is tangent to the edge. On the
+   circle that is a visible flat CUT on all four sides; on the home plate it
+   took the corners and the bottom point. 3 units of padding gives the stroke
+   ~0.85px of room at 28px and costs the shape 6% of its size, which is why the
+   badge now sits slightly inside its box instead of straining against it.
+   Anything that raises --bdg stroke-width has to raise this too. */
+const BDG_VIEWBOX = '-3 -3 106 106';
 /** `cls` sizes it: '' is the row badge, 'bg-sm' the table/strip one. */
 function teamBadge(t, cls=''){
   const T = String(t||'').toUpperCase();
@@ -2141,7 +2412,7 @@ function teamBadge(t, cls=''){
   const lg = AL.has(T) ? 'al' : 'nl';
   return `<span class="bdg ${lg} ${cls}" style="${badgeVars(T)}" role="img"
     aria-label="${esc(T)}" title="${esc(T)} · ${AL.has(T)?'American':'National'} League"
-    ><svg class="bdgs" viewBox="0 0 100 100" aria-hidden="true">${BDG_SHAPE[lg]}</svg><i>${esc(T)}</i></span>`;
+    ><svg class="bdgs" viewBox="${BDG_VIEWBOX}" aria-hidden="true">${BDG_SHAPE[lg]}</svg><i>${esc(T)}</i></span>`;
 }
 /* teamMark() — the club badge blown up as a row watermark — was deleted
    2026-07-27. It occupied the card's one background layer at ~7% opacity to
@@ -2951,7 +3222,7 @@ function dialHTML(b){
      it read well and it ate the rings, which are the reason this is a dial
      and not a badge. Now the geometry is always drawn and a settled row only
      changes whether it is lit. */
-  const club = tc(b.team,'var(--ink2)');
+  const club = tg(b.team,'var(--ink2)');   // a ring, not a label — see tg()
   const col = out==='miss' ? 'var(--ink4)' : club;
   // Square stroke ends throughout — rounded caps smear into blobs at row
   // size, and the caps' extra length lies about the arc's true sweep.
@@ -3114,7 +3385,7 @@ function batterCard(b, rank, hero, idx, lite){
      row and "he hit" on a settled one — never both at once, never on the same
      row. `data-out` drives all of it from one attribute. */
   const out = outcomeOf(b);
-  return `<div class="brow${cls}${isStarred(b)?' starred':''}"><button class="bcard${cls}${pos<20?' stagger':''}" data-k="${key(b)}"${out?` data-out="${out}"`:''} style="--i:${stagger};--tc:${out==='miss' ? 'var(--ink4)' : tc(b.team,'var(--ink2)')}">
+  return `<div class="brow${cls}${isStarred(b)?' starred':''}"><button class="bcard${cls}${pos<20?' stagger':''}" data-k="${key(b)}"${out?` data-out="${out}"`:''} style="--i:${stagger};--tc:${out==='miss' ? 'var(--ink4)' : tc(b.team,'var(--ink2)')};--tg:${out==='miss' ? 'var(--ink4)' : tg(b.team,'var(--ink2)')};--tk:${out==='miss' ? 'var(--ink4)' : tk(b.team,'var(--ink2)')}">
     <span class="brank num" aria-hidden="true">${rank!=null?rank:(r||'')}</span>
     <span class="bid">${dialHTML(b)}</span>
     <span class="bname">${esc(b.name)}${watchMark(b)}${lite?'':' '+lineupTag(b)}${stateTag(b)?' '+stateTag(b):''}</span>
@@ -3695,7 +3966,7 @@ function lineupCard(lu, rank, n, scale){
                                : esc(tagBs.map(b=>b.name).join(', '))}</div>` : '';
   const scoreTxt = (g.away!=null&&g.home!=null) ? `${g.awayAbbr||''} ${g.away}–${g.home} ${g.homeAbbr||''}` : '';
   const dl = lu.delta;
-  return `<article class="lu" style="--tc:${tc(lu.team,'var(--line2)')}">
+  return `<article class="lu" style="--tc:${tc(lu.team,'var(--line2)')};--tg:${tg(lu.team,'var(--line2)')}">
     <div class="lu-h">
       ${teamBadge(lu.team)}
       <span class="lu-tm">${esc(lu.team)}</span>
@@ -4135,7 +4406,7 @@ function renderDrawer(){
     <span class="evnum">${esc(e.val??'')}</span></div>`;
 
   $('#drawer').innerHTML=`
-  <div class="dhead" style="--tc:${tc(b.team,'var(--line2)')}"${fin?` data-out="${outcomeOf(b)}"`:''}>
+  <div class="dhead" style="--tc:${tc(b.team,'var(--line2)')};--tg:${tg(b.team,'var(--line2)')}"${fin?` data-out="${outcomeOf(b)}"`:''}>
     <div style="min-width:0">
       <div class="dtitle" id="dtitle">${esc(b.name)}${watchMark(b)}${outMark(outcomeOf(b),b)}</div>
       <div class="dsub">${matchupHTML(b.matchup)} · ${esc(b.startTime||'')} ${b.slot?`· ${slotDiamond(b.slot)}`:''} ${lineupTag(b)} ${stateTag(b)}</div>
@@ -4702,21 +4973,24 @@ const VIEW_ALIAS = {games:'teams'};
 const resolveView = v => VIEW_ALIAS[v] || v;
 function go(v){ v=resolveView(v); if(!VIEWS.some(x=>x.id===v)) return; S.view=v; S.batShowAll=false; S.watchShowAll=false; location.hash=v; window.scrollTo(0,0); render(); }
 
-/* theme — Dugout (auto/light/dark), the legacy dashboard's own palette, plus
-   Aurora. The ids `light`/`dark` are load-bearing: applyTheme('auto') writes
-   one of those two names onto the root, so they cannot be renamed. */
+/* theme — Aurora, in two lightnesses, plus Auto. The Dugout pair was deleted
+   2026-07-27; a stored 'aurora' from before then is a dead id that would leave
+   the cycle button starting from nowhere, so it maps to dark on read. The ids
+   `light`/`dark` are load-bearing: applyTheme('auto') writes one of those two
+   names onto the root, so they cannot be renamed. */
 const THEMES = [
   {id:'auto',  name:'Auto'},
-  {id:'light', name:'Dugout light'},
-  {id:'dark',  name:'Dugout dark'},
-  {id:'aurora', name:'Aurora'}
+  {id:'light', name:'Light'},
+  {id:'dark',  name:'Dark'}
 ];
 function applyTheme(t){
   const sys = matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.dataset.theme = t==='auto' ? (sys?'dark':'light') : t;
 }
 document.head.insertAdjacentHTML('beforeend', `<style id="teamcss">${teamCSS()}</style>`);
-let theme = store.get('theme','aurora'); applyTheme(theme);   // Aurora is the default
+let theme = store.get('theme','dark');
+if(!THEMES.some(t=>t.id===theme)) theme='dark';   /* retired id, e.g. 'aurora' */
+applyTheme(theme);
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ if(theme==='auto') applyTheme('auto'); });
 
 /* global events */
