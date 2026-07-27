@@ -976,6 +976,13 @@ td.sc b{font-size:var(--t-bd)}
 /* the batting order, in batting order — a lineup read top to bottom is the
    one ordering a team card owes you; ranking the nine by score would be the
    Batters table again with fewer rows. */
+/* why this lineup answered a TAG search — the same flat surface the arm strip
+   uses, deliberately uncoloured: it is a restatement of the query, not a
+   finding about the offence, and a tint here would read as one. */
+.lu-tag{font-size:var(--t-mi);color:var(--ink3);line-height:1.5;
+  padding:8px 11px;background:var(--surf2);border-radius:3px;margin-bottom:2px}
+.lu-tag b{color:var(--ink2);font-weight:650}
+.lu-tag span{font-family:var(--mono);color:var(--ink4);margin:0 5px 0 3px}
 .ord{display:grid;gap:0}
 /* The outcome gets its own 13px track rather than trailing the percentage:
    nine scores in a batting order are read as a column, and a ✓ that pushed
@@ -1851,8 +1858,8 @@ html[data-theme="aurora"] #main{animation:viewIn .38s var(--spring)}
     <div class="qs" id="qswrap">
       <label class="qsfield">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
-        <input id="qsq" type="search" autocomplete="off" placeholder="Batter, pitcher, team"
-               aria-label="Search batters, pitchers and teams" aria-expanded="false"
+        <input id="qsq" type="search" autocomplete="off" placeholder="Batter, pitcher, team, tag"
+               aria-label="Search batters, pitchers, teams and evidence tags" aria-expanded="false"
                aria-controls="qsres" role="combobox">
         <button class="qsx" id="qsx" type="button" aria-label="Close search">&times;</button>
       </label>
@@ -2399,6 +2406,37 @@ function evidence(b, st){
   const sig = out.filter(o=>!o.ctx).sort((a,b2)=>b2.s-a.s || Math.abs(b2.dir)-Math.abs(a.dir));
   const ctx = out.filter(o=>o.ctx);
   return {signal:sig, context:ctx, all:sig.concat(ctx)};
+}
+
+/* ── the chip vocabulary, as an index ──────────────────────────────────
+   The chips are the shortest true thing the page says about a batter, and
+   until now they were the one part of it you could not ask a question of:
+   "who is facing a beatable arm tonight" meant opening cards until you saw
+   the phrase. So the phrases are indexed and every search field matches
+   them alongside names.
+
+   What counts as a tag is exactly what could print as a CHIP — model signal
+   at strength 2+ (the bar chipFor already uses) plus every context item,
+   which is what the drawer lists under Context. A weak s=1 lean is not a
+   claim the page makes out loud, so searching for it would return a list
+   the cards do not corroborate. The card itself prints only the top one or
+   two for width; the search matches all of them, so a tag that is true but
+   crowded off the row is still findable — that is the point of asking.
+
+   Keyed on the batter OBJECT, not on key(b): the Teams tab's what-if builds
+   derived batters that share a key with the real one but face a different
+   arm, and those must not read each other's tags. */
+const _tagCache = new WeakMap();
+function tagsOf(b){
+  let t = _tagCache.get(b);
+  if(!t){
+    const ev = evidence(b, S.st);
+    const list = ev.signal.filter(e=>e.s>=2).map(phraseOf)
+      .concat(ev.context.map(e=>e.label));
+    t = {list, hay:list.join(' \n ').toLowerCase()};
+    _tagCache.set(b, t);
+  }
+  return t;
 }
 
 /** One-sentence verdict: strongest push, strongest drag, honest hedge. */
@@ -2966,7 +3004,18 @@ function batterCard(b, rank, hero, idx, lite){
   // The L10 strip used to open this row and take ~82px of it, which is why a
   // phone got exactly ONE chip. The strip is the dial's inner ring now, so the
   // width comes back to the evidence — see .bwhy.
-  const top = lite ? [] : ev.signal.filter(e=>e.s>=2).slice(0, narrow?2 : hero?3:2);
+  /* A tag search narrows the list to rows carrying a phrase, but a phone card
+     prints only the strongest one or two — so the row that ANSWERED the query
+     could show two other chips and look like a mismatch. When the Batters
+     query matches a chip, that chip leads; the answer has to be visible on the
+     row that was returned for it. */
+  const tq = (S.view==='batters' && S.filters.q.trim().length>1) ? S.filters.q.trim().toLowerCase() : '';
+  let pool = lite ? [] : ev.signal.filter(e=>e.s>=2);
+  if(tq && pool.length){
+    const i = pool.findIndex(e=>phraseOf(e).toLowerCase().includes(tq));
+    if(i>0) pool = [pool[i], ...pool.filter((_,j)=>j!==i)];
+  }
+  const top = pool.slice(0, narrow?2 : hero?3:2);
   // 'est' is already stated by the PROJECTED tag on the name line — repeating
   // it as a chip costs a whole row on a phone and says nothing new. It stays
   // in the drawer's Context list, where it explains the consequence.
@@ -3217,7 +3266,10 @@ function gameStrip(){
 function filtered(){
   const f=S.filters, q=f.q.toLowerCase();
   let list=S.batters.filter(b=>{
-    if(q && !(b.name.toLowerCase().includes(q)||b.team.toLowerCase().includes(q)||(b.pit||'').toLowerCase().includes(q))) return false;
+    // Names, clubs, arms — and the evidence chips themselves, so "beatable"
+    // narrows to everyone facing one (see tagsOf).
+    if(q && !(b.name.toLowerCase().includes(q)||b.team.toLowerCase().includes(q)||
+              (b.pit||'').toLowerCase().includes(q)||tagsOf(b).hay.includes(q))) return false;
     if(f.team && b.team!==f.team) return false;
     if(f.game && b.gamePk!==f.game) return false;
     if(f.slot && String(b.slot)!==f.slot) return false;
@@ -3294,7 +3346,7 @@ function viewBatters(){
   const bandAt = i => bands ? bands.filter(bd=>bd.at===i) : [];
   return `${ribbon()}
   <div class="filters">
-    <label class="field">${icon(ICONS.search)}<input id="fq" placeholder="Batter, team, pitcher" value="${esc(f.q)}" aria-label="Search"></label>
+    <label class="field">${icon(ICONS.search)}<input id="fq" placeholder="Batter, team, pitcher, tag" value="${esc(f.q)}" aria-label="Search batters, teams, pitchers and evidence tags"></label>
     <label class="field"><select id="fteam" aria-label="Team"><option value="">All teams</option>${teams.map(t=>`<option ${f.team===t?'selected':''}>${t}</option>`).join('')}</select></label>
     <label class="field"><select id="fgame" aria-label="Game"><option value="">All games</option>${games.map(([pk,m])=>`<option value="${pk}" ${f.game===pk?'selected':''}>${esc(m)}</option>`).join('')}</select></label>
     <label class="field"><select id="fslot" aria-label="Lineup slot"><option value="">Any slot</option>${[1,2,3,4,5,6,7,8,9].map(s=>`<option ${f.slot==s?'selected':''}>${s}</option>`).join('')}</select></label>
@@ -3507,6 +3559,20 @@ function lineupCard(lu, rank, n, scale){
       <span class="ordo">${outMark(o,b)}</span>
     </button>`;
   }).join('');
+  /* A tag search returns lineups whose order rows print a score, not chips —
+     so unlike a name search, nothing on the card says why it came back. Name
+     the tag and the bats carrying it, above the order they sit in. Only the
+     tag needs this: a name or an arm is already visible on the card. */
+  const lq = S.lq.trim().toLowerCase();
+  const tagBs = lq.length>1 ? bs.filter(b=>tagsOf(b).hay.includes(lq)) : [];
+  const tagName = tagBs.length ? (tagsOf(tagBs[0]).list.find(t=>t.toLowerCase().includes(lq))||'') : '';
+  /* An arm tag is true of everyone in the order — they all face the same
+     pitcher — so naming all nine costs three lines to say what "9 of 9"
+     already said. Names are what a SUBSET needs. */
+  const tagLine = tagName ? `<div class="lu-tag"><b>${esc(tagName)}</b>
+    <span>${tagBs.length} of ${bs.length}</span>
+    ${tagBs.length===bs.length ? 'every bat in the order'
+                               : esc(tagBs.map(b=>b.name).join(', '))}</div>` : '';
   const scoreTxt = (g.away!=null&&g.home!=null) ? `${g.awayAbbr||''} ${g.away}–${g.home} ${g.homeAbbr||''}` : '';
   const dl = lu.delta;
   return `<article class="lu" style="--tc:${tc(lu.team,'var(--line2)')}">
@@ -3555,6 +3621,7 @@ function lineupCard(lu, rank, n, scale){
       ${statCell('K rate', pct(lu.k,1))}
     </div>
 
+    ${tagLine}
     <div class="ord">${order}</div>
 
     <div class="lu-foot">
@@ -3579,7 +3646,11 @@ function viewTeams(){
         || l.opp.toLowerCase().includes(lq)
         || (l.arm.pit||'').toLowerCase().includes(lq)
         || (l.alt?(l.alt.name||'').toLowerCase().includes(lq):false)
-        || l.bs.some(b=>b.name.toLowerCase().includes(lq));
+        || l.bs.some(b=>b.name.toLowerCase().includes(lq))
+        // …and the chips: a tag question asked here is "which OFFENCES have
+        // bats carrying this", so one bat is enough to return the lineup and
+        // the card says which ones (see lineupCard's .lu-tag).
+        || l.bs.some(b=>tagsOf(b).hay.includes(lq));
   });
   return `${ribbon()}
   <div class="sec-h" style="margin-bottom:14px">
@@ -3589,7 +3660,7 @@ function viewTeams(){
       the club it happens to be playing.</p>
   </div>
   <div class="filters">
-    <label class="field">${icon(ICONS.search)}<input id="lq" placeholder="Team, batter, pitcher" value="${esc(S.lq)}" aria-label="Search lineups"></label>
+    <label class="field">${icon(ICONS.search)}<input id="lq" placeholder="Team, batter, pitcher, tag" value="${esc(S.lq)}" aria-label="Search lineups by team, batter, pitcher or evidence tag"></label>
     <div class="seg" role="group" aria-label="Order the lineups">
       ${LU_SORTS.map(s=>`<button data-lsort="${s.id}" aria-pressed="${S.lsort===s.id}">${s.label}</button>`).join('')}
     </div>
@@ -3598,7 +3669,7 @@ function viewTeams(){
       <span class="num">${pct(scale.min,0)}–${pct(scale.max,0)}</span></span>
   </div>
   ${shown.length?`<div class="lus">${shown.map(l=>lineupCard(l, rankOfLu.get(l.pk+'|'+l.team), ls.length, scale)).join('')}</div>`
-    :`<div class="empty">No lineup, batter or arm matches “${esc(S.lq.trim())}”.</div>`}`;
+    :`<div class="empty">No lineup, batter, arm or tag matches “${esc(S.lq.trim())}”.</div>`}`;
 }
 
 /* ── Watch ─────────────────────────────────────────────────────────── */
@@ -4196,11 +4267,12 @@ function initSwipe(){
    nav is a tab bar and switching costs a trip, "where is this player" took
    knowing which tab held him first.
 
-   Three kinds of answer, in the order a slate is usually read: a BATTER
+   Four kinds of answer, in the order a slate is usually read: a BATTER
    opens his drawer where he stands; a PITCHER routes to Batters filtered to
-   the arm, which is the list of everyone facing him tonight; a CLUB routes
-   to Teams filtered to its lineup. The routing is the point — the result is
-   not a link to a view, it is the question already answered.
+   the arm, which is the list of everyone facing him tonight; a TAG routes to
+   Batters filtered to everyone carrying that chip; a CLUB routes to Teams
+   filtered to its lineup. The routing is the point — the result is not a
+   link to a view, it is the question already answered.
 
    Matching is prefix-first: a query that starts a word outranks one that
    merely appears inside it, so "mar" puts Marte above Mangum-adjacent noise
@@ -4226,7 +4298,20 @@ function qsMatches(q){
     teamSeen.set(b.team, {team:b.team, n:S.batters.filter(x=>x.team===b.team).length});
   }
   const teams=[...teamSeen.values()].sort((a,b)=>rank(a.team)-rank(b.team)).slice(0,4);
-  return {q, batters, pitchers, teams, total:batters.length+pitchers.length+teams.length};
+  /* A fourth kind of answer, and the only one that is not a name: a TAG is a
+     question about the field rather than about a player ("who is facing a
+     beatable arm"), so the result is a phrase and a count, and picking it
+     hands the phrase to the Batters filter — which matches tags too — rather
+     than opening anything. Ordered by how many bats carry it, because the
+     count is the answer's size. */
+  const tagSeen=new Map();
+  for(const b of S.batters) for(const t of tagsOf(b).list){
+    if(has(t)) tagSeen.set(t, (tagSeen.get(t)||0)+1);
+  }
+  const tags=[...tagSeen.entries()].map(([tag,n])=>({tag,n}))
+    .sort((a,b)=>rank(a.tag)-rank(b.tag) || b.n-a.n).slice(0,5);
+  return {q, batters, pitchers, tags, teams,
+          total:batters.length+pitchers.length+tags.length+teams.length};
 }
 function qsClose(){
   const r=$('#qsres'); if(r) r.hidden=true;
@@ -4248,6 +4333,10 @@ function qsRender(){
     `<button class="qsitem" role="option" data-qsp="${esc(p.name)}">
       <span class="qsn">${hl(p.name)}</span>
       <span class="qsm">${p.n} bats</span></button>`).join('');
+  if(m.tags.length) h+=`<div class="qsh">Tags</div>`+m.tags.map(t=>
+    `<button class="qsitem" role="option" data-qstag="${esc(t.tag)}">
+      <span class="qsn">${hl(t.tag)}</span>
+      <span class="qsm">${t.n} bat${t.n===1?'':'s'}</span></button>`).join('');
   if(m.teams.length) h+=`<div class="qsh">Lineups</div>`+m.teams.map(t=>
     `<button class="qsitem" role="option" data-qst="${esc(t.team)}">
       <span class="qsn">${hl(t.team)}</span>
@@ -4290,6 +4379,9 @@ function initGlobalSearch(){
       openDrawer(el.dataset.qsb, [...S.batters].sort((a,b)=>b.p-a.p));
     } else if(el.dataset.qsp!=null){
       S.filters={...S.filters, q:el.dataset.qsp, team:'', game:'', slot:''};
+      go('batters');
+    } else if(el.dataset.qstag!=null){
+      S.filters={...S.filters, q:el.dataset.qstag, team:'', game:'', slot:''};
       go('batters');
     } else if(el.dataset.qst!=null){
       S.lq=el.dataset.qst; go('teams');
