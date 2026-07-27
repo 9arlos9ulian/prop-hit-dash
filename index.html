@@ -370,6 +370,14 @@ header{
    inner geometry the summary form has. */
 div.truth{padding:13px 16px;display:flex;gap:12px;align-items:flex-start}
 div.truth > div{flex:1;min-width:0}
+/* A callout that makes more than one claim stacks them. The era note was a
+   single ~17-line paragraph at 375px carrying three separate things — which
+   bands are retired at the bottom, which are off-scale at the top, and whose
+   model the curve above actually describes — and a reader looking for the
+   third had to run the first two to find it. First paragraph flush, because
+   the icon beside it is aligned to that first line. */
+div.truth p{margin:0}
+div.truth p + p{margin-top:10px}
 details.truth{display:block}
 details.truth summary{list-style:none;cursor:pointer;padding:13px 16px;display:flex;gap:12px;align-items:flex-start}
 details.truth summary::-webkit-details-marker{display:none}
@@ -1149,7 +1157,13 @@ html[data-theme="aurora"] .dbody .tblwrap{overflow-x:auto;overflow-y:hidden}
 .evrow{display:grid;grid-template-columns:22px 1fr auto;gap:12px;padding:14px 0;align-items:start;border-bottom:1px solid var(--line)}
 .evarrow{font-family:var(--mono);font-size:var(--t-bd);font-weight:800;text-align:center;line-height:1.15}
 .evarrow.up{color:var(--acc-txt)} .evarrow.down{color:var(--bad)} .evarrow.flat{color:var(--ink4)}
-.evlab{display:block;font-size:var(--t-bd);font-weight:700;letter-spacing:-.02em}
+/* --ink2 to match the section head above it (.sec-h.lv2 h2), not the full
+   --ink it inherited: a row label was reading BRIGHTER than the head naming
+   the whole block, which inverted the hierarchy the drawer had just been
+   given. The label names the datum; `.evnum` beside it keeps full --ink
+   because it IS the datum, and `.evtxt` under it stays --ink3, so the row
+   still steps value → label → explanation rather than flattening. */
+.evlab{display:block;font-size:var(--t-bd);font-weight:700;letter-spacing:-.02em;color:var(--ink2)}
 .evtxt{display:block;font-size:var(--t-xs);color:var(--ink3);line-height:1.5;margin-top:4px}
 .evnum{font-family:var(--mono);font-size:var(--t-bd);font-weight:700;white-space:nowrap;letter-spacing:-.03em}
 .evbars{display:flex;gap:3px;margin-top:8px}
@@ -1415,13 +1429,29 @@ td.c .dia{vertical-align:middle}
      those explain a chart or a block rather than the tab.
      This replaces a `.sec-h.plain p` rule that hid exactly one view's
      subtitle: same saving, now the same on all five tabs. */
-  .sec-h .vh-sub{display:none}
+  /* `.wide` is the same idea one level down: not a whole subtitle a phone
+     doesn't need, but the CLAUSE inside one that a phone doesn't need. It is
+     how the Honesty chart heads shed their how-to-read-it half — which the
+     legend under each chart already draws — and keep the half that says what
+     the chart is scoped to. Same rule, different granularity. */
+  .sec-h .vh-sub, .sec-h .wide{display:none}
   /* Likewise the head's navigation link: every target it points at is a tab
      in the bar 40px under the thumb — the same argument #btnStar loses on.
      A head action that is NOT a tab (Batters' "clear") has no such twin and
      is marked .act so it survives. */
   .sec-h .lnk.nav{display:none}
   .sec-h.vh{margin-bottom:11px}
+  /* Honesty is four stacked sections and nothing else, and margins do not
+     collapse in the flex column above, so 26+26 opened a 52px void between
+     every chart and the next head — on a phone that reads as the end of the
+     page, four times over. The previous section's own bottom margin is the
+     whole separation it needs. Scoped by data-view so Today's `.sec.sub`
+     keeps the deliberate 30px + rule above its game strip. */
+  #main[data-view="honesty"] .sec + .sec{margin-top:0}
+  /* Four legend items at 375px break 3 + 1, which strands the last one on a
+     line of its own 60px from the chart and reads as a separate remark rather
+     than the fourth swatch. A 2x2 grid keeps it a legend. */
+  .clegend{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
   .lbl{font-size:8.5px;letter-spacing:.1em}
   /* two chips must fit on one line at 375px, or the hero pushes its own
      score below the fold — which defeats the whole point of a shortlist */
@@ -3904,6 +3934,35 @@ function daysSVG(days){
 const CHART_LEGEND = (tol,pred)=>`<div class="clegend">
   <span><i class="${pred}"></i>predicted</span><span><i class="dot"></i>actual</span>
   <span><i class="bar"></i>gap</span><span><i class="bar off"></i>gap over ${tol}pt</span></div>`;
+/** Whose model the reliability curve actually describes, said in a way that
+    survives its own numbers.
+
+    The old sentence was written for a mid-migration slate and broke at both
+    ends of its range: "The current model has **0** settled picks of its own so
+    far; until that number is in the thousands, treat the curve as the previous
+    generation's" — with a literal 0 it asks the reader to watch a number climb
+    that has not started, hedges ("treat as") a fact that is not hedged at all
+    at n=0, and would go on saying "until that number is in the thousands" after
+    it had comfortably passed them.
+
+    Three states, because zero is genuinely different from few: at 0 the curve
+    is wholly the previous generation's and there is nothing to qualify; under
+    ERA_ENOUGH it is a rounding error on the old record; past it the curve has
+    started to describe the model that is actually serving. No cause is given
+    for a 0 — the honest reason could be settle lag or the known settle/slate
+    race, and the note should not guess. */
+const ERA_ENOUGH = 1000;
+function eraProvenance(n){
+  const b = v => `<b class="num">${v.toLocaleString()}</b>`;
+  const share = 'measured over the range the two share';
+  if(!n) return `None of these settled picks come from the current model yet, so the curve
+    above is entirely the previous generation's, ${share}.`;
+  // "1 of these picks COMES" — the subject is "one of", not "picks"
+  if(n < ERA_ENOUGH) return `Only ${b(n)} of these settled picks ${n===1?'comes':'come'} from the
+    current model, so the curve above is still effectively the previous generation's, ${share}.`;
+  return `${b(n)} of these settled picks now come from the current model — enough that the
+    curve above has started to describe the model actually serving, not only the one before it.`;
+}
 function viewHonesty(){
   const cal=S.cal;
   if(!cal) return `<div class="empty">Loading the settled-picks record…</div>`;
@@ -3913,16 +3972,21 @@ function viewHonesty(){
   const sum=f=>cal.bands.filter(f).reduce((s,b)=>s+b.n,0);
   const deadLo=sum(b=>b.pos==='lo'), deadHi=sum(b=>b.pos==='hi');
   const recent=cal.days.slice(0,14);
-  const eraNote = `<div class="truth" style="margin-top:12px">${icon(ICONS.info)}<div>The record spans two
-    model generations. The <b>${esc(cal.era)}</b> retrain (FEATURES 21 → 14) lifted the score floor from
-    ~30% to ~47%, so the <b class="num">${deadLo.toLocaleString()}</b> picks below the 45 band came from a model
-    that can no longer produce a score there — they are dimmed in the band chart below and kept off this curve.
-    ${deadHi?`The <b class="num">${deadHi.toLocaleString()}</b> picks above 80% are off the top of the scale the
-    same way — no slate has produced one since 2026-07-18 — but the 75–80 band below them is
-    <b>not</b> retired: the current model still scores there, and it is the worst-calibrated band on the page.`:''}
-    The current model has <b class="num">${cal.eraN.toLocaleString()}</b> settled picks of its own so far;
-    until that number is in the thousands, treat the curve as the previous generation's,
-    measured over the range both share.</div></div>`;
+  /* One claim per paragraph, in the order the chart below is read — off the
+     bottom, off the top, then whose model this curve is. It was one ~17-line
+     block on a phone, and the last part is the one a reader actually comes
+     back for. Each <p> stands alone, so the middle one dropping out with
+     deadHi=0 leaves the other two reading correctly. */
+  const eraNote = `<div class="truth" style="margin-top:12px">${icon(ICONS.info)}<div>
+    <p>The record spans two model generations. The <b>${esc(cal.era)}</b> retrain (FEATURES 21 → 14)
+    lifted the score floor from ~30% to ~47%, so the <b class="num">${deadLo.toLocaleString()}</b> picks
+    below the 45 band came from a model that can no longer produce a score there — they are dimmed in
+    the band chart below and kept off this curve.</p>
+    ${deadHi?`<p>The <b class="num">${deadHi.toLocaleString()}</b> picks above 80% are off the top of the
+    scale the same way — no slate has produced one since 2026-07-18 — but the 75–80 band below them is
+    <b>not</b> retired: the current model still scores there, and it is the worst-calibrated band on
+    the page.</p>`:''}
+    <p>${eraProvenance(cal.eraN)}</p></div></div>`;
   return `${ribbon()}
   <section class="sec">
     ${/* This tab had four heads at identical weight, so nothing on it read as
@@ -3950,7 +4014,12 @@ function viewHonesty(){
       gap that is almost entirely the retired low bands.</p>
   </section>
   <section class="sec">
-    <div class="sec-h lv2"><h2>Reliability</h2><p>A well-calibrated model sits on the dashed line. Circle size is sample size. Drawn over ${pct(CAL_LO,0)}–${pct(CAL_HI,0)} — the range the current model actually scores in.</p></div>
+    ${/* Each chart head keeps its SCOPE on a phone and sheds its how-to-read
+          clause to `.wide`, because the chart's own legend and axis labels
+          draw that half already — this curve even carries a "perfect" label
+          on the diagonal. Three heads were running 2–4 lines of prose at
+          375px, 156px of it, on the one tab that is nothing but charts. */''}
+    <div class="sec-h lv2"><h2>Reliability</h2><p>Drawn over ${pct(CAL_LO,0)}–${pct(CAL_HI,0)} — the range the current model actually scores in.<span class="wide"> A well-calibrated model sits on the dashed line, and circle size is sample size.</span></p></div>
     <div style="padding:2px 0 0">${reliabilitySVG(cal)}
       ${worst?`<div class="truth" style="margin-top:12px">${icon(ICONS.info)}<div>Worst-calibrated band in this range: the model said
       <b class="num">${pct(worst.pred,1)}</b> and those picks landed <b class="num">${pct(worst.act,1)}</b>
@@ -3961,14 +4030,16 @@ function viewHonesty(){
     </div>
   </section>
   <section class="sec">
-    <div class="sec-h lv2"><h2>Score bands</h2><p>What a score in each band has actually done. The bar is the gap between claim and outcome — every band, including the ones off either end of the current model's range, which are dimmed</p></div>
+    <div class="sec-h lv2"><h2>Score bands</h2><p>What a score in each band has actually done. Bands off either end of the current model's range are dimmed.<span class="wide"> The bar is the gap between claim and outcome.</span></p></div>
     <div style="padding:2px 0 0">${bandsSVG(cal)}${CHART_LEGEND(4,'tick')}
       <p class="muted" style="font-size:12.5px;margin-top:12px">The number beside each bar is how many settled picks
         that band rests on, and it varies by more than an order of magnitude — a long bar on a few hundred picks is a
         thinner claim than a short one on several thousand. Each row carries its exact figures as a tooltip.</p></div>
   </section>
   <section class="sec">
-    <div class="sec-h lv2"><h2>Last 14 days</h2><p>The dashed line is what the model claimed each night; the dot is what happened, sized by how many picks that slate carried</p></div>
+    ${/* Dot size is the one thing here the legend has no swatch for, so it is
+          the half that stays on a phone. */''}
+    <div class="sec-h lv2"><h2>Last 14 days</h2><p>Dot size is how many picks that slate carried.<span class="wide"> The dashed line is what the model claimed each night; the dot is what happened.</span></p></div>
     <div style="padding:2px 0 0">${daysSVG(recent)}${CHART_LEGEND(8,'dash')}</div>
   </section>`;
 }
@@ -4267,6 +4338,9 @@ function render(){
   renderFooter();
   renderDateSel();
   const m=$('#main');
+  // Which view is on screen, as a CSS hook — a per-view rule otherwise has
+  // nothing to hang off, and scoping one is far safer than widening a global.
+  m.dataset.view = S.view;
   try{
     m.innerHTML = dateBar() + (
                   S.view==='today'   ? viewToday()
