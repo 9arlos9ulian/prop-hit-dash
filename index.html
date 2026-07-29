@@ -1612,24 +1612,38 @@ td.c .dia{vertical-align:middle}
    that sets position:relative on every direct child, and at (0,2,0) it beats a
    bare `.bctx` — the mark rendered at 0x0 in the flow instead of in the gutter.
    .brank is exempted from that rule by name; this needs the same escape. */
+/* A MARK, not a loose number. As bare text under the rank it read as a second
+   ordinal — "+5" next to "23" invites being read as part of the same figure.
+   The hairline box says "this is a different kind of statement", which is
+   exactly what it is: the rank is the model's ordering, this is the context
+   lane annotating it. Border rather than fill, because a filled pill at this
+   size competes with the score tier on the dial two columns to its left. */
 .bcard > .bctx{
-  position:absolute;right:16px;top:calc(50% + 14px);
+  position:absolute;right:13px;top:calc(50% + 13px);
   pointer-events:none;z-index:0;line-height:1;
-  font-size:11px;font-weight:650;letter-spacing:-.02em;
-  font-variant-numeric:tabular-nums;color:var(--ink3);opacity:.85;
+  font-size:10px;font-weight:650;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;
+  padding:2px 5px;border-radius:999px;
+  border:1px solid var(--line);color:var(--ink2);
 }
-/* Only the UP mark takes the accent. A negative read is information, not an
-   alarm — colouring both ends would put two competing attractors on a list
-   that already colours the score by tier, and the eye would start reading the
-   red one as "avoid", which is a stronger claim than an uncalibrated context
-   score is allowed to make. Down simply stays ink. */
-.bcard > .bctx.up{color:var(--acc-txt);opacity:1}
-.bcard.hero > .bctx{right:14px;top:calc(50% + 26px);font-size:12px}
+/* Only the UP mark takes the accent — a negative read is information, not an
+   alarm, and a red one would be read as "avoid", a stronger claim than an
+   uncalibrated score may make. But "not an alarm" is not the same as "quiet",
+   and the first version confused the two: measured on the card surface, up ran
+   15.06:1 in dark against down's 4.91:1 on --ink3, so the boost read as a
+   highlight and the deboost as body text. Deboosts are 43% of a real slate —
+   as common as boosts — and they were being missed.
+   --ink2 puts down at 9.2:1: a deliberate mark, still neutral, still not a
+   warning. Worth knowing the fault was DARK-ONLY — in light the two already
+   measured 5.51 and 5.71, so anyone checking there would have seen nothing
+   wrong. Check both lightnesses before trusting a contrast judgement here. */
+.bcard > .bctx.up{color:var(--acc-txt);border-color:var(--acc-line)}
+.bcard.hero > .bctx{right:12px;top:calc(50% + 26px);font-size:11px}
 /* A lite row drops its CHIPS, not its rank — and this annotates the rank, so
    it stays and just tracks .bcard.lite .brank's smaller size and gutter.
    Hiding it here was actively backwards: the Context filter renders its whole
    result set lite, so filtering FOR context hid every context mark. */
-.bcard.lite > .bctx{top:calc(50% + 10px);right:12px;font-size:10px}
+.bcard.lite > .bctx{top:calc(50% + 9px);right:9px;font-size:9px;padding:2px 4px}
 /* A settled row DIMS its rank rather than dropping it, so the annotation on
    that rank does the same. Hiding it here was the first instinct and it was
    wrong twice over: it contradicts how .brank behaves, and on a slate whose
@@ -1638,10 +1652,10 @@ td.c .dia{vertical-align:middle}
    It recedes by OPACITY, not by taking .brank's --surf3. That tone is tuned
    for a 26px numeral; at 10px it computes to rgba(255,255,255,.11) and the
    mark disappears again by a different route. */
-.bcard[data-out] > .bctx{opacity:.45}
+.bcard[data-out] > .bctx{opacity:.5}
 @media(max-width:600px){
-  .bcard > .bctx{right:10px;top:calc(50% + 12px);font-size:9px}
-  .bcard.hero > .bctx{right:14px;top:calc(50% + 22px);font-size:11px}
+  .bcard > .bctx{right:8px;top:calc(50% + 11px);font-size:9px;padding:1px 4px}
+  .bcard.hero > .bctx{right:12px;top:calc(50% + 22px);font-size:10px}
 }
 /* ── the hero's rank is the one that is ABOUT something ────────────────────
    Every other row's rank is an ordinal repeated 270 times and belongs at
@@ -3084,8 +3098,28 @@ function applyContext(bs){
   for(const b of bs) b.ctxStrong = Math.abs(b.ctx||0) >= cut;
 }
 /** The one comparator every batter list sorts by. Falls back to raw p if
-    Context has not been applied (an archive row read before applyContext). */
-const byScore = (a,b) => (b.pSort??b.p??0) - (a.pSort??a.p??0);
+    Context has not been applied (an archive row read before applyContext).
+
+    TIER-MAJOR, then boosted score. Two reasons, and the first one is a bug the
+    plain version caused: tierBands() emits a header every time tierOf(b.p)
+    changes from one row to the next, so it needs the list monotonic in TIER.
+    Ordering purely on pSort let a 69.8% bat sort above a 70.2% one and the
+    list came apart into repeating "70% and up / 55 – 70% / 70% and up"
+    stripes.
+
+    The second reason is why the fix is right rather than merely convenient.
+    Context is a bounded tie-break — at most 1pt against tiers 15pt wide — so
+    the only batters it could push across a boundary are those already sitting
+    within a point of it. Filing one of them under a header that reads "70% and
+    up" when the model says 69.8% would be the label lying, which is a worse
+    failure than the ordering being slightly coarser. The boost reorders
+    freely INSIDE a tier, which is where a tie-break belongs. */
+const TIER_ORDER = {hi:0, mid:1, lo:2};
+const byScore = (a,b) => {
+  const ta = TIER_ORDER[tierOf(a.p)], tb = TIER_ORDER[tierOf(b.p)];
+  if(ta !== tb) return ta - tb;
+  return (b.pSort??b.p??0) - (a.pSort??a.p??0);
+};
 
 async function calibration(){
   return load('cal', async () => {
@@ -3962,9 +3996,15 @@ function filtered(){
   // the adjusted order, so a row could read #10 above a row reading #6. Every
   // OTHER column is left alone — sorting by xBA is a different question, and
   // the rank there is just an ordinal the reader can refer back to.
-  const k = f.sort === 'p' ? 'pSort' : f.sort;
+  // Descending on the score column IS byScore — the same tier-major, then
+  // Context-adjusted comparator the rank badges count and the tier bands
+  // depend on. Reusing it rather than sorting on the pSort key directly is
+  // what keeps the bands contiguous; a plain pSort sort stripes them (see
+  // byScore). Ascending, and every other column, take the generic path.
+  const k = f.sort;
+  if(k === 'p' && f.dir === -1){ list.sort(byScore); return list; }
   list.sort((a,b)=>{
-    const va=a[k], vb=b[k];
+    const va=a[k==='p'?'pSort':k], vb=b[k==='p'?'pSort':k];
     if(typeof va==='string'||typeof vb==='string') return f.dir*String(va??'').localeCompare(String(vb??''));
     if(va==null) return 1; if(vb==null) return -1;
     return f.dir*(va-vb);
