@@ -1345,6 +1345,13 @@ html[data-theme] .dbody .tblwrap{overflow-x:auto;overflow-y:hidden}
 .vside{flex:1;font-size:var(--t-sm);line-height:1.55;color:var(--ink2);padding-top:3px}
 .vside b{color:var(--ink);font-weight:700}
 .vcheck{margin-top:16px;padding:13px 15px;background:var(--surf2);border-left:2px solid var(--rule);font-size:var(--t-xs);color:var(--ink2);line-height:1.6}
+/* The Context line in the verdict. Same restraint as .bctx on the row: it is
+   an annotation on the standing, so it sits a step below the verdict text and
+   takes the accent only when it actually lifted him. It is never given a tier
+   colour — the tier belongs to the score, and Context is explicitly not the
+   score. */
+.vctx{display:inline-block;margin-top:6px;font-size:var(--t-xs);color:var(--ink3);font-variant-numeric:tabular-nums}
+.vctx.up{color:var(--acc-txt)}
 .vcheck b{font-family:var(--mono);color:var(--ink);font-weight:700}
 
 .wf{margin-top:18px}
@@ -1588,6 +1595,53 @@ td.c .dia{vertical-align:middle}
   position:absolute;right:16px;top:50%;transform:translateY(-50%);
   pointer-events:none;z-index:0;line-height:1;
   font-size:26px;font-weight:750;letter-spacing:-.05em;color:var(--ink4);
+}
+/* The Context shift, tucked under the rank in the same gutter — it is a
+   statement ABOUT the rank ("context moved him 17 places"), so it belongs to
+   that column and nowhere else. Deliberately small and quiet: it annotates the
+   standing, it does not compete with it.
+
+   It carries its own colour, and that is the one thing to be careful about
+   here. Everywhere else on a row, green/red is the SCORE's tier or the settled
+   outcome. This is neither, so it uses --ink3/--acc-txt rather than the tier or
+   result ramps: an up-shift reads as accent (the page's "pay attention" hue),
+   a down-shift simply recedes. No row ever shows a tier colour and a shift
+   colour meaning different things in the same place, because the shift lives
+   under the rank and the tier lives on the dial. */
+/* `.bcard > .bctx`, not `.bctx`. There is a `.bcard > :not(.brank)` rule above
+   that sets position:relative on every direct child, and at (0,2,0) it beats a
+   bare `.bctx` — the mark rendered at 0x0 in the flow instead of in the gutter.
+   .brank is exempted from that rule by name; this needs the same escape. */
+.bcard > .bctx{
+  position:absolute;right:16px;top:calc(50% + 14px);
+  pointer-events:none;z-index:0;line-height:1;
+  font-size:11px;font-weight:650;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;color:var(--ink3);opacity:.85;
+}
+/* Only the UP mark takes the accent. A negative read is information, not an
+   alarm — colouring both ends would put two competing attractors on a list
+   that already colours the score by tier, and the eye would start reading the
+   red one as "avoid", which is a stronger claim than an uncalibrated context
+   score is allowed to make. Down simply stays ink. */
+.bcard > .bctx.up{color:var(--acc-txt);opacity:1}
+.bcard.hero > .bctx{right:14px;top:calc(50% + 26px);font-size:12px}
+/* A lite row drops its CHIPS, not its rank — and this annotates the rank, so
+   it stays and just tracks .bcard.lite .brank's smaller size and gutter.
+   Hiding it here was actively backwards: the Context filter renders its whole
+   result set lite, so filtering FOR context hid every context mark. */
+.bcard.lite > .bctx{top:calc(50% + 10px);right:12px;font-size:10px}
+/* A settled row DIMS its rank rather than dropping it, so the annotation on
+   that rank does the same. Hiding it here was the first instinct and it was
+   wrong twice over: it contradicts how .brank behaves, and on a slate whose
+   games have finished — 29 of 30 rows tonight — it made the whole feature
+   invisible on exactly the page someone would go looking for it. */
+   It recedes by OPACITY, not by taking .brank's --surf3. That tone is tuned
+   for a 26px numeral; at 10px it computes to rgba(255,255,255,.11) and the
+   mark disappears again by a different route. */
+.bcard[data-out] > .bctx{opacity:.45}
+@media(max-width:600px){
+  .bcard > .bctx{right:10px;top:calc(50% + 12px);font-size:9px}
+  .bcard.hero > .bctx{right:14px;top:calc(50% + 22px);font-size:11px}
 }
 /* ── the hero's rank is the one that is ABOUT something ────────────────────
    Every other row's rank is an ordinal repeated 270 times and belongs at
@@ -2996,6 +3050,38 @@ function applyContext(bs){
     const nudge = Math.max(-CONTEXT_BAND/2, Math.min(CONTEXT_BAND/2, ctx*CONTEXT_UNIT));
     b.pSort = (b.p==null) ? null : b.p + nudge;
   }
+  /* `ctxShift` — places the batter moved. Kept because the drawer quotes it
+     and it is the literal answer to "what did this do to him". */
+  const byP = [...bs].filter(b=>b.p!=null).sort((a,b)=>b.p-a.p);
+  const pos = new Map(byP.map((b,i)=>[b,i]));
+  [...byP].sort(byScore).forEach((b,i)=>{ b.ctxShift = pos.get(b) - i; });
+
+  /* `ctxStrong` — the flag the ROW marks, and it is deliberately NOT ctxShift.
+     Places moved looks like the honest measure and is not: this list packs 288
+     bats into a ~26pt range, so it is dense, and a nudge of at most 1pt shoves
+     almost everyone past several neighbours. Measured on a real slate, 91%
+     moved at all and 71% moved 3+ — a mark on 71% of rows is wallpaper. What
+     actually separates batters is the STRENGTH of the read: |ctx| >= 5 is 10%
+     of the same slate.
+
+     So the cue thresholds on |ctx|, slate-relative like every other threshold
+     in the engine, with a floor of 3 so a flat slate marks nobody rather than
+     marking its least-flat sixth.
+
+     The percentile is 0.84 and the reason is DISCOVERABILITY, measured rather
+     than guessed. Context scores are small integers, so a percentile snaps to
+     a whole cut, and the three available ones behave very differently on the
+     30 rows the Batters view actually shows first:
+         |ctx|>=3   113 of 288 (39%)   11 of the visible 30
+         |ctx|>=4    67 of 288 (23%)    6 of the visible 30
+         |ctx|>=5    28 of 288 (10%)    1 of the visible 30
+     0.90 gives the tightest, most defensible set — and puts a single mark on
+     the opening screen, which is indistinguishable from the invisibility this
+     whole change exists to fix. 0.84 keeps it a clear minority while leaving
+     enough on screen to be noticed. A cue nobody encounters is not a cue. */
+  const mags = bs.map(b=>Math.abs(b.ctx||0)).filter(v=>v>0).sort((a,b)=>a-b);
+  const cut = mags.length ? Math.max(3, mags[Math.floor(mags.length*0.84)]) : Infinity;
+  for(const b of bs) b.ctxStrong = Math.abs(b.ctx||0) >= cut;
 }
 /** The one comparator every batter list sorts by. Falls back to raw p if
     Context has not been applied (an archive row read before applyContext). */
@@ -3081,7 +3167,7 @@ function bandFor(cal,p){
 const S = {                                   // app state
   view:'today', batters:[], st:null, cal:null, modified:null, batShowAll:false, watchShowAll:false,
   live:{}, bullpen:null, odds:null, pitcherLog:null,
-  filters:{q:'',team:'',game:'',slot:'',lineup:'',sort:'p',dir:-1},
+  filters:{q:'',team:'',game:'',slot:'',lineup:'',ctx:'',sort:'p',dir:-1},
   stars:store.get('stars',[]), snap:null, drawerIdx:-1, drawerList:[],
   gamelog:{},   // per-gamePk finished-game logs, fetched lazily on drawer open
   lsort:store.get('lsort','strength'),      // how the Teams tab orders its lineups
@@ -3513,6 +3599,33 @@ function chipFor(e){
 }
 /** Rank within tonight's field. With scores packed into 47–75%, "3rd of 270"
     communicates standing far better than the percentage on its own. */
+/** The Context boost, made visible on the row it acted on.
+
+    Until 2026-07-29 the score existed, reordered 263 of 288 bats on a real
+    slate, and then said so nowhere except one clause inside a paragraph in the
+    drawer — you had to already know it was there to find it. This is the fix.
+
+    The first version of this marked PLACES MOVED and was barely better than
+    saying nothing: 71% of the slate cleared a 3-place threshold, because a
+    dense list turns a 1pt nudge into several places for nearly everyone. A
+    mark on 71% of rows is wallpaper. See applyContext for the measurements.
+
+    So it states the SCORE and fires on strength: `+5` / `−5`, where the sign
+    says which way the intangibles lean and the magnitude says how loudly. Both
+    are properties of the batter, not of how crowded his neighbourhood happens
+    to be. Places moved stays in the tooltip — it is the consequence, and it
+    belongs somewhere, just not as the thing competing for attention 200 times. */
+function ctxHTML(b){
+  if(!b.ctxStrong || !b.ctx) return '';
+  const up = b.ctx > 0, d = b.ctxShift || 0, n = Math.abs(d);
+  const moved = n
+    ? `moved him ${n} place${n===1?'':'s'} ${d>0?'up':'down'} this list`
+    : 'not enough to move him past anyone tonight';
+  const sign = up ? '+' : '−';
+  return `<span class="bctx${up?' up':''}" aria-hidden="true" `
+       + `title="Context ${sign}${Math.abs(b.ctx)} — ${moved}">${sign}${Math.abs(b.ctx)}</span>`;
+}
+
 function rankOf(b){
   if(!S._rank){ S._rank=new Map(); [...S.batters].sort((x,y)=>byScore(x,y)).forEach((x,i)=>S._rank.set(key(x),i+1)); }
   return S._rank.get(key(b));
@@ -3571,6 +3684,7 @@ function batterCard(b, rank, hero, idx, lite){
   const out = outcomeOf(b);
   return `<div class="brow${cls}${isStarred(b)?' starred':''}"><button class="bcard${cls}${pos<20?' stagger':''}" data-k="${key(b)}"${out?` data-out="${out}"`:''} style="--i:${stagger};--tc:${out==='miss' ? 'var(--ink4)' : tc(b.team,'var(--ink2)')};--tg:${out==='miss' ? 'var(--ink4)' : tg(b.team,'var(--ink2)')};--tk:${out==='miss' ? 'var(--ink4)' : tk(b.team,'var(--ink2)')}">
     <span class="brank num" aria-hidden="true">${rank!=null?rank:(r||'')}</span>
+    ${ctxHTML(b)}
     <span class="bid">${dialHTML(b)}</span>
     <span class="bname">${esc(b.name)}${watchMark(b)}${lite?'':' '+lineupTag(b)}${stateTag(b)?' '+stateTag(b):''}</span>
     <span class="bmeta">${matchupHTML(b.matchup, b.team)} · ${slotDiamond(b.slot)} · vs ${esc(b.pit||'TBD')}${lite||narrow?'':` ${gradePill(b.pGrade)}`}</span>
@@ -3833,10 +3947,22 @@ function filtered(){
     if(f.slot && String(b.slot)!==f.slot) return false;
     if(f.lineup==='conf' && !b.confirmed) return false;
     if(f.lineup==='est' && b.confirmed) return false;
+    // Filters on the MARKED set, not on any non-zero context — 89% of a slate
+    // has some, so "any context" would filter almost nothing out.
+    if(f.ctx==='up' && !(b.ctxStrong && b.ctx>0)) return false;
+    if(f.ctx==='dn' && !(b.ctxStrong && b.ctx<0)) return false;
     return true;
   });
   // dir: 1 = ascending, -1 = descending. Nulls always sort last.
-  const k=f.sort;
+  //
+  // Sorting on the SCORE column means the Context-adjusted order, because that
+  // is what the rank badge on every row counts (rankOf uses byScore). Before
+  // Context existed pSort was identical to p and the two agreed for free; once
+  // it landed this path was still comparing raw p while the badges numbered
+  // the adjusted order, so a row could read #10 above a row reading #6. Every
+  // OTHER column is left alone — sorting by xBA is a different question, and
+  // the rank there is just an ordinal the reader can refer back to.
+  const k = f.sort === 'p' ? 'pSort' : f.sort;
   list.sort((a,b)=>{
     const va=a[k], vb=b[k];
     if(typeof va==='string'||typeof vb==='string') return f.dir*String(va??'').localeCompare(String(vb??''));
@@ -3908,7 +4034,7 @@ function viewBatters(){
      filtering, the head's action becomes the way out of it: a "clear" is a
      real action rather than a trip to another tab, so it keeps its place on a
      phone (see .lnk.act). */
-  const narrowed = !!(f.q.trim()||f.team||f.game||f.slot||f.lineup);
+  const narrowed = !!(f.q.trim()||f.team||f.game||f.slot||f.lineup||f.ctx);
   return `${ribbon()}
   <section class="sec">
   ${viewHead({
@@ -3927,6 +4053,15 @@ function viewBatters(){
       <button data-lu="" aria-pressed="${f.lineup===''}">All</button>
       <button data-lu="conf" aria-pressed="${f.lineup==='conf'}">Confirmed</button>
       <button data-lu="est" aria-pressed="${f.lineup==='est'}">Projected</button>
+    </div>
+    ${/* Isolating the boosted bats, which is the question a mark on the row
+         can only half answer. Scanning 288 rows for a badge is not a way to
+         ask "who did the intangibles like tonight" — this is. Split by
+         direction because they are opposite reads, not two shades of one. */''}
+    <div class="seg" role="group" aria-label="Context">
+      <button data-cx="" aria-pressed="${f.ctx===''}">Any context</button>
+      <button data-cx="up" aria-pressed="${f.ctx==='up'}">Context for</button>
+      <button data-cx="dn" aria-pressed="${f.ctx==='dn'}">Context against</button>
     </div>
   </div>
   <div class="tblwrap" style="display:none" id="tbl">
@@ -4659,6 +4794,15 @@ function renderDrawer(){
         <div class="vside">
           Chance of <b>at least one hit</b> ${S.date?'that day':'tonight'} — ${v.where}.<br>
           <span class="muted">${esc(v.lead.charAt(0).toUpperCase()+v.lead.slice(1))}.</span>
+          ${/* The Context boost, stated where the standing is stated. It used
+               to appear only as a clause inside the Context section's subtitle,
+               two scrolls down — present, but findable only if you already knew
+               to look. The rank is what Context changes, so it belongs on the
+               line that gives the rank. */''}
+          ${b.ctx ? `<br><span class="vctx${b.ctxShift>0?' up':''}">Context ${b.ctx>0?'+':''}${b.ctx}${
+            Math.abs(b.ctxShift||0)>=1
+              ? ` — moved him ${Math.abs(b.ctxShift)} place${Math.abs(b.ctxShift)===1?'':'s'} ${b.ctxShift>0?'up':'down'} this list`
+              : ' — not enough to move him past anyone tonight'}</span>` : ''}
         </div>
       </div>
       ${bd&&bd.n>60?`<div class="vcheck">Historically, scores in this band landed <b>${pct(bd.act,1)}</b> across
@@ -5166,7 +5310,7 @@ function wireView(){
      thing the reader was trying to get out of. `sort` goes back to the score
      because that is the order the list has when you arrive on it. */
   const clearBat=()=>{
-    S.filters={...S.filters, q:'', team:'', game:'', slot:'', lineup:'', sort:'p', dir:-1};
+    S.filters={...S.filters, q:'', team:'', game:'', slot:'', lineup:'', ctx:'', sort:'p', dir:-1};
     S.batShowAll=false; render();
   };
   // two entry points, one behaviour: the head's action, and the way out of an
@@ -5194,6 +5338,7 @@ function wireView(){
   const bind=(id,k)=>{ const el=$(id); if(el) el.addEventListener('change',()=>{ S.filters[k]=el.value; render(); }); };
   bind('#fteam','team'); bind('#fgame','game'); bind('#fslot','slot');
   $$('[data-lu]').forEach(el=>el.addEventListener('click',()=>{ S.filters.lineup=el.dataset.lu; render(); }));
+  $$('[data-cx]').forEach(el=>el.addEventListener('click',()=>{ S.filters.ctx=el.dataset.cx; render(); }));
   $$('[data-lsort]').forEach(el=>el.addEventListener('click',()=>{
     S.lsort=el.dataset.lsort; store.set('lsort',S.lsort); render();
   }));
