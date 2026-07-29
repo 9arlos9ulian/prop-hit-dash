@@ -2489,6 +2489,15 @@ function toBatter(r){
     vsSP:N(r.b_hit_rate_vs_sp), paSP:N(r.b_pa_vs_sp), vsRP:N(r.b_hit_rate_vs_rp), paRP:N(r.b_pa_vs_rp),
     hrFb:N(r.b_hr_vs_fb), hrBb:N(r.b_hr_vs_bb), hrOs:N(r.b_hr_vs_os), hrAll:N(r.b_hr_overall),
     bvpAB:N(r.bvp_ab), bvpH:N(r.bvp_h), bvpAvg:N(r.bvp_avg),
+    // bvpCareer distinguishes a real multi-season line from a season-to-date
+    // one. Before 2026-07-28 the chip said "Career" over a season-scoped pull
+    // whose largest sample across 33 archived slates was 9 AB.
+    bvpCareer:r.bvp_career==='1'||r.bvp_career===1, bvpSince:N(r.bvp_since),
+    // context lane — none of these are model inputs
+    penDelta:N(r.pen_delta), penAvail:N(r.pen_available_n), penRested:N(r.pen_rested_frac),
+    defOaa:N(r.def_oaa_tonight), defOaaN:N(r.def_oaa_n),
+    schedG7:N(r.sched_games_7d), schedDAN:N(r.sched_day_after_night),
+    schedGetaway:N(r.sched_getaway), schedTz:N(r.sched_tz_shift),
     // pitcher
     pit:r.pitcher, pitId:r.opp_pitcher_id, pitHand:r.pitcher_hand, pGrade:r.p_grade, pRating:N(r.p_rating),
     pCsw:N(r.p_csw), pKbb:N(r.p_k_bb), pHard:N(r.p_hardhit_allowed), pK:N(r.p_k_rate),
@@ -2511,7 +2520,11 @@ function slateStats(bs){
      thing in the Why list and another six rows further down. */
   const cols = {p:'p',base:'base',delta:'delta',bHit:'bHit',bXba:'bXba',bHard:'bHard',bK:'bK',
                 pCsw:'pCsw',pHard:'pHard',pRating:'pRating',bPA:'bPA',bQ3:'bQ3',pH9:'pH9',
-                bBabip:'bBabip',pEra:'pEra',pWhip:'pWhip',pK9:'pK9',pBb9:'pBb9',pAvgBf:'pAvgBf'};
+                bBabip:'bBabip',pEra:'pEra',pWhip:'pWhip',pK9:'pK9',pBb9:'pBb9',pAvgBf:'pAvgBf',
+                /* context lane (2026-07-28) — ranked in the same field as
+                   everything else so "unusual tonight" means the same thing
+                   here as it does in the Why list. */
+                penDelta:'penDelta',defOaa:'defOaa'};
   for(const c in cols){
     const v = bs.map(b=>b[c]).filter(x=>x!=null).sort((a,b)=>a-b);
     st[c] = v.length ? {min:v[0], max:v[v.length-1], med:v[Math.floor(v.length/2)], sorted:v} : null;
@@ -2572,21 +2585,33 @@ function scell(lab, val, sub, col, raw){
    actually trains on it. Context that only informs the reader's own judgment
    is labelled as such rather than being passed off as model signal.
    ══════════════════════════════════════════════════════════════════════ */
-const IN_MODEL = new Set(['form','contact','whiff','pitcher','volume','park','rest','q3','pitchmix','role']);
+/* Which evidence the model actually trained on. Until 2026-07-29 this set was
+   DECORATIVE — declared here and in slate_reasons.py and read by neither, while
+   what actually decides a chip's lane is its own `ctx` flag. So the two could,
+   and did, disagree: pitchmix, q3 and rest all rendered with arrows and
+   strength bars while none of their columns is in FEATURES.
+   Removed: 'role' (2026-07-28, never emitted by any chip); 'pitchmix', 'q3',
+   'rest' (2026-07-29, each checked against FEATURES — see slate_reasons.py's
+   copy for the per-chip evidence). All three still render and still carry
+   their strength; they sit in the context lane now, where the provenance is
+   stated rather than implied.
+   tests/test_slate_reasons_parity.py pins this against the chips themselves. */
+const IN_MODEL = new Set(['form','contact','whiff','pitcher','volume','park']);
 
 /** Chips assert a claim ("Cold stretch"); drawer rows name a category
     ("Recent form"). Same evidence, two registers — a chip that reads
     "↑ Whiff risk" is ambiguous about who the arrow is good for. */
+/* Only model-signal chips need a PHRASE: phraseOf() returns the plain label
+   for anything in the context lane. pitchmix/q3/rest lost their entries on
+   2026-07-29 when they moved to that lane — the pairs were dead the moment
+   ctx:true was set. */
 const PHRASE = {
   form:     [ 'Cold stretch',        'Hot at the plate'   ],
   contact:  [ 'Weak contact',        'Hard contact'       ],
   whiff:    [ 'High whiff risk',     'Low whiff risk'     ],
   pitcher:  [ 'Tough arm',           'Beatable arm'       ],
   volume:   [ 'Fewer trips up',      'Extra trips up'     ],
-  pitchmix: [ 'Mix works on him',    'Mix suits him'      ],
-  park:     [ "Pitcher's park",      "Hitter's park"      ],
-  q3:       [ 'Slow starter',        'Strong early ABs'   ],
-  rest:     [ 'Long layoff',         'Rested'             ]
+  park:     [ "Pitcher's park",      "Hitter's park"      ]
 };
 const phraseOf = e => e.ctx ? e.label : (PHRASE[e.k]?.[e.dir>0?1:0] || e.label);
 
@@ -2667,9 +2692,18 @@ function evidence(b, st){
       const g = d==null?0 : d>.02?2 : d>.007?1 : d<-.02?-2 : d<-.007?-1 : 0;
       const mix = [['fastball',b.useFb,b.hrFb],['breaking',b.useBb,b.hrBb],['offspeed',b.useOs,b.hrOs]]
         .sort((a,c)=>(c[1]||0)-(a[1]||0));
-      add({ k:'pitchmix', dir:Math.sign(g), s:Math.abs(g), label:'Pitch-mix fit',
+      /* CONTEXT, not model signal — corrected 2026-07-29. None of the seven
+         columns this reads (p_use_fb/bb/os, b_hr_vs_fb/bb/os, b_hr_overall)
+         is in FEATURES. pitch_mix_edge was cut for fragmenting an already
+         small window by pitch type, and re-tested 2026-07-22 across three
+         widened configurations at n=248,887: correlation 0.010-0.013, which
+         is BELOW the max-of-N null for that sample size. It rendered with
+         arrows and strength bars anyway, which claimed the score came from
+         it. The read is still worth printing; the provenance was wrong. */
+      add({ k:'pitchmix', dir:Math.sign(g), s:Math.abs(g), ctx:true, label:'Pitch-mix fit',
             text:`Throws ${pct(mix[0][1],0)} ${mix[0][0]}; he reaches base ${pct(mix[0][2],1)} against it (${pct(b.hrAll,1)} overall)`,
-            val:(d==null?'—':(d>0?'+':'')+ (d*100).toFixed(1)+'pt') });
+            val:(d==null?'—':(d>0?'+':'')+ (d*100).toFixed(1)+'pt'),
+            note:'Tested for the model twice and cut both times — the measured effect is inside the noise floor. Shown for your read, not the score.' });
     }
   }
   // 7 — park
@@ -2685,14 +2719,23 @@ function evidence(b, st){
   {
     if(b.bQ3!=null && (b.bQ3n??0)>=10){
       const p = rel('bQ3', b.bQ3), g = grade(p);
-      add({ k:'q3', dir:Math.sign(g), s:Math.abs(g), label:'Early-game quality',
-            text:`${pct(b.bQ3,1)} quality contact in his first 3 ABs (${b.bQ3n} games)`, val:pct(b.bQ3,1), pctl:p });
+      /* CONTEXT, not model signal — corrected 2026-07-29. b_quality_first3 was
+         measured on 2026-07-11 (diagnose_first3ab_signal.py) and deliberately
+         NOT added to FEATURES; CLAUDE.md calls it a display-only badge. It was
+         rendering as model signal regardless. */
+      add({ k:'q3', dir:Math.sign(g), s:Math.abs(g), ctx:true, label:'Early-game quality',
+            text:`${pct(b.bQ3,1)} quality contact in his first 3 ABs (${b.bQ3n} games)`, val:pct(b.bQ3,1), pctl:p,
+            note:'Measured on 2026-07-11 and deliberately kept out of the model. Shown for your read, not the score.' });
     }
   }
   // 9 — rest
   {
     if(b.bRest!=null && b.bRest>=2){
-      add({ k:'rest', dir:b.bRest>=4?-1:0, s:b.bRest>=4?1:0, label:'Time off',
+      /* CONTEXT, not model signal — corrected 2026-07-29. b_days_rest is in
+         the dropped-features log ("near-zero importance confirmed") and is not
+         in FEATURES. It belongs beside the schedule chip, which is where the
+         rest of the wear story now lives. */
+      add({ k:'rest', dir:b.bRest>=4?-1:0, s:b.bRest>=4?1:0, ctx:true, label:'Time off',
             text:`${b.bRest} days since his last game${b.bRest>=4?' — rust risk on a long layoff':''}`, val:b.bRest+'d' });
     }
   }
@@ -2736,11 +2779,100 @@ function evidence(b, st){
           val:(b.splitDiff>0?'+':'')+(b.splitDiff*100).toFixed(1)+'pt',
           note:'Tested and cut from the model on 2026-07-25 (no measurable lift). Shown for your read, not the score.' });
   }
-  // batter vs pitcher history — almost always too small to mean anything
+  /* batter vs pitcher history. Genuinely career since 2026-07-28 — until then
+     live_slate.py pulled Statcast from season_start only, so this said
+     "Career" over a season-to-date line whose biggest sample across 33
+     archived slates was 9 AB. bvpCareer says which line is on screen; the
+     wording follows it rather than asserting the stronger claim by default.
+
+     It contributes to Context only at 20+ AB, and never at strength 2. The
+     noise-floor work of 2026-07-26 is the reason: a causally-null feature
+     reaches |r| 0.482 at n=25, so even a 20-AB line is inside the band where
+     coincidence produces the whole effect. Weighted at all because the client
+     asked for the intangibles to carry visible weight, and capped at 1
+     because the arithmetic says a 0-for-12 is worth about 2pt. */
   if((b.bvpAB??0)>0){
-    add({ k:'bvp', dir:0, s:0, label:'Career vs this pitcher', ctx:true,
-          text:`${b.bvpH}-for-${b.bvpAB} (${num(b.bvpAvg,3)})${b.bvpAB<20?' — sample far too small to lean on':''}`,
+    const deep = b.bvpAB>=20, gap = (deep && b.bHit!=null) ? b.bvpAvg-b.bHit : null;
+    add({ k:'bvp', dir:gap!=null?Math.sign(gap):0, s:(gap!=null&&Math.abs(gap)>=.06)?1:0,
+          label:b.bvpCareer?'Career vs this pitcher':'This season vs this pitcher', ctx:true,
+          text:`${b.bvpH}-for-${b.bvpAB} (${num(b.bvpAvg,3)})`
+               +(b.bvpCareer&&b.bvpSince?` since ${b.bvpSince}`:'')
+               +(b.bvpAB<20?' — sample far too small to lean on'
+                          :`, against ${pct(b.bHit,1)} overall`),
           val:`${b.bvpH}/${b.bvpAB}` });
+  }
+  /* bullpen state — the model's blind spot, stated plainly. p_avg_bf tells it
+     how deep the STARTER goes and then it says nothing about who follows, even
+     though the 3rd and 4th plate appearances usually come against the pen.
+     pen_delta is what those later looks are worth relative to the starter,
+     counting only arms that can actually pitch tonight. */
+  if(b.penDelta!=null && b.penAvail!=null){
+    /* Slate-relative, not absolute. Absolute cuts (.015/.04) were the first
+       pass and fired on 173 of 216 on a realistic slate — the engine's whole
+       thresholding principle is percentile-within-tonight precisely because
+       "unusual" is a property of the field, and how far a pen sits from its
+       starter varies with the night's pitching. */
+    const pp = rel('penDelta', b.penDelta);
+    const g = pp==null?0 : (pp>=.9||pp<=.1)?2 : (pp>=.75||pp<=.25)?1 : 0;
+    const easier = b.penDelta>0;
+    /* A THIRD, not a half. At <=.5 this branch fired on 57% of a realistic
+       slate on its own, which put the chip on 162 of 216 even with the
+       percentile gate above doing its job. "Most of it worked the last three
+       days" has to mean most. */
+    const thin = (b.penRested??1)<=1/3;
+    if(g>0 || thin){
+      add({ k:'pen', dir:g?Math.sign(b.penDelta):0, s:g, ctx:true,
+            label:'What comes after the starter',
+            text:`${b.penAvail} rested arm${b.penAvail===1?'':'s'} in that pen`
+                 +(thin?' — most of it worked the last three days':'')
+                 +(g?`; against what is left he scores ${pct(Math.abs(b.penDelta),1)} ${easier?'higher':'lower'} than against tonight's starter`:''),
+            val:(b.penDelta>0?'+':'')+(b.penDelta*100).toFixed(1)+'pt' });
+    }
+  }
+  /* tonight's actual defence. def_babip_allowed IS a model input but it is a
+     team-season trailing rate whose measured permutation importance is 0.0002
+     — it cannot know the regular centre fielder is resting. This is the seven
+     gloves actually behind the pitcher, and OAA is centred on league average,
+     so the number is already the delta. Good defence is bad for the hitter. */
+  if(b.defOaa!=null && (b.defOaaN??0)>=5){
+    const p = rel('defOaa', b.defOaa);
+    if(p!=null && (p>=.75 || p<=.25)){
+      const sharp = b.defOaa>0;
+      add({ k:'defense', dir:sharp?-1:1, s:(p>=.9||p<=.1)?2:1, ctx:true,
+            label:sharp?'Sharp defence behind him':'Leaky defence behind him',
+            text:`Tonight's seven fielders are ${Math.abs(b.defOaa).toFixed(0)} outs `
+                 +`${sharp?'above':'below'} average on the season`
+                 +(b.defOaaN<7?` (${b.defOaaN} of 7 with a record)`:'')
+                 +` — ${sharp?'balls in play are likelier to be caught':'more of what he hits should fall'}`,
+            val:(b.defOaa>0?'+':'')+b.defOaa.toFixed(0), pctl:p });
+    }
+  }
+  /* schedule texture — the stuff a broadcast mentions and no feature has ever
+     seen. All fatigue-directional: none of it argues a batter is fresher than
+     the field, only that he may be more worn than his season line implies. */
+  {
+    /* Getaway day is deliberately NOT able to fire this chip on its own: a
+       three-game series makes every third game a getaway, so it lands on
+       roughly a third of any slate and says almost nothing alone. It rides
+       along as a supporting bit. The first pass let it trigger and the chip
+       appeared on 162 of 216 — a context lane that loud is one nobody reads. */
+    const strong = [];
+    if(b.schedDAN===1) strong.push('day game after a night game');
+    if(b.schedTz!=null && Math.abs(b.schedTz)>=2) strong.push(`${Math.abs(b.schedTz)} time zones since his last game`);
+    /* Riders — true, worth printing alongside, never enough to speak alone.
+       Seven games in seven days is simply a week with no off day, which the
+       real schedule puts at roughly a third of teams on any given night; it is
+       the fatigued end of normal, not an event. Same argument as getaway. */
+    const riders = [];
+    if((b.schedG7??0)>=7) riders.push(`${b.schedG7} games in seven days`);
+    if(b.schedGetaway===1) riders.push('getaway day');
+    if(strong.length){
+      const bits = strong.concat(riders);
+      add({ k:'sched', dir:-1, s:strong.length>=2?1:0, ctx:true, label:'Schedule',
+            text:bits.join(' · ').replace(/^./,c=>c.toUpperCase())
+                 +' — wear the trailing windows have not caught up to yet',
+            val:strong.length>=2?'HEAVY':'NOTE' });
+    }
   }
   if(b.bRookie){
     add({ k:'rookie', dir:0, s:0, label:'Rookie bat', ctx:true, warn:true,
@@ -2818,6 +2950,57 @@ const MODEL_ERA = '2026-07-25';
    filter — the worst-calibrated band in the whole record (75, -12pt) is inside
    it, and tonight's floor of ~0.47 would fall outside a 60-cut. */
 const CAL_LO = .45, CAL_HI = .80;
+
+/* ── the Context score ──────────────────────────────────────────────────────
+   A second, explicitly UNCALIBRATED number built only from the context lane:
+   career BvP, the bullpen behind the starter, tonight's actual defence, the
+   schedule. None of it is a model input, and p_hit is never altered — what
+   ships to the client and what the Honesty tab audits is always the raw
+   calibrated probability.
+
+   WHY IT EXISTS: the model's own permutation audit calls it "overwhelmingly a
+   PLATE-APPEARANCE predictor" — opportunity outweighs skill ~15x, and 15 of 22
+   features move AUC by <=0.0005. That is why tonight's scores compress into a
+   ~47-75% band. The baseball texture a person reads a matchup on is not
+   underweighted in that number; it is absent from it.
+
+   WHAT IT IS ALLOWED TO DO: break ties, nothing more. The sort key is
+      p + clamp(ctx * CONTEXT_UNIT, -CONTEXT_BAND/2, +CONTEXT_BAND/2)
+   so Context can move a batter at most half a band. It reorders bats the model
+   has already called near-equal — precisely where p_hit has no resolution and
+   so where it cannot do damage — and it can never lift a 55% bat over a 71%
+   one. The clamp is smooth, so there are no bucket-edge cliffs.
+
+   Tuning knobs in the FORM_WINDOW/SLOT_PA spirit, not constants to build
+   around. Raising CONTEXT_BAND is the one change that could let context
+   override the model; do it deliberately or not at all. */
+/* CONTEXT_UNIT dropped .002 -> .0015 on 2026-07-29, when pitchmix/q3/rest moved
+   into this lane and widened the score's range from +-4 to -7..+6 (sd 1.63 ->
+   2.77). At .002 that put 10% of a real 288-batter slate hard against the
+   clamp, where every extreme read collapses to the same nudge; at .0015 only
+   2 of 288 clip. The clamp is the safety guarantee and stays exactly where it
+   was — this only keeps the range inside it expressive. */
+const CONTEXT_BAND = .02, CONTEXT_UNIT = .0015;
+
+/** Signed sum of the context lane. Positive = the intangibles favour him. */
+function contextScore(ev){
+  return (ev.context||[]).reduce((t,e)=>t + (e.dir||0)*(e.s||0), 0);
+}
+/** Compute Context once per slate and hang it on each batter, so every sort
+    site and every card reads the same number rather than recomputing it. */
+function applyContext(bs){
+  for(const b of bs){
+    let ctx = 0;
+    try { ctx = contextScore(evidence(b, S.st)); } catch(_){ ctx = 0; }
+    b.ctx = ctx;
+    const nudge = Math.max(-CONTEXT_BAND/2, Math.min(CONTEXT_BAND/2, ctx*CONTEXT_UNIT));
+    b.pSort = (b.p==null) ? null : b.p + nudge;
+  }
+}
+/** The one comparator every batter list sorts by. Falls back to raw p if
+    Context has not been applied (an archive row read before applyContext). */
+const byScore = (a,b) => (b.pSort??b.p??0) - (a.pSort??a.p??0);
+
 async function calibration(){
   return load('cal', async () => {
     const {body} = await getAny(['./picks_log.csv','/picks_log.csv'],{timeout:25000});
@@ -2923,6 +3106,7 @@ async function loadSlate(){
   if(!rows.length) throw new Error('no rows in that slate');
   S.batters = rows.map(toBatter);
   S.st = slateStats(S.batters);
+  applyContext(S.batters);
   S._rank = null;
   S.modified = modified;
   // The snapshot is a per-day "what changed since this morning" baseline for
@@ -3330,7 +3514,7 @@ function chipFor(e){
 /** Rank within tonight's field. With scores packed into 47–75%, "3rd of 270"
     communicates standing far better than the percentage on its own. */
 function rankOf(b){
-  if(!S._rank){ S._rank=new Map(); [...S.batters].sort((x,y)=>y.p-x.p).forEach((x,i)=>S._rank.set(key(x),i+1)); }
+  if(!S._rank){ S._rank=new Map(); [...S.batters].sort((x,y)=>byScore(x,y)).forEach((x,i)=>S._rank.set(key(x),i+1)); }
   return S._rank.get(key(b));
 }
 /** Three weights, not two. `hero` gets a categorically different treatment —
@@ -3451,7 +3635,7 @@ function viewHead({title, n, sub, action}){
 
 /* ── Today ─────────────────────────────────────────────────────────── */
 function viewToday(){
-  const ranked=[...S.batters].sort((a,b)=>b.p-a.p);
+  const ranked=[...S.batters].sort(byScore);
   const short=ranked.slice(0,10);
   // The "Since <time>" section (lineup churn since a morning snapshot) lived
   // here until 2026-07-26 — cut on client call: it never earned its screen
@@ -3554,15 +3738,15 @@ function gameStripData(){
       const tb=bs.filter(b=>b.team===t);
       return {team:t, n:tb.length,
         avg: tb.reduce((s,b)=>s+b.p,0)/tb.length,
-        best: [...tb].sort((x,y)=>y.p-x.p)[0],
+        best: [...tb].sort((x,y)=>byScore(x,y))[0],
         hot: tb.filter(b=>b.p>=hotCut).length};
     });
     return {pk, g, live, fin, pre, start:bs[0].startTime||'', sides,
             grp: fin?2:live?1:0, hot:sides.reduce((s,x)=>s+x.hot,0),
             // the names behind the heat, hottest first — what the middle of the
             // row shows instead of blank space
-            hotBats: bs.filter(b=>b.p>=hotCut).sort((x,y)=>y.p-x.p),
-            best: [...bs].sort((x,y)=>y.p-x.p)[0]};
+            hotBats: bs.filter(b=>b.p>=hotCut).sort((x,y)=>byScore(x,y)),
+            best: [...bs].sort((x,y)=>byScore(x,y))[0]};
   });
   games.sort((a,b)=> a.grp-b.grp || startMin(a.start)-startMin(b.start));
   return games;
@@ -4075,7 +4259,7 @@ function viewTeams(){
 
 /* ── Watch ─────────────────────────────────────────────────────────── */
 function viewWatch(){
-  const list=S.batters.filter(b=>S.stars.includes(key(b))).sort((a,b)=>b.p-a.p);
+  const list=S.batters.filter(b=>S.stars.includes(key(b))).sort(byScore);
   // An empty watchlist is still the Watch tab, so it keeps its head. Losing
   // the title was the reason a phone could not tell an empty list apart from
   // a view that had failed to render at all.
@@ -4312,6 +4496,56 @@ function viewHonesty(){
           the half that stays on a phone. */''}
     <div class="sec-h lv2"><h2>Last 14 days</h2><p>Dot size is how many picks that slate carried.<span class="wide"> The dashed line is what the model claimed each night; the dot is what happened.</span></p></div>
     <div style="padding:2px 0 0">${daysSVG(recent)}${CHART_LEGEND(8,'dash')}</div>
+  </section>
+  ${contextHonesty()}`;
+}
+
+/* The Context lane audits itself here, on the same tab as the model, because a
+   second number on the card is a second claim being made to the client — and
+   an unmeasured one is exactly what this tab exists to refuse.
+
+   It reports what Context is DOING tonight rather than what it has been worth,
+   because as of 2026-07-28 the second question has no answer yet: the columns
+   it is built from landed that day, so no settled outcome has ever seen them.
+   diagnose_context_score.py is the script that will answer it, and it says the
+   same "not enough to conclude" until the record catches up. Saying so on the
+   page is the point — the alternative is a number on every card whose track
+   record the page quietly declines to mention. */
+function contextHonesty(){
+  const bs = S.batters||[];
+  if(!bs.length) return '';
+  const moved = bs.filter(b=>b.ctx).length;
+  const up = bs.filter(b=>b.ctx>0).length, dn = bs.filter(b=>b.ctx<0).length;
+  /* Two different true numbers, and they are easy to conflate: one batter
+     moves at most half a band, but two moving oppositely swing a FULL band
+     relative to each other. The tile quotes the per-batter figure, the prose
+     quotes the pair figure. tests/test_context_lane.py pins both. */
+  const maxSelf = (CONTEXT_BAND*100/2).toFixed(0), maxPair = (CONTEXT_BAND*100).toFixed(0);
+  // how many pairs the nudge actually reorders — the honest measure of its
+  // reach, since most non-zero Context scores change nothing
+  let flips = 0;
+  const byP = [...bs].filter(b=>b.p!=null).sort((a,b)=>b.p-a.p);
+  const byS = [...byP].sort(byScore);
+  for(let i=0;i<byP.length;i++) if(byP[i]!==byS[i]) flips++;
+  return `<section class="sec">
+    <div class="sec-h lv2"><h2>The Context score</h2><p>A second number, deliberately not calibrated — and what it is allowed to do</p></div>
+    <div class="sgrid">
+      <div class="scell"><div class="slab">Bats with context</div><div class="sval">${moved}</div><div class="ssub">of ${bs.length} tonight</div></div>
+      <div class="scell"><div class="slab">Reads for / against</div><div class="sval">${up} / ${dn}</div><div class="ssub">positive / negative</div></div>
+      <div class="scell"><div class="slab">Order changed</div><div class="sval">${flips}</div><div class="ssub">positions moved</div></div>
+      <div class="scell"><div class="slab">Most it can move</div><div class="sval">${maxSelf}pt</div><div class="ssub">one bat, either way</div></div>
+    </div>
+    <div class="truth" style="margin-top:12px">${icon(ICONS.info)}<div>
+      <p>The score above this section is the model's, and Context never changes it. What you see on a
+      card is always the raw calibrated probability — Context only decides the <b>order</b> of bats the
+      model already rates within ${maxPair}pt of each other, which is inside the range where
+      <b class="num">p_hit</b> has no real resolution anyway. It cannot lift a 55% bat over a 71% one.</p>
+      <p>It is built from things the model does not train on: career record against tonight's starter,
+      the bullpen actually available behind him, the seven gloves actually on the field, and schedule
+      wear. Each is true and none is calibrated.</p>
+      <p><b>Its track record is not yet measurable.</b> These columns were added 2026-07-28, so no
+      settled outcome has been scored with them. Until enough have, this section reports what Context
+      is doing and makes no claim about whether it helps.</p></div></div>
   </section>`;
 }
 
@@ -4436,7 +4670,9 @@ function renderDrawer(){
     <div class="sec-h lv2"><h2>Why</h2><p>Ranked by how much each factor moves this score</p></div>
     <div class="ev">${ev.signal.map(evRow).join('')}</div>
 
-    ${ev.context.length?`<div class="sec-h lv2"><h2>Context</h2><p>Real information the model does not train on</p></div>
+    ${ev.context.length?`<div class="sec-h lv2"><h2>Context</h2><p>Real information the model does not train on${
+        b.ctx?` — on balance it reads <b class="num">${b.ctx>0?'+':''}${b.ctx}</b> for him, enough to move him past bats within ${(CONTEXT_BAND*100).toFixed(0)}pt of his score and no further`
+             :'. Nothing here is unusual enough tonight to move him.'}</p></div>
     <div class="ev">${ev.context.map(evRow).join('')}</div>`:''}
 
     <div class="sec-h lv2"><h2>Form</h2><p>Last 10 games — filled means he got a hit. Green stats favour him tonight, red work against him, each against the rest of the slate.</p></div>
@@ -4599,7 +4835,7 @@ function animateNumbers(){
 function paintSlateHue(){
   const r=document.documentElement;
   const top = S.view==='today' && S.batters.length
-    ? [...S.batters].sort((a,b)=>b.p-a.p)[0] : null;
+    ? [...S.batters].sort(byScore)[0] : null;
   const t = top && String(top.team||'').toUpperCase();
   if(t && getComputedStyle(r).getPropertyValue('--tb-'+t)) r.style.setProperty('--slate-tc', `var(--tb-${t})`);
   else r.style.removeProperty('--slate-tc');
@@ -4755,7 +4991,7 @@ function qsMatches(q){
   const has=(t)=>String(t||'').toLowerCase().includes(q);
   const rank=(t)=>starts(t)?0:1;
   const batters=S.batters.filter(b=>has(b.name))
-    .sort((a,b)=>rank(a.name)-rank(b.name) || b.p-a.p).slice(0,6);
+    .sort((a,b)=>rank(a.name)-rank(b.name) || byScore(a,b)).slice(0,6);
   const pitSeen=new Map();
   for(const b of S.batters){
     if(!b.pit || !has(b.pit) || pitSeen.has(b.pit)) continue;
@@ -4846,7 +5082,7 @@ function initGlobalSearch(){
       /* opened against the whole slate by score, so the drawer's ‹ › and its
          swipe still page through a real ranking rather than a search result
          set that stops after six */
-      openDrawer(el.dataset.qsb, [...S.batters].sort((a,b)=>b.p-a.p));
+      openDrawer(el.dataset.qsb, [...S.batters].sort(byScore));
     } else if(el.dataset.qsp!=null){
       S.filters={...S.filters, q:el.dataset.qsp, team:'', game:'', slot:''};
       go('batters');
@@ -4920,8 +5156,8 @@ function wireView(){
     ev.stopPropagation();
     if(Date.now()-swipedAt < 400) return;   // that click is the tail of a swipe
     const list = S.view==='batters' ? filtered() : S.view==='watch'
-      ? S.batters.filter(b=>S.stars.includes(key(b))).sort((a,b)=>b.p-a.p)
-      : [...S.batters].sort((a,b)=>b.p-a.p);
+      ? S.batters.filter(b=>S.stars.includes(key(b))).sort(byScore)
+      : [...S.batters].sort(byScore);
     openDrawer(el.dataset.k, list);
   }));
   $$('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
