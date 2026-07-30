@@ -996,7 +996,7 @@ table{border-collapse:collapse;width:100%;font-size:var(--t-sm);table-layout:fix
    sit on `table` itself, so every table on the site inherited a 1040px floor —
    including the six-column pitcher log inside a 560px drawer, which then
    overflowed and dragged the whole panel sideways. */
-#tbl table{min-width:1040px}
+#tbl table{min-width:1104px}
 th{
   text-align:left;font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);
   font-weight:750;padding:10px 10px 10px 0;border-bottom:1px solid var(--rule);white-space:nowrap;
@@ -1036,6 +1036,11 @@ th:last-child,td:last-child{padding-right:0}
    # · batter · tm · slot · score · form · matchup · L10 · xba · k% · pitcher · arm · pa/g · ★
    c-l10 holds a `.strip.sm` (63px) plus the 12px group rule padding. */
 col.c-rk{width:44px}
+/* 64, not 46: the group band above it spells "Context" and needs 63px, so a
+   46px column clipped the heading to "CONTE". The band is the whole point of
+   the column — it is what says this is NOT model score — so the width follows
+   the label rather than the digits. */
+col.c-ctx{width:64px}
 col.c-name{width:19%} col.c-tm{width:48px}  col.c-slot{width:50px} col.c-score{width:124px}
 col.c-form{width:70px} col.c-mu{width:78px} col.c-l10{width:84px} col.c-xba{width:66px}
 col.c-k{width:64px}    col.c-pit{width:14%} col.c-arm{width:62px} col.c-pa{width:62px}
@@ -1618,13 +1623,20 @@ td.c .dia{vertical-align:middle}
    exactly what it is: the rank is the model's ordering, this is the context
    lane annotating it. Border rather than fill, because a filled pill at this
    size competes with the score tier on the dial two columns to its left. */
-.bcard > .bctx{
-  position:absolute;right:13px;top:calc(50% + 13px);
-  pointer-events:none;z-index:0;line-height:1;
+/* APPEARANCE here, POSITION on the card rule below. Split deliberately: the
+   table and the card list are two presentations of one slate, and a reader who
+   learns the mark in one has to recognise it in the other. Sharing the base
+   means they cannot drift into two different-looking badges. */
+.bctx{
+  display:inline-block;line-height:1;
   font-size:10px;font-weight:650;letter-spacing:-.01em;
   font-variant-numeric:tabular-nums;
   padding:2px 5px;border-radius:999px;
   border:1px solid var(--line);color:var(--ink2);
+}
+.bcard > .bctx{
+  position:absolute;right:13px;top:calc(50% + 13px);
+  pointer-events:none;z-index:0;
 }
 /* Only the UP mark takes the accent — a negative read is information, not an
    alarm, and a red one would be read as "avoid", a stronger claim than an
@@ -1637,7 +1649,7 @@ td.c .dia{vertical-align:middle}
    warning. Worth knowing the fault was DARK-ONLY — in light the two already
    measured 5.51 and 5.71, so anyone checking there would have seen nothing
    wrong. Check both lightnesses before trusting a contrast judgement here. */
-.bcard > .bctx.up{color:var(--acc-txt);border-color:var(--acc-line)}
+.bctx.up{color:var(--acc-txt);border-color:var(--acc-line)}
 .bcard.hero > .bctx{right:12px;top:calc(50% + 26px);font-size:11px}
 /* A lite row drops its CHIPS, not its rank — and this annotates the rank, so
    it stays and just tracks .bcard.lite .brank's smaller size and gutter.
@@ -1652,7 +1664,19 @@ td.c .dia{vertical-align:middle}
    It recedes by OPACITY, not by taking .brank's --surf3. That tone is tuned
    for a 26px numeral; at 10px it computes to rgba(255,255,255,.11) and the
    mark disappears again by a different route. */
-.bcard[data-out] > .bctx{opacity:.5}
+.bcard[data-out] > .bctx, tr[data-out] .bctx{opacity:.5}
+/* The table gets a COLUMN, not a mark tucked beside the rank. A table is read
+   by its headings, and "no visual cue at first glance" was the accurate
+   complaint about a badge that only appears on the ~20% of rows carrying a
+   strong read — the top ten had none, so the feature was invisible exactly
+   where a reader starts. A column announces itself in the header band, gives
+   every row a value, and can be SORTED, which is the question underneath all
+   of this: show me who context liked.
+   `.ctxnil` is the dot a row with no strong read prints — a blank cell reads
+   as missing data, a dot reads as "asked and answered, nothing here". */
+td .bctx{font-size:9px;padding:1px 4px}
+.ctxnil{color:var(--ink4);opacity:.5}
+.ctxdim{color:var(--ink3);font-size:11px;font-variant-numeric:tabular-nums}
 @media(max-width:600px){
   .bcard > .bctx{right:8px;top:calc(50% + 11px);font-size:9px;padding:1px 4px}
   .bcard.hero > .bctx{right:12px;top:calc(50% + 22px);font-size:10px}
@@ -3656,8 +3680,29 @@ function ctxHTML(b){
     ? `moved him ${n} place${n===1?'':'s'} ${d>0?'up':'down'} this list`
     : 'not enough to move him past anyone tonight';
   const sign = up ? '+' : '−';
-  return `<span class="bctx${up?' up':''}" aria-hidden="true" `
+  /* NOT aria-hidden, unlike .brank beside it. The rank is decorative on a card
+     — the list order already conveys it — but this is a fact the order does
+     not carry, and the table states it in a real cell. The title is the
+     accessible text in both presentations. */
+  return `<span class="bctx${up?' up':''}" `
        + `title="Context ${sign}${Math.abs(b.ctx)} — ${moved}">${sign}${Math.abs(b.ctx)}</span>`;
+}
+
+/** The table's Context cell. Three states, and the middle one is why this is
+    not just ctxHTML: a COLUMN has to say something for every row, while the
+    card's mark only speaks for the strong reads.
+
+      strong  — the same pill the card wears, so the two presentations teach
+                one symbol
+      present — a plain dim number: true, worth reading, not worth a badge
+      none    — a dot, because an empty cell reads as missing data while a dot
+                reads as asked-and-answered */
+function ctxCell(b){
+  if(b.ctxStrong && b.ctx) return ctxHTML(b);
+  if(!b.ctx) return '<span class="ctxnil" title="No context either way tonight">·</span>';
+  const sign = b.ctx > 0 ? '+' : '−';
+  return `<span class="ctxdim" title="Context ${sign}${Math.abs(b.ctx)} — below tonight's mark threshold">`
+       + `${sign}${Math.abs(b.ctx)}</span>`;
 }
 
 function rankOf(b){
@@ -4053,15 +4098,21 @@ function viewBatters(){
     ['','#','c rk'],
     ['name','Batter',''],['team','Tm','c'],['slot','Slot','c'],
     ['p','Score','sch g1'],['base','Form','r'],['delta','Matchup','r'],
+    ['ctx','Ctx','c g1'],
     ['l10hits','L10','c g1'],['bXba','xBA','r dim'],['bK','K%','r dim'],
     ['pit','Pitcher','g1'],['pRating','Arm','r dim'],['bPA','PA/g','r dim'],
     ['','','c']
   ];
-  // group header band — colspans must total the 14 columns above
-  const groups=[[1,''],[3,'Who'],[3,'Model score'],[3,'Batter form'],[3,'The arm'],[1,'']];
+  /* group header band — colspans must total the 15 columns above.
+     Context is its OWN band, not an extra cell under "Model score". That
+     heading names what the model produced, and the whole claim of this lane is
+     that the model did not produce it. Sitting the column under that band
+     would undo in one word what the ctx flag, IN_MODEL and the parity suite
+     are all there to keep straight. */
+  const groups=[[1,''],[3,'Who'],[3,'Model score'],[1,'Context'],[3,'Batter form'],[3,'The arm'],[1,'']];
   // one <col> per column, in the same order — the widths live in the
   // stylesheet so the table can be table-layout:fixed (see .tblwrap)
-  const colgroup = ['rk','name','tm','slot','score','form','mu','l10','xba','k','pit','arm','pa','star']
+  const colgroup = ['rk','name','tm','slot','score','form','mu','ctx','l10','xba','k','pit','arm','pa','star']
     .map(c=>`<col class="c-${c}">`).join('');
   const bands = tierBands(shown, f.sort==='p');
   const bandRow = (bd,span) => `<tr class="band"><td colspan="${span}">
@@ -4124,6 +4175,7 @@ function viewBatters(){
         <td class="sc g1"><b class="num ${o?'':tcls(b.p)}">${pct(b.p,1)}${outMark(o,b)}</b>${meter(b)}</td>
         <td class="r num">${pct(b.base,1)}</td>
         <td class="r num" style="color:${d>0?'var(--tier-hi)':d<0?'var(--bad)':'var(--ink3)'}">${d==null?'—':(d>0?'+':'')+(d*100).toFixed(1)}</td>
+        <td class="c g1">${ctxCell(b)}</td>
         <td class="c g1">${stripHTML(b.last10,'sm')}</td>
         <td class="r num dim">${num(b.bXba,3)}</td>
         <td class="r num dim">${pct(b.bK,1)}</td>
