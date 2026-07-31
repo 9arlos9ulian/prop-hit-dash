@@ -331,6 +331,14 @@ a{color:var(--acc-ink);text-decoration:none}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum";letter-spacing:-.02em}
 .wrap{max-width:1180px;margin:0 auto;padding:0 18px}
 @media(min-width:860px){ .wrap{padding:0 28px} }
+/* Batters is the one view that is width-starved rather than width-comfortable:
+   its fifteen columns give BATTER a percentage of 1180px, which ellipsises real
+   names ("Fernando Ta…") while a wide display leaves ~700px of empty gutter on
+   either side. Only this view — and only its own <main>, so the header and
+   footer keep the site's measure — spends the screen it actually has. */
+@media(min-width:1280px){
+  #main[data-view="batters"]{max-width:min(1560px, calc(100vw - 56px))}
+}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 :focus-visible{outline:2px solid var(--acc-txt);outline-offset:2px;border-radius:2px}
 .muted{color:var(--ink3)}
@@ -1469,6 +1477,28 @@ html[data-theme] .srail{left:14px}   /* aurora insets the cell */
 .chart .dead{opacity:.4}
 .chart .rlab{fill:var(--ink2);font-size:10px}
 .chart .rn{fill:var(--ink4)}
+/* ── the headline gap axis (gapSVG) ─────────────────────────────────────
+   Reuses the page's existing chart vocabulary rather than inventing one: the
+   scoped marker is `.actdot`, the same dot that means "what happened" on the
+   other three charts, and it takes `.off` past tolerance exactly as they do.
+   The whole-file marker is deliberately a GHOST — it is context for the
+   scoped number, not a second claim of equal standing. */
+.chart .tolband{fill:var(--surf2)}
+.chart .gapstem{stroke:var(--line2);stroke-width:1}
+.chart .gapghost{fill:none;stroke:var(--ink4);stroke-width:2}
+.chart .glab{fill:var(--ink);font-size:calc(var(--ct) + 3px);font-weight:750}
+.chart .gsub{fill:var(--ink4)}
+/* ── the context distribution (contextSVG) ──────────────────────────────
+   Sign is already carried by position on the axis, so colour here is
+   reinforcement, not the only channel — and it borrows the chip vocabulary
+   the cards already use for the same fact. */
+.chart .ctxup{fill:var(--acc-txt)}
+.chart .ctxdn{fill:var(--bad)}
+/* --ink3, not --ink4: the neutral bar is a MARK, so it owes 3:1 against the
+   surface like any other. --ink4 measured 2.82:1 on dark and 1.96:1 on light,
+   which made "no reading tonight" the hardest column on the chart to see —
+   and it is the one column whose height is a real finding about the lane. */
+.chart .ctxflat{fill:var(--ink3)}
 .clegend{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:12px 0 0;padding-left:2px;
   font-size:var(--t-mi);letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--ink3)}
 .clegend span{display:inline-flex;align-items:center;gap:7px}
@@ -3225,7 +3255,7 @@ function bandFor(cal,p){
 const S = {                                   // app state
   view:'today', batters:[], st:null, cal:null, modified:null, batShowAll:false, watchShowAll:false,
   live:{}, bullpen:null, odds:null, pitcherLog:null,
-  filters:{q:'',team:'',game:'',slot:'',lineup:'',ctx:'',sort:'p',dir:-1},
+  filters:{q:'',team:'',game:'',slot:'',lineup:'',ctx:'',res:'',sort:'p',dir:-1},
   stars:store.get('stars',[]), snap:null, drawerIdx:-1, drawerList:[],
   gamelog:{},   // per-gamePk finished-game logs, fetched lazily on drawer open
   lsort:store.get('lsort','strength'),      // how the Teams tab orders its lineups
@@ -3796,6 +3826,20 @@ function ribbon(){
                              : `${n(conf)} of ${n(bs.length)} confirmed`);
   if(S.st.p) bits.push(`median ${n(pct(S.st.p.med,0))}, spanning `
     + n(`${pct(S.st.p.min,0).replace('%','')}–${pct(S.st.p.max,0)}`));
+  /* How the night is actually going. The ribbon reported the slate's SHAPE —
+     games, lineups, score spread — and nothing about its RESULT, so a page
+     showing 151 batters who had already recorded a hit said only "median 63%".
+     The per-row ✓ was there; what was missing was the state at a glance.
+     Only once something has happened: on a pre-game slate every batter is
+     open, and "0 hit · 288 still to bat" is noise dressed as information. */
+  {
+    const hit = bs.filter(b=>outcomeOf(b)==='hit').length;
+    const openN = bs.filter(b=>!outcomeOf(b)).length;
+    if(hit || openN < bs.length){
+      bits.push(`${n(hit)} hit`
+        + (openN ? ` · ${n(openN)} still to bat` : ''));
+    }
+  }
   if(S.date) bits.push(dateLabel(S.date));
   else if(ago!=null) bits.push(`<span class="${stale?'warn':''}">scored `
     + `${ago<60?ago+'m':Math.round(ago/60)+'h'} ago</span>`);
@@ -4030,6 +4074,12 @@ function filtered(){
     // has some, so "any context" would filter almost nothing out.
     if(f.ctx==='up' && !(b.ctxStrong && b.ctx>0)) return false;
     if(f.ctx==='dn' && !(b.ctxStrong && b.ctx<0)) return false;
+    // Outcome. 'live' is the one worth having on a running slate: a bat with
+    // no hit yet whose game is still going is the only group still capable of
+    // changing, and it is invisible otherwise — it looks identical to a bat
+    // whose game ended without one.
+    if(f.res==='hit'  && outcomeOf(b)!=='hit') return false;
+    if(f.res==='live' && outcomeOf(b)!=='')    return false;
     return true;
   });
   // dir: 1 = ascending, -1 = descending. Nulls always sort last.
@@ -4125,7 +4175,7 @@ function viewBatters(){
      filtering, the head's action becomes the way out of it: a "clear" is a
      real action rather than a trip to another tab, so it keeps its place on a
      phone (see .lnk.act). */
-  const narrowed = !!(f.q.trim()||f.team||f.game||f.slot||f.lineup||f.ctx);
+  const narrowed = !!(f.q.trim()||f.team||f.game||f.slot||f.lineup||f.ctx||f.res);
   return `${ribbon()}
   <section class="sec">
   ${viewHead({
@@ -4154,6 +4204,14 @@ function viewBatters(){
       <button data-cx="up" aria-pressed="${f.ctx==='up'}">Context for</button>
       <button data-cx="dn" aria-pressed="${f.ctx==='dn'}">Context against</button>
     </div>
+    ${/* Outcome, and ONLY once something has happened. Before first pitch every
+         bat is open, so the control would offer three ways to see the same 288
+         rows — a filter that cannot narrow anything is furniture. */''}
+    ${S.batters.some(b=>outcomeOf(b)) ? `<div class="seg" role="group" aria-label="Outcome">
+      <button data-res="" aria-pressed="${f.res===''}">Any result</button>
+      <button data-res="hit" aria-pressed="${f.res==='hit'}">Hit</button>
+      <button data-res="live" aria-pressed="${f.res==='live'}">Still to bat</button>
+    </div>` : ''}
   </div>
   <div class="tblwrap" style="display:none" id="tbl">
     <table><colgroup>${colgroup}</colgroup><thead>
@@ -4526,6 +4584,99 @@ function viewWatch(){
 }
 
 /* ── Honesty ───────────────────────────────────────────────────────── */
+/* The headline, as a position rather than a readout.
+
+   This section used to be five stat tiles — n, Brier, mean predicted, actual
+   rate, overall gap — and the reader had to subtract two of them to get the
+   only number the section is actually about. The same objection the band
+   table answered with a dumbbell, one level up.
+
+   So the axis IS the gap, signed, centred on nothing-to-report. Two markers,
+   because the honest headline is a comparison: the scoped record (the range
+   the current model can still score in) and the unscoped one (the whole file,
+   including bands this model cannot reach). The paragraph that used to spell
+   out "unscoped, the same file reads +3.7pt" is now the distance between two
+   dots, which is the form that claim was always asking for.
+
+   Brier and the raw counts do not go on this axis. They are scalars with no
+   spatial meaning here, and inventing a scale for them would be decoration —
+   they ride the section's subtitle and each marker's own label instead. */
+function gapSVG(cal){
+  const g = (cal.baseRate-cal.meanP)*100;
+  const ga = (cal.all.baseRate-cal.all.meanP)*100;
+  /* 2pt is not a new threshold: the stat tile this chart replaced turned its
+     gap red at exactly Math.abs(gap) > .02, so the band is the page's own
+     existing verdict, drawn instead of applied to a text colour. */
+  const TOL = 2;
+  const reach = Math.max(TOL+1.5, Math.abs(g), Math.abs(ga)) * 1.25;
+  /* Vertical rhythm is set by the PHONE, not the desktop. `--ct` is a CSS px
+     size on SVG text inside a viewBox, which means it lands in USER UNITS —
+     9.5 on desktop but 15 under 820px. The first cut spaced these labels 14
+     units apart, which is fine for 9.5-unit text and overlapping for 15-unit
+     text, so every label on this chart collided on a phone. Everything below
+     is spaced for 15. */
+  const W=660,H=200,L=18,R=18, AX=106;
+  const x=v=>L+(v+reach)/(2*reach)*(W-L-R);
+  const ticks=[]; const step = reach>8 ? 4 : 2;
+  for(let t=-Math.floor(reach/step)*step; t<=reach+1e-9; t+=step) ticks.push(+t.toFixed(1));
+  const mark=(v,n,label,cls,above)=>{
+    const cx=x(v), sign=(v>0?'+':'')+v.toFixed(1);
+    return `<g><title>${esc(label)}: ${sign}pt over ${n.toLocaleString()} settled picks</title>
+      <line class="gapstem" x1="${cx.toFixed(1)}" y1="${AX}" x2="${cx.toFixed(1)}" y2="${(above?AX-26:AX+34)}"/>
+      <circle class="${cls}" cx="${cx.toFixed(1)}" cy="${AX}" r="${above?8:6}"/>
+      <text x="${cx.toFixed(1)}" y="${above?AX-36:AX+60}" text-anchor="middle" class="glab">${sign}pt</text>
+      <text x="${cx.toFixed(1)}" y="${above?AX-60:AX+84}" text-anchor="middle" class="gsub">${esc(label)}</text></g>`;
+  };
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img"
+    aria-label="Overall calibration gap: ${(g>0?'plus ':'minus ')}${Math.abs(g).toFixed(1)} points scoped to the current model's range over ${cal.n.toLocaleString()} settled picks, versus ${(ga>0?'plus ':'minus ')}${Math.abs(ga).toFixed(1)} points across the whole file">
+    <rect class="tolband" x="${x(-TOL).toFixed(1)}" y="${AX-16}" width="${(x(TOL)-x(-TOL)).toFixed(1)}" height="32" rx="3"/>
+    <line class="grid" x1="${L}" y1="${AX}" x2="${W-R}" y2="${AX}"/>
+    ${ticks.map(t=>`<line class="grid" x1="${x(t).toFixed(1)}" y1="${AX-6}" x2="${x(t).toFixed(1)}" y2="${AX+6}"/>
+      <text x="${x(t).toFixed(1)}" y="${AX+24}" text-anchor="middle">${t>0?'+':''}${t}</text>`).join('')}
+    ${/* stops short of the tick labels — it used to run straight through the 0 */''}
+    <line class="ideal" x1="${x(0).toFixed(1)}" y1="${AX-30}" x2="${x(0).toFixed(1)}" y2="${AX+8}"/>
+    ${mark(g, cal.n, 'this model\u2019s range', 'actdot'+(Math.abs(g)>TOL?' off':''), true)}
+    ${mark(ga, cal.all.n, 'whole file', 'gapghost', false)}
+    <text x="${L}" y="14" class="gsub">actual \u2212 predicted, in points</text>
+  </svg>`;
+}
+/* Tonight's Context lane as a distribution instead of four counts.
+
+   The tiles said how many bats context read for, how many against, and the
+   most it can move one bat. A diverging column chart says all three at once
+   and adds the shape, which is the part that actually matters: whether the
+   lane is nudging a handful of bats hard or nearly all of them slightly. The
+   cap is drawn as the axis's own extent rather than quoted as a number. */
+function contextSVG(bs){
+  const vals = bs.map(b=>b.ctx).filter(v=>v!=null && !isNaN(v));
+  if(!vals.length) return '';
+  const counts=new Map();
+  for(const v of vals) counts.set(v,(counts.get(v)||0)+1);
+  const lo=Math.min(...counts.keys()), hi=Math.max(...counts.keys());
+  const span=Math.max(Math.abs(lo),Math.abs(hi));
+  const keys=[]; for(let k=-span;k<=span;k++) keys.push(k);
+  const maxN=Math.max(...counts.values());
+  // same user-unit reasoning as gapSVG: spaced for 15-unit text, not 9.5
+  const W=660,H=250,L=18,R=18,T=52,B=52;
+  const bw=(W-L-R)/keys.length, gap=Math.min(6,bw*.22);
+  const x=i=>L+i*bw, yTop=n=>H-B-(n/maxN)*(H-B-T);
+  const up=vals.filter(v=>v>0).length, dn=vals.filter(v=>v<0).length, flat=vals.filter(v=>!v).length;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img"
+    aria-label="Context score distribution across ${vals.length} bats tonight: ${up} read for, ${dn} against, ${flat} neutral, spanning ${lo} to ${hi}">
+    <line class="grid" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>
+    ${keys.map((k,i)=>{
+      const n=counts.get(k)||0;
+      const cls = k>0?'ctxup' : k<0?'ctxdn' : 'ctxflat';
+      const h=n?Math.max(2,(H-B)-yTop(n)):0;
+      return `<g><title>Context ${k>0?'+':''}${k}: ${n} bat${n===1?'':'s'}</title>
+        ${n?`<rect class="${cls}" x="${(x(i)+gap/2).toFixed(1)}" y="${yTop(n).toFixed(1)}" width="${(bw-gap).toFixed(1)}" height="${h.toFixed(1)}" rx="3"/>`:''}
+        <text x="${(x(i)+bw/2).toFixed(1)}" y="${H-B+22}" text-anchor="middle">${k>0?'+':''}${k}</text>
+        ${n?`<text x="${(x(i)+bw/2).toFixed(1)}" y="${(yTop(n)-8).toFixed(1)}" text-anchor="middle" class="rn">${n}</text>`:''}</g>`;
+    }).join('')}
+    <text x="${L}" y="14" class="gsub">bats at each context reading \u2014 against on the left, for on the right</text>
+    <text x="${W/2}" y="${H-6}" text-anchor="middle" class="gsub">context score</text>
+  </svg>`;
+}
 function reliabilitySVG(cal){
   const W=560,H=300,P=38, SPAN=CAL_HI-CAL_LO;
   const x=v=>P+(v-CAL_LO)/SPAN*(W-P-14), y=v=>H-P-(v-CAL_LO)/SPAN*(H-P-14);
@@ -4679,21 +4830,13 @@ function viewHonesty(){
       // figure it could carry is already a tile 20px below it, and the head
       // would be the only place on the page saying a thing twice. The long
       // title would also wrap it onto a line of its own.
-      sub:`The one hard rule of this project — measured on the ${cal.n.toLocaleString()} settled picks inside the range the current model scores in`})}
-    <div class="sgrid">
-      <div class="scell"><div class="slab">Settled picks</div><div class="sval">${cal.n.toLocaleString()}</div><div class="ssub">${pct(cal.lo,0)}+, since ${esc(cal.since||'')}</div></div>
-      <div class="scell"><div class="slab">Brier</div><div class="sval">${num(cal.brier,4)}</div><div class="ssub">lower is better</div></div>
-      <div class="scell"><div class="slab">Mean predicted</div><div class="sval">${pct(cal.meanP,1)}</div><div class="ssub">what it claimed</div></div>
-      <div class="scell"><div class="slab">Actual rate</div><div class="sval">${pct(cal.baseRate,1)}</div><div class="ssub">what happened</div></div>
-      <div class="scell"><div class="slab">Overall gap</div><div class="sval" style="color:${Math.abs(cal.baseRate-cal.meanP)>.02?'var(--bad)':'var(--acc)'}">${((cal.baseRate-cal.meanP)*100>0?'+':'')+((cal.baseRate-cal.meanP)*100).toFixed(1)}pt</div><div class="ssub">actual − predicted</div></div>
-    </div>
-    <p class="muted" style="font-size:12.5px;margin-top:8px">Scoped to scores of ${pct(cal.lo,0)} and up, because
-      below that the record belongs to the pre-${esc(cal.era)} model and the current one cannot land there.
-      Unscoped, the same file reads <b class="num">${cal.all.n.toLocaleString()}</b> picks,
-      Brier <b class="num">${num(cal.all.brier,4)}</b>, predicted <b class="num">${pct(cal.all.meanP,1)}</b>
-      vs actual <b class="num">${pct(cal.all.baseRate,1)}</b> — a
+      sub:`The one hard rule of this project — measured on the ${cal.n.toLocaleString()} settled picks inside the range the current model scores in, since ${esc(cal.since||'')}`})}
+    ${gapSVG(cal)}
+    <p class="muted" style="font-size:12.5px;margin-top:10px">It said <b class="num">${pct(cal.meanP,1)}</b>,
+      those picks landed <b class="num">${pct(cal.baseRate,1)}</b>. Brier <b class="num">${num(cal.brier,4)}</b>,
+      lower is better. The lower marker is the same file unscoped — its
       <b class="num">${((cal.all.baseRate-cal.all.meanP)*100>0?'+':'')+((cal.all.baseRate-cal.all.meanP)*100).toFixed(1)}pt</b>
-      gap that is almost entirely the retired low bands.</p>
+      is almost entirely the retired bands below ${pct(cal.lo,0)}, which the current model cannot land in.</p>
   </section>
   <section class="sec">
     ${/* Each chart head keeps its SCOPE on a phone and sheds its how-to-read
@@ -4756,12 +4899,11 @@ function contextHonesty(){
   for(let i=0;i<byP.length;i++) if(byP[i]!==byS[i]) flips++;
   return `<section class="sec">
     <div class="sec-h lv2"><h2>The Context score</h2><p>A second number, deliberately not calibrated — and what it is allowed to do</p></div>
-    <div class="sgrid">
-      <div class="scell"><div class="slab">Bats with context</div><div class="sval">${moved}</div><div class="ssub">of ${bs.length} tonight</div></div>
-      <div class="scell"><div class="slab">Reads for / against</div><div class="sval">${up} / ${dn}</div><div class="ssub">positive / negative</div></div>
-      <div class="scell"><div class="slab">Order changed</div><div class="sval">${flips}</div><div class="ssub">positions moved</div></div>
-      <div class="scell"><div class="slab">Most it can move</div><div class="sval">${maxSelf}pt</div><div class="ssub">one bat, either way</div></div>
-    </div>
+    ${contextSVG(bs)}
+    <p class="muted" style="font-size:12.5px;margin-top:10px"><b class="num">${moved}</b> of
+      <b class="num">${bs.length}</b> bats carry a reading tonight — <b class="num">${up}</b> for,
+      <b class="num">${dn}</b> against — and it moved <b class="num">${flips}</b> of them in the order.
+      The most it can move one bat is <b class="num">${maxSelf}pt</b>, either way.</p>
     <div class="truth" style="margin-top:12px">${icon(ICONS.info)}<div>
       <p>The score above this section is the model's, and Context never changes it. What you see on a
       card is always the raw calibrated probability — Context only decides the <b>order</b> of bats the
@@ -5402,7 +5544,7 @@ function wireView(){
      thing the reader was trying to get out of. `sort` goes back to the score
      because that is the order the list has when you arrive on it. */
   const clearBat=()=>{
-    S.filters={...S.filters, q:'', team:'', game:'', slot:'', lineup:'', ctx:'', sort:'p', dir:-1};
+    S.filters={...S.filters, q:'', team:'', game:'', slot:'', lineup:'', ctx:'', res:'', sort:'p', dir:-1};
     S.batShowAll=false; render();
   };
   // two entry points, one behaviour: the head's action, and the way out of an
@@ -5431,6 +5573,7 @@ function wireView(){
   bind('#fteam','team'); bind('#fgame','game'); bind('#fslot','slot');
   $$('[data-lu]').forEach(el=>el.addEventListener('click',()=>{ S.filters.lineup=el.dataset.lu; render(); }));
   $$('[data-cx]').forEach(el=>el.addEventListener('click',()=>{ S.filters.ctx=el.dataset.cx; render(); }));
+  $$('[data-res]').forEach(el=>el.addEventListener('click',()=>{ S.filters.res=el.dataset.res; render(); }));
   $$('[data-lsort]').forEach(el=>el.addEventListener('click',()=>{
     S.lsort=el.dataset.lsort; store.set('lsort',S.lsort); render();
   }));
