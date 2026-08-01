@@ -2600,7 +2600,7 @@ function toBatter(r){
     slot:N(r.slot), gamePk:r.game_pk, matchup:r.matchup, startTime:r.start_time,
     gameState:r.game_state, confirmed:(r.lineup_source||'')==='live',
     p:N(r.p_hit), base:N(r.base_p_hit), delta:N(r.matchup_delta),
-    hasHit:r.has_hit==='True', last10,
+    hasHit:r.has_hit==='True', dnp:r.did_not_play==='True', last10,
     l10hits: last10 ? [...last10.slice(-10)].filter(c=>c==='1').length : null,
     // batter form
     bHit:N(r.b_hit_rate), bXba:N(r.b_xba), bHard:N(r.b_hardhit), bBabip:N(r.b_babip),
@@ -3653,9 +3653,18 @@ const slateOver = () => S.batters.length>0 && S.batters.every(isFinal);
     and draws the same mark, so ✓ and ✗ mean exactly one thing each.
     An archived CSV carries whatever game_state it was written with (usually
     pre-game), so any archive from a past day counts as settled wholesale —
-    the same rule the archive ribbon and the drawer already use. */
+    the same rule the archive ribbon and the drawer already use — which is
+    only sound because settle.py now backfills has_hit into the archive from
+    the settled picks_log. Before that, a snapshot frozen at 16:00 PT with
+    the game still in progress carried has_hit=False, and this line turned
+    that stale False into a confident ✗ beside a drawer that had fetched the
+    real boxscore and said he got two hits.
+    `dnp` is the fourth input and the reason it exists: a batter the boxscore
+    never listed did not miss, he never batted, so he gets no mark at all —
+    the same third state the form strip draws. */
 function outcomeOf(b){
   if(b.hasHit) return 'hit';
+  if(b.dnp) return '';
   return (isFinal(b) || (!!S.date && S.date < TODAY())) ? 'miss' : '';
 }
 /** The mark itself. Rendered beside the SCORE, never beside the name: the
