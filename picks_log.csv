@@ -32032,7 +32032,7 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-02,824807,607208,Trea Turner,PHI,PHI @ BAL,1,0.6747,-233.0,245.0,,70.0,,,,,
 2026-08-02,824807,664761,Alec Bohm,PHI,PHI @ BAL,4,0.6736,,,,,,,,,
 2026-08-02,824648,691176,Jasson Domínguez,NYY,NYY @ CHC,5,0.6705,,,,,,,,,
-2026-08-02,824648,502671,Paul Goldschmidt,NYY,NYY @ CHC,3,0.6695,,,,,,,,,
+2026-08-02,824648,502671,Paul Goldschmidt,NYY,NYY @ CHC,9,0.6695,,,,,,,,,
 2026-08-02,823107,702284,Cole Young,SEA,MIN @ SEA,1,0.6641,-163.0,186.0,,62.0,,,,,
 2026-08-02,824648,663757,Trent Grisham,NYY,NYY @ CHC,1,0.6681,,,,,,,,,
 2026-08-02,823919,605141,Mookie Betts,LAD,BOS @ LAD,5,0.6603,-170.0,178.0,,63.0,,,,,
@@ -32300,3 +32300,4 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-02,823996,666139,Josh Lowe,LAA,MIL @ LAA,8,0.4845,285.0,-212.0,,26.0,,,,,
 2026-08-02,822943,691011,Drew Romo,CWS,CWS @ TB,9,0.4735,809.0,-233.0,,11.0,,,,,
 2026-08-02,823107,660844,Leo Rivas,SEA,MIN @ SEA,9,0.4367,133.0,-117.0,,43.0,,,,,
+2026-08-02,823919,672613,Eliezer Alfonzo,LAD,BOS @ LAD,9,0.5689,,,,,,,,,
