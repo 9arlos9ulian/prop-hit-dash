@@ -940,7 +940,39 @@ td.sc .res{font-size:8.5px;margin-left:4px;vertical-align:.14em}
 .sdial .dc{position:absolute;display:flex;flex-direction:column;align-items:center;line-height:1;text-align:center}
 /* .24em, not .27em: the third ring took the core hole down to 35 units */
 .sdial .dv{font-weight:750;letter-spacing:-.04em;font-size:.24em}
+/* the dial's stamp — see dialHTML(). It rides the bottom of the rings rather
+   than sitting in the core: the core hole is 35 of 100 units across and the
+   digits already fill it, so a disc under them would spill over the inner
+   arc. Sized in em of --ds, so all four dial sizes get a proportionate mark
+   from the one rule. The halo is --bg (a solid page tone in both lightnesses,
+   unlike the translucent --surf) and it is what keeps the arcs from running
+   into the disc's edge. */
+.sdial .res{position:absolute;left:50%;bottom:-.025em;transform:translateX(-50%);
+  font-size:.15em;box-shadow:0 0 0 .13em var(--bg)}
+/* the miss stamp is a 14% fill of --bad, and the row it sits on is already at
+   .6 — on the light theme the two together left a pale pink dot you had to
+   hunt for. A hairline in --bad gives it an edge to be found by. The row still
+   recedes; the mark on it stays legible, which is the whole point of the
+   third state existing. */
+.sdial .res.miss{opacity:1;
+  box-shadow:0 0 0 .13em var(--bg),inset 0 0 0 .085em color-mix(in srgb,var(--bad) 50%,transparent)}
+/* not in the drawer. The stamp exists because a row has nowhere else to say
+   the outcome; the drawer has already said it twice by the time you reach this
+   dial — beside the title and as "Final — no hit" over the play-by-play — and
+   at 200px the disc is a 48px object competing with all three. */
+.vtop .sdial .res{display:none}
 [data-out] .meter i,.meter.settled i{background:var(--ink4)}
+/* ── the two settled directions ───────────────────────────────────────
+   A miss recedes; for a while a hit did NOTHING, and nothing is also what a
+   bat that has not come up yet looks like. So the hit gets the mirror of the
+   fade rather than the absence of it: the row holds full strength and carries
+   a rail in the outcome green down the edge the dial sits on. Two treatments
+   per direction, symmetric — recede + ✗, rail + ✓ — and neither is decorative:
+   each says only "this bat resolved, this way".
+   --hit-disc, never --tier-hi: the tier colour is retired on a settled row
+   (see the [data-out] block above), so outcome green is unambiguous here. */
+[data-out="hit"]{--out-rail:inset 3px 0 0 var(--hit-disc)}
+.bcard[data-out="hit"]{box-shadow:var(--out-rail)}
 [data-out="miss"]{opacity:.6;transition:opacity .15s}
 [data-out="miss"]:hover{opacity:1}
 /* the game strip's inline marks — same class, so there is literally one
@@ -1971,6 +2003,12 @@ html[data-theme] .bcard.lite{
   box-shadow:none;
 }
 html[data-theme] .bcard.lite::after{display:none}
+/* the settled-hit rail, restated per weight because each weight sets its own
+   box-shadow above and a shorthand cannot be added to. --out-rail is declared
+   once, on [data-out="hit"]; these only append it to the lift each card has. */
+html[data-theme] .bcard[data-out="hit"]{box-shadow:var(--edge),var(--out-rail)}
+html[data-theme] .bcard.lite[data-out="hit"]{box-shadow:var(--out-rail)}
+html[data-theme] .bcard.hero[data-out="hit"]{box-shadow:var(--hero-edge),var(--hero-lift),var(--out-rail)}
 html[data-theme] .gsrow{border-bottom-color:var(--line)}
 html[data-theme] .gstrip{border-top-color:var(--line)}
 html[data-theme] .bcard.stagger{
@@ -2025,6 +2063,18 @@ html[data-theme] .bcard.stagger{
      instead of by luck. */
   html[data-theme] .bcard.hero:hover{
     box-shadow:inset 0 0 0 1px var(--acc-line),var(--hero-lift);
+  }
+  /* hover replaces the shorthand, so the settled-hit rail has to be restated
+     here too or it disappears under the pointer — on the one row you are
+     actually looking at. */
+  html[data-theme] .bcard[data-out="hit"]:hover{
+    box-shadow:inset 0 0 0 1px var(--acc-line),var(--lift),var(--out-rail);
+  }
+  html[data-theme] .bcard.lite[data-out="hit"]:hover{
+    box-shadow:inset 0 0 0 1px var(--acc-line),var(--out-rail);
+  }
+  html[data-theme] .bcard.hero[data-out="hit"]:hover{
+    box-shadow:inset 0 0 0 1px var(--acc-line),var(--hero-lift),var(--out-rail);
   }
 }
 /* a sheen that sweeps across on hover */
@@ -3611,14 +3661,26 @@ function dialHTML(b){
       svg+=`<path d="${A(rMatch,Math.min(a0,a1),Math.max(a0,a1))}" stroke="${b.delta>=0?col:'var(--ink4)'}" stroke-width="${sw}" fill="none"/>`;
   }
   svg+='</svg>';
-  /* The core carries the two digits and nothing else — no rank, no team
-     code, no ✓/✗. aria-label carries what the rings say for anyone who
-     cannot see them, and states the outcome outright, since two visual
-     states cannot say "hit" the way three could. */
+  /* The digits, plus the outcome STAMP once the game has answered them.
+     The dial shipped without the ✓/✗ for a while, on the theory that lit vs
+     dimmed said it: a miss recedes, so anything at full strength must have
+     hit. It does not work, because dim/lit is two states and there are three.
+     "Recorded a hit" and "still to bat" both render as the natural, fully lit
+     dial — so an archived slate where 90 of 142 bats had already hit showed
+     nothing to separate them from the one that never batted, and the main page
+     read as a night that had not started. The stamp is the only mark that
+     tells the three apart, so it is back, on the rings rather than in the core
+     (the hole is 35 units wide — the digits already fill it).
+     aria-hidden: the dial's own aria-label states the outcome in words, and a
+     nested role="img" inside it would only repeat that. */
   const vc= out==='miss' ? 'var(--ink3)' : 'var(--ink)';
   const dl = b.delta!=null ? `, matchup ${b.delta>=0?'+':''}${(b.delta*100).toFixed(1)}` : '';
+  const stamp = out
+    ? `<i class="res ${out}${b&&S._justHit?.has(key(b))?' pop':''}" aria-hidden="true"
+         title="${out==='hit'?'Recorded a hit':'Game ended with no hit'}">${out==='hit'?'✓':'✗'}</i>`
+    : '';
   return `<span class="sdial" role="img" aria-label="${esc(b.team||'')} ${pct(b.p,1)}${dl}${out ? out==='hit'?', recorded a hit':', game ended with no hit' : ''}">${svg}<span class="dc">
-    <span class="dv num${out?'':' anim'}" style="color:${vc}">${Math.round(b.p*100)}</span></span></span>`;
+    <span class="dv num${out?'':' anim'}" style="color:${vc}">${Math.round(b.p*100)}</span></span>${stamp}</span>`;
 }
 /** The lineup slot drawn as a scorecard diamond. The batting order is one of
     the few numbers here that is a baseball object rather than a statistic, and
@@ -3641,7 +3703,15 @@ function stripHTML(l10, cls){
 function lineupTag(b){
   return b.confirmed ? `<span class="tag conf">confirmed</span>` : `<span class="tag est">projected</span>`;
 }
-const isFinal = b => /final|game over/i.test(S.live[b.gamePk]?.state||b.gameState||'');
+/* "Completed Early" is a finished game — a rain-shortened one. It was missing
+   here, so on a live slate those rows never settled: a batter who went 0-for in
+   a game called after 6 innings sat at "still to bat" until midnight. Same
+   string-matching miss as settle.py's FINAL_STATES, which listed the state and
+   never matched "Completed Early: Rain" (two games, 39 rows, never settled).
+   Substring on purpose, so a suffixed reason still matches; "Suspended: Rain"
+   and "Delayed Start: Rain" contain none of these words and must not match —
+   a suspended game gets resumed. */
+const isFinal = b => /final|game over|completed early/i.test(S.live[b.gamePk]?.state||b.gameState||'');
 /** True once every game has ended — then "final" is a property of the slate,
     not of each batter, and belongs in the ribbon instead of on 270 cards. */
 const slateOver = () => S.batters.length>0 && S.batters.every(isFinal);
@@ -3667,6 +3737,12 @@ function outcomeOf(b){
   if(b.dnp) return '';
   return (isFinal(b) || (!!S.date && S.date < TODAY())) ? 'miss' : '';
 }
+/** Still to bat — and NOT simply `!outcomeOf(b)`. A batter the boxscore never
+    listed also has no mark, and he is not waiting: `dnp` is only ever written
+    by settle.py off a finished boxscore, so it always means a closed game.
+    Counting him as open is how a fully settled archive reported "1 still to
+    bat" under eight games that had all been Final since the night before. */
+const stillToBat = b => !outcomeOf(b) && !b.dnp;
 /** The mark itself. Rendered beside the SCORE, never beside the name: the
     score is the claim the outcome answers, and a ✓ floating next to a name
     was an ornament stuck on a forecast row rather than the row's own state. */
@@ -3843,10 +3919,12 @@ function ribbon(){
      open, and "0 hit · 288 still to bat" is noise dressed as information. */
   {
     const hit = bs.filter(b=>outcomeOf(b)==='hit').length;
-    const openN = bs.filter(b=>!outcomeOf(b)).length;
+    const openN = bs.filter(stillToBat).length;
+    const dnpN = bs.filter(b=>b.dnp).length;
     if(hit || openN < bs.length){
       bits.push(`${n(hit)} hit`
-        + (openN ? ` · ${n(openN)} still to bat` : ''));
+        + (openN ? ` · ${n(openN)} still to bat` : '')
+        + (dnpN ? ` · ${n(dnpN)} did not play` : ''));
     }
   }
   if(S.date) bits.push(dateLabel(S.date));
@@ -3973,7 +4051,7 @@ function gameStripData(){
     // started, which filed every pre-game matchup under Final, dimmed at the
     // bottom of the strip, with a "0–0" beside it.
     const live = g.abstract==='Live'  || (!g.abstract && /progress/i.test(state));
-    const fin  = g.abstract==='Final' || (!g.abstract && /final|game over/i.test(state));
+    const fin  = g.abstract==='Final' || (!g.abstract && /final|game over|completed early/i.test(state));
     const pre  = !live && !fin;
     // "AWAY @ HOME" — the same parse lineups() does, so the away side is drawn
     // on the left the way every scoreboard in the sport draws it.
@@ -4410,7 +4488,7 @@ function lineupCard(lu, rank, n, scale){
      is a forecast, and once every bat in it has an answer the forecast is no
      longer the headline — "5 of 9 got a hit" is. The tier colour goes with it,
      so a finished card cannot be mistaken for one still in play. */
-  const luFin = bs.length>0 && bs.every(b=>!!outcomeOf(b));
+  const luFin = bs.length>0 && !bs.some(stillToBat);
   const luHits = bs.filter(b=>outcomeOf(b)==='hit').length;
   const order = bs.map(b=>{
     const pv = pFor(b,alt);
@@ -4569,7 +4647,7 @@ function viewWatch(){
   // the header keeps the running answer: landed, finished without, still open.
   const done=list.filter(b=>outcomeOf(b)==='hit').length;
   const missed=list.filter(b=>outcomeOf(b)==='miss').length;
-  const open=list.length-done-missed;
+  const open=list.filter(stillToBat).length;
   // Same cap as Batters (LIST_CAP). The counts above stay whole-list — a
   // watchlist you can't see all of at once still has to report its real score.
   const capped = !S.watchShowAll && list.length > LIST_CAP+15;
