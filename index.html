@@ -3261,9 +3261,17 @@ async function calibration(){
        the overall gap to +3.7pt and made the serving model look badly
        miscalibrated on picks it cannot produce. Scoped, it is -0.2pt. The full
        -record numbers are still printed under the grid; nothing is hidden.
-       Not scoped by DATE, which would be the literal reading of "the current
-       model": that subset is empty until the first post-retrain settle. */
+
+       It is ALSO scoped by date, separately, as `eraLive` below. That used to
+       be pointless — the comment here said the date-scoped subset "is empty
+       until the first post-retrain settle" — but as of 2026-08-13 it holds
+       4,816 picks over 18 days and it does not say the same thing as the
+       pooled row: pooled is -1.1pt, the current generation alone is -5.3pt.
+       The pooled figure is not wrong, it is just 117 well-calibrated days
+       outvoting 18 bad ones, and a reader asking "is the number honest"
+       is asking about tonight's number. Both are reported. */
     let ln=0, lbrier=0, lsumP=0, lhits=0, lfirst='';
+    let en=0, ebrier=0, esumP=0, ehits=0, edays=new Set();
     for(const r of once.values()){
       const p=N(r.p_hit), a=r.actual_hit;
       if(p==null || (a!=='0'&&a!=='1')) continue;
@@ -3272,6 +3280,8 @@ async function calibration(){
       if(p>=CAL_LO && p<CAL_HI){                // == the bands marked `live`
         ln++; lbrier+=(p-y)**2; lsumP+=p; lhits+=y;
         if(!lfirst || String(r.date)<lfirst) lfirst=String(r.date);
+        // same rows, narrowed to the generation actually serving tonight
+        if(era){ en++; ebrier+=(p-y)**2; esumP+=p; ehits+=y; edays.add(r.date); }
       }
       /* Clamped at CAL_HI, not at .75: the old .75 ceiling folded every score
          above 80% into the "75%–80%" row, so 17 picks that the model called
@@ -3285,6 +3295,12 @@ async function calibration(){
       // headline = live range; `all` keeps the unscoped record for the footnote
       n:ln, brier:lbrier/ln, baseRate:lhits/ln, meanP:lsumP/ln, since:lfirst,
       all:{n, brier:brier/n, baseRate:hits/n, meanP:sumP/n},
+      /* the headline rows again, restricted to picks the CURRENT model made.
+         `days` is what decides whether this is readable at all: per-day gap SD
+         runs ~5pt, so 18 days is a +-2.3pt interval and no number of rows
+         inside a handful of slates substitutes for more slates. */
+      eraLive: en ? {n:en, brier:ebrier/en, baseRate:ehits/en, meanP:esumP/en,
+                     days:edays.size} : null,
       era:MODEL_ERA, eraN, lo:CAL_LO, hi:CAL_HI,
       /* `live` = a band the CURRENT model can still land a score in; charted and
          counted in the headline. `pos` says which side a dead band fell off:
@@ -4731,7 +4747,13 @@ function gapSVG(cal){
       <text x="${x(t).toFixed(1)}" y="${AX+24}" text-anchor="middle">${t>0?'+':''}${t}</text>`).join('')}
     ${/* stops short of the tick labels — it used to run straight through the 0 */''}
     <line class="ideal" x1="${x(0).toFixed(1)}" y1="${AX-30}" x2="${x(0).toFixed(1)}" y2="${AX+8}"/>
-    ${mark(g, cal.n, 'this model\u2019s range', 'actdot'+(Math.abs(g)>TOL?' off':''), true)}
+    ${/* Labelled by the SCORE RANGE, not "this model's range" (2026-08-13).
+          The old wording was fine while the pooled record and the serving
+          model agreed; since 07-25 they do not, and a marker a reader parses
+          as "this model" sitting at -1.1pt directly above a note saying the
+          serving model is -5.3pt is the chart contradicting its own caption.
+          The scoping here has always been by score range, never by date. */''}
+    ${mark(g, cal.n, '45\u201380% range', 'actdot'+(Math.abs(g)>TOL?' off':''), true)}
     ${mark(ga, cal.all.n, 'whole file', 'gapghost', false)}
     <text x="${L}" y="14" class="gsub">actual \u2212 predicted, in points</text>
   </svg>`;
@@ -4879,9 +4901,30 @@ const CHART_LEGEND = (tol,pred)=>`<div class="clegend">
     ERA_ENOUGH it is a rounding error on the old record; past it the curve has
     started to describe the model that is actually serving. No cause is given
     for a 0 — the honest reason could be settle lag or the known settle/slate
-    race, and the note should not guess. */
+    race, and the note should not guess.
+
+    A FOURTH state was added 2026-08-13, and it is the one that matters: past
+    ERA_ENOUGH the old copy congratulated itself that the curve "has started to
+    describe the model actually serving" — which is only reassuring while the
+    two agree. They stopped agreeing on 07-25. Pooled the record is -1.1pt;
+    the current generation alone is -5.3pt over 4,816 picks. Saying "the curve
+    now describes the serving model" under a curve that is 4pt kinder than the
+    serving model is the single most misleading sentence this tab could carry,
+    because this is the tab a reader opens to be told the bad news. So when the
+    two diverge, the divergence IS the provenance note. */
 const ERA_ENOUGH = 1000;
-function eraProvenance(n){
+/** How far apart the pooled and current-generation gaps have to be before the
+    tab leads with the split rather than the pooled number. 1.5pt is above the
+    interval on any window with enough days to be worth reporting, and below
+    the ~4pt divergence that prompted this — it is a threshold for "these are
+    different claims", not a verdict on either. */
+const ERA_SPLIT_PT = 1.5;
+function eraGap(cal){
+  if(!cal || !cal.eraLive) return null;
+  const e=cal.eraLive, pooled=(cal.baseRate-cal.meanP)*100, era=(e.baseRate-e.meanP)*100;
+  return {e, pooled, era, diverged: e.n>=ERA_ENOUGH && Math.abs(era-pooled)>=ERA_SPLIT_PT};
+}
+function eraProvenance(n, cal){
   const b = v => `<b class="num">${v.toLocaleString()}</b>`;
   const share = 'measured over the range the two share';
   if(!n) return `None of these settled picks come from the current model yet, so the curve
@@ -4889,6 +4932,19 @@ function eraProvenance(n){
   // "1 of these picks COMES" — the subject is "one of", not "picks"
   if(n < ERA_ENOUGH) return `Only ${b(n)} of these settled picks ${n===1?'comes':'come'} from the
     current model, so the curve above is still effectively the previous generation's, ${share}.`;
+  const g=eraGap(cal);
+  if(g && g.diverged){
+    const sign=v=>(v>0?'+':'')+v.toFixed(1);
+    // g.e.n, not n: `n` is cal.eraN, which counts era picks across the WHOLE
+    // file, and every other figure in this sentence is scoped to the live
+    // range. Mixing the two would put two different denominators in one line.
+    return `${b(g.e.n)} of these settled picks come from the current model, and they do
+      <b>not</b> read the same as the curve above: pooled, the record is
+      <b class="num">${sign(g.pooled)}pt</b>; those ${b(g.e.n)} alone are
+      <b class="num">${sign(g.era)}pt</b> over ${b(g.e.days)} slates. The curve is
+      ${b(cal.n - g.e.n)} well-calibrated picks from the previous generation outvoting them.
+      Read the current-model figure as the live one.`;
+  }
   return `${b(n)} of these settled picks now come from the current model — enough that the
     curve above has started to describe the model actually serving, not only the one before it.`;
 }
@@ -4915,7 +4971,7 @@ function viewHonesty(){
     scale the same way — no slate has produced one since 2026-07-18 — but the 75–80 band below them is
     <b>not</b> retired: the current model still scores there, and it is the worst-calibrated band on
     the page.</p>`:''}
-    <p>${eraProvenance(cal.eraN)}</p></div></div>`;
+    <p>${eraProvenance(cal.eraN, cal)}</p></div></div>`;
   return `${ribbon()}
   <section class="sec">
     ${/* This tab had four heads at identical weight, so nothing on it read as
@@ -4933,6 +4989,29 @@ function viewHonesty(){
       lower is better. The lower marker is the same file unscoped — its
       <b class="num">${((cal.all.baseRate-cal.all.meanP)*100>0?'+':'')+((cal.all.baseRate-cal.all.meanP)*100).toFixed(1)}pt</b>
       is almost entirely the retired bands below ${pct(cal.lo,0)}, which the current model cannot land in.</p>
+    ${/* The headline above pools 135 days. When the generation actually serving
+          disagrees with that pool by more than ERA_SPLIT_PT, the pooled number
+          answers a question nobody is asking — a reader on this tab wants to
+          know whether TONIGHT'S score is honest, and 117 well-calibrated days
+          from a retired model are not evidence about that. So the split is
+          stated here, at the top, rather than left to the provenance note four
+          screens down. It disappears on its own when the two agree again. */''}
+    ${(()=>{const g=eraGap(cal); if(!g||!g.diverged) return '';
+      const sign=v=>(v>0?'+':'')+v.toFixed(1);
+      return `<div class="truth" style="margin-top:12px">${icon(ICONS.info)}<div>
+        <p>That is the whole record. <b>The model serving tonight has done worse.</b>
+        On the <b class="num">${g.e.n.toLocaleString()}</b> picks it has settled since
+        <b>${esc(cal.era)}</b> — <b class="num">${g.e.days}</b> slates — it said
+        <b class="num">${pct(g.e.meanP,1)}</b> and those picks landed
+        <b class="num">${pct(g.e.baseRate,1)}</b>, a gap of
+        <b class="num">${sign(g.era)}pt</b> against the pooled
+        <b class="num">${sign(g.pooled)}pt</b>.</p>
+        <p>Treat a score as ${Math.abs(g.era).toFixed(0)} points optimistic until this closes.
+        The ORDER of the board is unaffected and has if anything improved — this is the
+        printed percentage being high, not the wrong batters being at the top.
+        ${g.e.days<28?`<b class="num">${g.e.days}</b> slates is not yet enough to call it settled:
+        night-to-night variation alone runs about 5pt.`:''}</p>
+      </div></div>`;})()}
   </section>
   <section class="sec">
     ${/* Each chart head keeps its SCOPE on a phone and sheds its how-to-read
