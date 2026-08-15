@@ -3389,9 +3389,11 @@ async function goDate(d){
     return;
   }
   S.live = {}; clearTimeout(liveTimer);
+  archiveStateFor = null; for(const k in archiveState) delete archiveState[k];
   S.preview = {};        // what-ifs belong to the slate they were opened on
   render();
   if(!S.date) loadLive().then(()=>{ render(); scheduleLive(); });
+  else refreshHits().then(render);   // an unsettled archive still needs outcomes
 }
 /** "Since this morning" — the day's highest-value moment is lineup
     confirmation at ~12:00 PT. Nothing server-side records it, so we keep a
@@ -3459,11 +3461,50 @@ async function loadLive(){
    exactly once — and a watched batter's hit gets said out loud. */
 const hitsCache = {};   // gamePk -> {batterId: got a hit}; a final's map never changes
 let hitsPrimed = false, hitsSlate = null;
+/* What the ARCHIVE's own rows say, repaired: gamePk -> detailedState, for an
+   archive frozen mid-game. Deliberately separate from S.live, which stays
+   empty on an archived date — S.live also drives the score ticker, the inning
+   clock and the live pitcher swap, and none of those belong on a past slate. */
+const archiveState = {};
+let archiveStateFor = null;
+/** A row is frozen if the CSV caught its game unfinished. Read off b.gameState
+    and NOT isFinal(), which archiveState is about to answer differently — the
+    question here is "did the snapshot miss the ending", and that stays true
+    after we learn the ending. */
+const frozenRow = b => !/final|game over|completed early/i.test(b.gameState||'');
+async function loadArchiveState(){
+  if(archiveStateFor===S.date) return;
+  archiveStateFor = S.date;
+  for(const k in archiveState) delete archiveState[k];
+  try{
+    const {body} = await get(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${S.date}`,{json:true,timeout:8000});
+    (body.dates?.[0]?.games||[]).forEach(g=>{ archiveState[g.gamePk] = g.status?.detailedState||''; });
+  }catch(e){ /* silent: the frozen state stands, which reads as unanswered */ }
+}
 async function refreshHits(){
-  if(S.date) return;                  // archives carry their own outcomes
-  const started = [...new Set(S.batters.map(b=>b.gamePk))]
-    .filter(pk=>/^(Live|Final)$/.test(S.live[pk]?.abstract||''));
-  const fetchPks = started.filter(pk=>S.live[pk].abstract==='Live' || !hitsCache[pk]);
+  /* "Archived" and "SETTLED" are not the same thing, and assuming they were is
+     what put a confident ✗ on 127 of yesterday's 251 rows. The archive is
+     frozen by the last slate run at 16:00 PT with most games still In
+     Progress, and settle.py does not backfill it until 05:00 PT the next
+     morning — later whenever Actions is queued, which is routine. Every hour
+     in between, yesterday is a past date whose rows carry a stale has_hit=False.
+     So an archive asks MLB the same two questions the live slate does: the
+     schedule for whether each frozen game ended, and one boxscore per frozen
+     game for who hit. Both are needed and neither substitutes for the other —
+     the boxscore alone turns a stale ✗ into a ✓ but leaves a real miss with no
+     mark, because a miss is only knowable once the game is over.
+     A settled archive asks for nothing: all 50 on disk are wholly Final. */
+  const archived = !!S.date;
+  const frozen = archived ? S.batters.filter(frozenRow) : [];
+  if(!frozen.length && archived) return;   // settled archive: nothing to ask
+  if(archived) await loadArchiveState();
+  const started = archived
+    ? [...new Set(frozen.map(b=>b.gamePk))]
+    : [...new Set(S.batters.map(b=>b.gamePk))]
+        .filter(pk=>/^(Live|Final)$/.test(S.live[pk]?.abstract||''));
+  const fetchPks = archived
+    ? started.filter(pk=>!hitsCache[pk])
+    : started.filter(pk=>S.live[pk].abstract==='Live' || !hitsCache[pk]);
   await Promise.all(fetchPks.map(async pk=>{
     try{
       const {body} = await get(`https://statsapi.mlb.com/api/v1/game/${pk}/boxscore`,{json:true,timeout:12000});
@@ -3481,7 +3522,7 @@ async function refreshHits(){
   // News is a transition observed on the SAME slate we last looked at — the
   // first pass of a session (or of a freshly reloaded slate) is baseline, so
   // opening the page at 10pm does not pop-and-toast four hours of history.
-  const news = hitsPrimed && hitsSlate===S.batters;
+  const news = !archived && hitsPrimed && hitsSlate===S.batters;
   const landed = [];
   for(const b of S.batters){
     const m = hitsCache[b.gamePk]; if(!m) continue;
@@ -3736,7 +3777,12 @@ function lineupTag(b){
    Substring on purpose, so a suffixed reason still matches; "Suspended: Rain"
    and "Delayed Start: Rain" contain none of these words and must not match —
    a suspended game gets resumed. */
-const isFinal = b => /final|game over|completed early/i.test(S.live[b.gamePk]?.state||b.gameState||'');
+/** Where a game actually stands, resolved in ONE place and in one order:
+    tonight's ticker, then what an archive frozen mid-game was repaired to,
+    then the state the CSV happened to be written with. Anything that reads
+    b.gameState directly is reading the snapshot's guess. */
+const stateOf = b => S.live[b.gamePk]?.state || archiveState[b.gamePk] || b.gameState || '';
+const isFinal = b => /final|game over|completed early/i.test(stateOf(b));
 /** True once every game has ended — then "final" is a property of the slate,
     not of each batter, and belongs in the ribbon instead of on 270 cards. */
 const slateOver = () => S.batters.length>0 && S.batters.every(isFinal);
@@ -3746,21 +3792,25 @@ const slateOver = () => S.batters.length>0 && S.batters.every(isFinal);
     bare `!hasHit` is never enough. Everywhere a batter appears — shortlist
     row, table row, batting order, game strip, drawer — reads this function
     and draws the same mark, so ✓ and ✗ mean exactly one thing each.
-    An archived CSV carries whatever game_state it was written with (usually
-    pre-game), so any archive from a past day counts as settled wholesale —
-    the same rule the archive ribbon and the drawer already use — which is
-    only sound because settle.py now backfills has_hit into the archive from
-    the settled picks_log. Before that, a snapshot frozen at 16:00 PT with
-    the game still in progress carried has_hit=False, and this line turned
-    that stale False into a confident ✗ beside a drawer that had fetched the
-    real boxscore and said he got two hits.
+    The row's OWN game_state is the sole authority on whether it is answered.
+    This used to fall back on "the archive is from a past day, so it is
+    settled wholesale", which is a different claim and a false one: the
+    snapshot is frozen by the 16:00 PT slate run while games are still in
+    progress, and settle.py does not backfill it until 05:00 PT the next
+    morning at the earliest. Every hour in that window, the fallback turned a
+    stale has_hit=False into a confident ✗ beside a drawer that had fetched
+    the real boxscore and said he got two hits — 127 of 251 rows on
+    2026-08-14, all of them wrong in the same direction. A frozen False is
+    the absence of an answer, not a miss; the fallback is what made it
+    unfalsifiable, so it is gone rather than patched. Every settled archive
+    carries Final on every row and is unaffected.
     `dnp` is the fourth input and the reason it exists: a batter the boxscore
     never listed did not miss, he never batted, so he gets no mark at all —
     the same third state the form strip draws. */
 function outcomeOf(b){
   if(b.hasHit) return 'hit';
   if(b.dnp) return '';
-  return (isFinal(b) || (!!S.date && S.date < TODAY())) ? 'miss' : '';
+  return isFinal(b) ? 'miss' : '';
 }
 /** Still to bat — and NOT simply `!outcomeOf(b)`. A batter the boxscore never
     listed also has no mark, and he is not waiting: `dnp` is only ever written
@@ -3781,7 +3831,7 @@ const watchMark = b => isStarred(b)
   ? `<i class="wmk" role="img" aria-label="on your watchlist" title="On your watchlist">${icon(ICONS.watch)}</i>`
   : '';
 function stateTag(b){
-  const g=S.live[b.gamePk], s=(g?.state||b.gameState||'');
+  const g=S.live[b.gamePk], s=stateOf(b);
   /* Outcome used to be said here, as a solid green `hit ✓` pill on the name
      line. It is gone: the row now RESOLVES (see .bcard[data-out]) instead of
      wearing a badge, and a "final" tag on a resolved row said nothing the ✓/✗
@@ -3924,7 +3974,7 @@ const VIEWS = [
 function ribbon(){
   const bs=S.batters, games=new Set(bs.map(b=>b.gamePk)).size;
   const conf=bs.filter(b=>b.confirmed).length;
-  const live=bs.some(b=>/progress/i.test(S.live[b.gamePk]?.state||b.gameState||''));
+  const live=bs.some(b=>/progress/i.test(stateOf(b)));
   const when = S.modified ? new Date(S.modified) : null;
   const ago = when ? Math.round((Date.now()-when)/60000) : null;
   const over = slateOver();
@@ -4069,7 +4119,7 @@ function gameStripData(){
   const hotCut=hotCutoff();
   const games=[...byGame.entries()].map(([pk,bs])=>{
     const g=S.live[pk]||{};
-    const state=String(g.state||bs[0].gameState||'');
+    const state=String(g.state||archiveState[pk]||bs[0].gameState||'');
     // `abstract` is the authority ('Preview' | 'Live' | 'Final'); the regex on
     // `state` only covers a feed that omits it. Do NOT infer "final" from the
     // score being present — the live feed reports 0–0 for a game that has not
@@ -5145,12 +5195,11 @@ function renderDrawer(){
      case stays below it, frozen, so the two can be read against each other.
      The log loads lazily — kick the fetch here and re-render on arrival,
      guarded so a closed drawer or a stepped-to different batter is a no-op. */
-  /* isFinal covers the live slate; an archived CSV carries whatever
-     game_state it was written with (usually pre-game), so any archive from a
-     past day counts as final wholesale — same rule as the archive ribbon. */
   /* Same rule outcomeOf() applies, named here because the drawer needs the
-     boolean itself for the "What happened" section, not just the mark. */
-  const fin = !!outcomeOf(b) || isFinal(b) || (!!S.date && S.date < TODAY());
+     boolean itself for the "What happened" section, not just the mark. The
+     past-date fallback is gone for the reason given there — an archive frozen
+     mid-game is unanswered, not final. */
+  const fin = !!outcomeOf(b) || isFinal(b);
   const gl = fin ? S.gamelog[b.gamePk] : null;
   if(fin && !gl) loadGameLog(b.gamePk).then(()=>{
     if(!$('#drawer').hidden && S.drawerList[S.drawerIdx]===b) renderDrawer();
