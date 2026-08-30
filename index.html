@@ -3249,7 +3249,18 @@ async function calibration(){
        always the date the game was actually played. 226 of 28,567 settled rows
        — 0.8% — as of 2026-07-26, across 17 postponed games. */
     const once=new Map();
+    let supN=0;   // declared with the loop that increments it, not with the
+                  // counters below — those are read after it runs.
     for(const r of rows){
+      /* A bat dropped from the posted lineup after the run that scored it is
+         not a pick for the game that was played — the slate archive this grid
+         draws for a past date never carried it either. Excluded here to match
+         monitor_calibration.drop_superseded() and slate_reasons.band_history();
+         if these three ever disagree the Honesty tab is quoting a record
+         nothing else recognises. 624 settled rows in MODEL_ERA, worth 2.0pt of
+         the measured gap. See live_slate.log_picks(). */
+      const sup=String(r.superseded||'').trim().toLowerCase();
+      if(sup==='true'||sup==='1'){ if(r.actual_hit==='0'||r.actual_hit==='1') supN++; continue; }
       const k=r.game_pk+'|'+r.batter, prev=once.get(k);
       if(!prev || String(r.date) > String(prev.date)) once.set(k, r);
     }
@@ -3301,7 +3312,7 @@ async function calibration(){
          inside a handful of slates substitutes for more slates. */
       eraLive: en ? {n:en, brier:ebrier/en, baseRate:ehits/en, meanP:esumP/en,
                      days:edays.size} : null,
-      era:MODEL_ERA, eraN, lo:CAL_LO, hi:CAL_HI,
+      era:MODEL_ERA, eraN, supN, lo:CAL_LO, hi:CAL_HI,
       /* `live` = a band the CURRENT model can still land a score in; charted and
          counted in the headline. `pos` says which side a dead band fell off:
          'lo' is the pre-MODEL_ERA floor, 'hi' is the handful of >=80% scores no
@@ -5021,6 +5032,13 @@ function viewHonesty(){
     scale the same way — no slate has produced one since 2026-07-18 — but the 75–80 band below them is
     <b>not</b> retired: the current model still scores there, and it is the worst-calibrated band on
     the page.</p>`:''}
+    ${cal.supN?`<p>A further <b class="num">${cal.supN.toLocaleString()}</b> settled picks are held off this
+    curve for a different reason: the batter came off the posted lineup after the run that scored him,
+    so the score was never live for the game that was played, and the grid for that date never showed
+    him. They hit .263 against a .588 prediction, and counting them would put this curve about
+    <b>2 points</b> worse — so this is an exclusion that flatters the model, and you should know it is
+    being made. It is not a free pass: if you acted on a midday shortlist you may well have backed one
+    of these bats before the lineup changed.</p>`:''}
     <p>${eraProvenance(cal.eraN, cal)}</p></div></div>`;
   return `${ribbon()}
   <section class="sec">
