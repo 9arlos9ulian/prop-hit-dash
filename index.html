@@ -3236,6 +3236,27 @@ const byScore = (a,b) => {
 
 async function calibration(){
   return load('cal', async () => {
+    /* Precomputed by calibration_summary.py in the pipeline (2026-08-30).
+       This function used to fetch picks_log.csv — 3.09 MB, 40,288 rows x 18
+       columns — and parse it here on EVERY load, a 454-484ms blocking task
+       inside a 695-738ms long task (TBT 756-841ms, "poor"). It was the single
+       dominant cost on the page, it ran even for visitors who never opened the
+       Honesty tab, and its entire product is the ~19 KB object below.
+
+       The CSV path is KEPT as a fallback, not as dead code: the public mirror
+       may be running an older push that has no calibration.json, and the
+       Honesty tab going blank there would be a worse regression than the parse
+       it replaces. It also means this could ship without a coordinated deploy.
+       If you change either path, change both — they must return the same
+       shape, and tests/test_calibration_summary.py pins the Python side. */
+    try{
+      const r = await fetch('./calibration.json', {cache:'no-cache'});
+      if(r.ok){
+        const j = await r.json();
+        if(j && typeof j.n === 'number' && Array.isArray(j.bands)) return j;
+      }
+    }catch(e){ /* fall through to the CSV */ }
+
     const {body} = await getAny(['./picks_log.csv','/picks_log.csv'],{timeout:25000});
     const rows = parseCSV(body);
     /* One row per (game_pk, batter), keeping the latest date.
@@ -5155,14 +5176,19 @@ function contextHonesty(){
       <p>It is built from things the model does not train on: career record against tonight's starter,
       the bullpen actually available behind him, the seven gloves actually on the field, and schedule
       wear. Each is true and none is calibrated.</p>
-      <p><b>Its track record, measured 2026-08-18:</b> across <b class="num">5,101</b> settled picks
+      <p><b>Its track record, measured 2026-08-30:</b> across <b class="num">8,028</b> settled picks
       that carried a Context reading, comparing bats the model scored the <i>same</i> — which is the
       only way to see Context rather than the model — the ones Context liked hit
-      <b class="num">61.2%</b> and the ones it disliked hit <b class="num">59.0%</b>. That is
-      <b class="num">+2.1pt</b> in Context's favour with a 95% interval of
-      <b class="num">±2.9pt</b> around it, so the honest reading is <b>still no verdict</b>: the
-      gap is real in the sample and too small to separate from chance. It leans the right way and
-      that is all anyone can say today. Re-measured as the record grows.</p></div></div>
+      <b class="num">61.8%</b> and the ones it disliked hit <b class="num">58.3%</b>, a gap of
+      <b class="num">+3.6pt</b>. Measured across the 33 slates rather than by pooling every pick,
+      which is the honest way to count it, that is <b class="num">+2.8pt</b> with a 95% interval of
+      <b class="num">±2.9pt</b> — so <b>still no verdict</b>, and the gap is up from +2.1pt on a
+      smaller sample two weeks ago. It leans the right way on 21 of 33 nights and that is all anyone
+      can say today.</p>
+      <p class="muted" style="font-size:12px">Why two numbers: picks on one night share a park, an
+      umpire and that night's offence, so counting 7,000 of them as 7,000 independent draws makes
+      the interval look tighter than it is. Pooled, this reads +3.6 ±2.3 and would clear the bar.
+      It does not. The same correction was applied to the calibration monitor the same day.</p></div></div>
   </section>`;
 }
 
