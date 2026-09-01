@@ -40335,7 +40335,7 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-31,824719,702332,Caleb Durbin,BOS,SEA @ BOS,6,0.6768,-186.0,194.0,,65.0,,,,,,
 2026-08-31,824473,630105,Jake Cronenworth,SD,SD @ CIN,2,0.675,,,,,,,,,,
 2026-08-31,824314,666160,Mickey Moniak,COL,BAL @ COL,6,0.7134,-170.0,178.0,,63.0,,,,,,
-2026-08-31,823982,671277,Luis García,NYY,NYY @ LAA,4,0.6742,,,,,,,,,,
+2026-08-31,823982,671277,Luis García,NYY,NYY @ LAA,3,0.6742,,,,,,,,,,
 2026-08-31,822855,643446,Jeff Mcneil,ATH,ATH @ TEX,2,0.674,-186.0,194.0,,65.0,,,,,,
 2026-08-31,824635,661388,William Contreras,MIL,MIL @ CHC,4,0.6738,-212.0,223.0,,68.0,,,,,,
 2026-08-31,824149,670623,Isaac Paredes,HOU,CWS @ HOU,3,0.6738,-163.0,170.0,,62.0,,,,,,
@@ -40359,7 +40359,7 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-31,824911,805811,Bryce Eldridge,SF,SF @ ATL,3,0.6651,,,,,,,,,,
 2026-08-31,822932,666018,Jonathan Aranda,TB,NYM @ TB,2,0.665,-194.0,212.0,,66.0,,,,,,
 2026-08-31,825040,664761,Alec Bohm,PHI,PHI @ AZ,5,0.665,,,,,,,,,,
-2026-08-31,825040,545121,Ildemaro Vargas,AZ,PHI @ AZ,4,0.665,,,,,,,,,,
+2026-08-31,825040,545121,Ildemaro Vargas,AZ,PHI @ AZ,8,0.665,,,,,,,,,,
 2026-08-31,824635,663538,Nico Hoerner,CHC,MIL @ CHC,5,0.6707,-203.0,223.0,,67.0,,,,,,
 2026-08-31,822689,669364,Xavier Edwards,MIA,MIA @ WSH,3,0.6623,,,,,,,,,,True
 2026-08-31,824719,686527,Dominic Canzone,SEA,SEA @ BOS,2,0.661,,,,,,,,,,
@@ -40382,11 +40382,11 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-31,822689,694673,Abimelec Ortiz,WSH,MIA @ WSH,2,0.6446,,,,,,,,,,
 2026-08-31,822855,695720,Tommy White,ATH,ATH @ TEX,5,0.6446,-138.0,144.0,,58.0,,,,,,
 2026-08-31,824911,660670,Ronald Acuña,ATL,SF @ ATL,2,0.6446,,,,,,,,,,
-2026-08-31,823982,663757,Trent Grisham,NYY,NYY @ LAA,1,0.6438,,,,,,,,,,
+2026-08-31,823982,663757,Trent Grisham,NYY,NYY @ LAA,5,0.6438,,,,,,,,,,
 2026-08-31,824911,687551,Drew Gilbert,SF,SF @ ATL,1,0.6436,,,,,,,,,,
 2026-08-31,823663,605137,Josh Bell,MIN,DET @ MIN,5,0.6412,-163.0,170.0,,62.0,,,,,,
 2026-08-31,824149,572233,Christian Walker,HOU,CWS @ HOU,4,0.6541,-138.0,144.0,,58.0,,,,,,
-2026-08-31,825040,672695,Geraldo Perdomo,AZ,PHI @ AZ,5,0.6394,,,,,,,,,,
+2026-08-31,825040,672695,Geraldo Perdomo,AZ,PHI @ AZ,1,0.6394,,,,,,,,,,
 2026-08-31,824719,596115,Trevor Story,BOS,SEA @ BOS,8,0.6394,,,,,,,,,,
 2026-08-31,825040,681082,Bryson Stott,PHI,PHI @ AZ,6,0.6392,,,,,,,,,,
 2026-08-31,822689,660688,Keibert Ruiz,WSH,MIA @ WSH,4,0.638,,,,,,,,,,
@@ -40396,11 +40396,11 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-31,825040,682998,Corbin Carroll,AZ,PHI @ AZ,2,0.6327,-163.0,178.0,,62.0,,,,,,
 2026-08-31,824314,687637,Dylan Beavers,BAL,BAL @ COL,5,0.6283,-186.0,203.0,,65.0,,,,,,
 2026-08-31,823663,650402,Gleyber Torres,DET,DET @ MIN,1,0.632,-186.0,194.0,,65.0,,,,,,
-2026-08-31,823982,700250,Ben Rice,NYY,NYY @ LAA,2,0.632,-163.0,170.0,,62.0,,,,,,
+2026-08-31,823982,700250,Ben Rice,NYY,NYY @ LAA,1,0.632,-163.0,170.0,,62.0,,,,,,
 2026-08-31,824635,608324,Alex Bregman,CHC,MIL @ CHC,3,0.6415,-186.0,194.0,,65.0,,,,,,
 2026-08-31,824149,662139,Daulton Varsho,HOU,CWS @ HOU,5,0.6318,-138.0,144.0,,58.0,,,,,,
 2026-08-31,824473,699302,Héctor Rodríguez,CIN,SD @ CIN,1,0.6317,,,,,,,,,,
-2026-08-31,825040,663457,Lars Nootbaar,AZ,PHI @ AZ,1,0.6308,,,,,,,,,,
+2026-08-31,825040,663457,Lars Nootbaar,AZ,PHI @ AZ,5,0.6308,,,,,,,,,,
 2026-08-31,823663,690993,Colt Keith,DET,DET @ MIN,2,0.6279,-156.0,163.0,,61.0,,,,,,
 2026-08-31,823663,668904,Royce Lewis,MIN,DET @ MIN,7,0.6272,-144.0,156.0,,59.0,,,,,,
 2026-08-31,824635,592885,Christian Yelich,MIL,MIL @ CHC,5,0.6308,-186.0,203.0,,65.0,,,,,,
@@ -40419,7 +40419,7 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-31,824719,680776,Jarren Duran,BOS,SEA @ BOS,7,0.6156,,,,,,,,,,
 2026-08-31,822855,680869,Zack Gelof,ATH,ATH @ TEX,3,0.6147,-117.0,122.0,,54.0,,,,,,
 2026-08-31,824473,593428,Xander Bogaerts,SD,SD @ CIN,6,0.6139,,,,,,,,,,
-2026-08-31,825040,592663,J. T. Realmuto,PHI,PHI @ AZ,8,0.6128,,,,,,,,,,
+2026-08-31,825040,592663,J. T. Realmuto,PHI,PHI @ AZ,8,0.6128,,,,,,,,,,True
 2026-08-31,822932,689414,Liam Hicks,TB,NYM @ TB,4,0.612,,,,,,,,,,
 2026-08-31,823663,701678,Hao-Yu Lee,DET,DET @ MIN,9,0.5582,-144.0,150.0,,59.0,,,,,,
 2026-08-31,824635,673548,Seiya Suzuki,CHC,MIL @ CHC,2,0.6098,-178.0,186.0,,64.0,,,,,,
@@ -40430,7 +40430,7 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-31,823663,693307,Dillon Dingler,DET,DET @ MIN,4,0.6072,-178.0,186.0,,64.0,,,,,,
 2026-08-31,822689,681715,Heriberto Hernandez,MIA,MIA @ WSH,1,0.6069,,,,,,,,,,
 2026-08-31,824719,702284,Cole Young,SEA,SEA @ BOS,7,0.6046,-150.0,156.0,,60.0,,,,,,
-2026-08-31,822689,678391,Jorbit Vivas,WSH,MIA @ WSH,6,0.6039,,,,,,,,,,
+2026-08-31,822689,678391,Jorbit Vivas,WSH,MIA @ WSH,6,0.6039,,,,,,,,,,True
 2026-08-31,824149,643217,Andrew Benintendi,CWS,CWS @ HOU,4,0.6038,-127.0,133.0,,56.0,,,,,,
 2026-08-31,824911,813841,Jonah Cox,SF,SF @ ATL,4,0.6033,,,,,,,,,,
 2026-08-31,824635,683734,Andrew Vaughn,MIL,MIL @ CHC,5,0.6024,,,,,,,,,,True
@@ -40443,8 +40443,8 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-31,824473,668709,Jj Bleday,CIN,SD @ CIN,4,0.5967,,,,,,,,,,
 2026-08-31,824149,808959,Munetaka Murakami,CWS,CWS @ HOU,2,0.5957,-122.0,127.0,,55.0,,,,,,
 2026-08-31,822932,676356,Jonny Deluca,TB,NYM @ TB,7,0.5957,,,,,,,,,,
-2026-08-31,823982,671218,Heliot Ramos,NYY,NYY @ LAA,3,0.5953,,,,,,,,,,
-2026-08-31,822689,665052,Griffin Conine,MIA,MIA @ WSH,5,0.5918,,,,,,,,,,True
+2026-08-31,823982,671218,Heliot Ramos,NYY,NYY @ LAA,3,0.5953,,,,,,,,,,True
+2026-08-31,822689,665052,Griffin Conine,MIA,MIA @ WSH,3,0.5918,,,,,,,,,,
 2026-08-31,824314,678662,Ezequiel Tovar,COL,BAL @ COL,9,0.612,-144.0,150.0,,59.0,,,,,,
 2026-08-31,823663,701785,Kaelen Culpepper,MIN,DET @ MIN,8,0.5911,-144.0,150.0,,59.0,,,,,,
 2026-08-31,824473,666023,Freddy Fermin,SD,SD @ CIN,9,0.5911,,,,,,,,,,True
@@ -40459,10 +40459,10 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-31,824911,683766,Christian Koss,SF,SF @ ATL,9,0.5835,,,,,,,,,,
 2026-08-31,825040,694374,Tim Tawa,AZ,PHI @ AZ,7,0.5835,,,,,,,,,,
 2026-08-31,824149,671976,Tristan Peters,CWS,CWS @ HOU,8,0.5814,-122.0,127.0,,55.0,,,,,,
-2026-08-31,822689,682663,Agustín Ramírez,MIA,MIA @ WSH,3,0.5804,,,,,,,,,,
+2026-08-31,822689,682663,Agustín Ramírez,MIA,MIA @ WSH,3,0.5804,,,,,,,,,,True
 2026-08-31,822855,666126,Carlos Cortes,ATH,ATH @ TEX,7,0.568,-100.0,104.0,,50.0,,,,,,
 2026-08-31,823982,695681,Christian Moore,LAA,NYY @ LAA,6,0.5793,,,,,,,,,,
-2026-08-31,823982,642350,José Siri,LAA,NYY @ LAA,5,0.579,,,,,,,,,,
+2026-08-31,823982,642350,José Siri,LAA,NYY @ LAA,5,0.579,,,,,,,,,,True
 2026-08-31,824911,669221,Sean Murphy,ATL,SF @ ATL,7,0.5744,,,,,,,,,,
 2026-08-31,825040,702222,Justin Crawford,PHI,PHI @ AZ,8,0.5782,,,,,,,,,,
 2026-08-31,822855,671732,Lawrence Butler,ATH,ATH @ TEX,4,0.5735,-113.0,117.0,,53.0,,,,,,
@@ -40475,11 +40475,11 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-31,824149,695657,Colson Montgomery,CWS,CWS @ HOU,6,0.5647,-108.0,113.0,,52.0,,,,,,
 2026-08-31,823663,703601,Max Clark,DET,DET @ MIN,8,0.5737,-138.0,144.0,,58.0,,,,,,
 2026-08-31,824149,701358,Cam Smith,HOU,CWS @ HOU,6,0.6044,-138.0,150.0,,58.0,,,,,,
-2026-08-31,823982,682987,Spencer Jones,NYY,NYY @ LAA,5,0.5624,,,,,,,,,,
+2026-08-31,823982,682987,Spencer Jones,NYY,NYY @ LAA,7,0.5624,,,,,,,,,,
 2026-08-31,822932,656775,Cedric Mullins,TB,NYM @ TB,6,0.5601,,,,,,,,,,
 2026-08-31,824149,545341,Randal Grichuk,CWS,CWS @ HOU,9,0.5571,,,,,,,,,,True
 2026-08-31,822855,679822,Justin Foscue,TEX,ATH @ TEX,6,0.5396,-108.0,113.0,,52.0,,,,,,
-2026-08-31,823982,806146,George Lombard,NYY,NYY @ LAA,6,0.554,,,,,,,,,,
+2026-08-31,823982,806146,George Lombard,NYY,NYY @ LAA,6,0.554,,,,,,,,,,True
 2026-08-31,822932,673357,Luis Robert,NYM,NYM @ TB,6,0.5537,,,,,,,,,,True
 2026-08-31,824719,641487,J. P. Crawford,SEA,SEA @ BOS,9,0.5537,,,,,,,,,,
 2026-08-31,824473,553993,Eugenio Suárez,CIN,SD @ CIN,6,0.5537,,,,,,,,,,
@@ -40488,9 +40488,9 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-31,822689,677870,Leo Jimenez,MIA,MIA @ WSH,6,0.5484,,,,,,,,,,
 2026-08-31,822932,543760,Marcus Semien,NYM,NYM @ TB,7,0.5483,,,,,,,,,,
 2026-08-31,823982,666139,Josh Lowe,LAA,NYY @ LAA,7,0.5483,,,,,,,,,,
-2026-08-31,823982,694203,Denzer Guzman,LAA,NYY @ LAA,8,0.5436,,,,,,,,,,
+2026-08-31,823982,694203,Denzer Guzman,LAA,NYY @ LAA,8,0.5436,,,,,,,,,,True
 2026-08-31,824314,665966,Carlos Narváez,BAL,BAL @ COL,9,0.5435,,,,,,,,,,True
-2026-08-31,823982,665862,Jazz Chisholm,NYY,NYY @ LAA,7,0.5396,-122.0,127.0,,55.0,,,,,,
+2026-08-31,823982,665862,Jazz Chisholm,NYY,NYY @ LAA,6,0.5396,-122.0,127.0,,55.0,,,,,,
 2026-08-31,824314,691728,Zac Veen,COL,BAL @ COL,9,0.5389,,,,,,,,,,True
 2026-08-31,824635,666152,David Hamilton,MIL,MIL @ CHC,8,0.5483,-127.0,144.0,,56.0,,,,,,
 2026-08-31,822932,670764,Taylor Walls,TB,NYM @ TB,9,0.537,,,,,,,,,,
@@ -40499,22 +40499,22 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-31,824719,663728,Cal Raleigh,SEA,SEA @ BOS,4,0.5357,-113.0,117.0,,53.0,,,,,,
 2026-08-31,825040,814439,Ryan Waldschmidt,AZ,PHI @ AZ,9,0.5357,,,,,,,,,,
 2026-08-31,822855,683227,Cody Freeman,TEX,ATH @ TEX,8,0.5348,-117.0,122.0,,54.0,,,,,,
-2026-08-31,823982,676609,José Caballero,NYY,NYY @ LAA,9,0.53,,,,,,,,,,
+2026-08-31,823982,676609,José Caballero,NYY,NYY @ LAA,8,0.53,,,,,,,,,,
 2026-08-31,822855,694497,Evan Carter,TEX,ATH @ TEX,7,0.53,,,,,,,,,,True
 2026-08-31,824635,608348,Carson Kelly,CHC,MIL @ CHC,7,0.5567,-138.0,144.0,,58.0,,,,,,
 2026-08-31,824635,664023,Ian Happ,CHC,MIL @ CHC,5,0.53,,,,,,,,,,True
 2026-08-31,822932,682626,Francisco Álvarez,NYM,NYM @ TB,9,0.5282,,,,,,,,,,
 2026-08-31,824473,670770,Tj Friedl,CIN,SD @ CIN,8,0.5275,,,,,,,,,,
-2026-08-31,825040,691783,Jordan Lawlar,AZ,PHI @ AZ,8,0.522,,,,,,,,,,
+2026-08-31,825040,691783,Jordan Lawlar,AZ,PHI @ AZ,8,0.522,,,,,,,,,,True
 2026-08-31,824911,801501,Nate Furman,SF,SF @ ATL,8,0.5205,,,,,,,,,,
 2026-08-31,822855,622268,Donovan Walton,ATH,ATH @ TEX,9,0.5205,,,,,,,,,,True
-2026-08-31,823982,518595,Travis D'Arnaud,LAA,NYY @ LAA,9,0.5122,,,,,,,,,,
+2026-08-31,823982,518595,Travis D'Arnaud,LAA,NYY @ LAA,9,0.5122,,,,,,,,,,True
 2026-08-31,822855,691777,Max Muncy,ATH,ATH @ TEX,6,0.5362,,,,,,,,,,
 2026-08-31,824149,666211,Taylor Trammell,HOU,CWS @ HOU,8,0.507,,,,,,,,,,True
 2026-08-31,824635,624424,Michael Conforto,CHC,MIL @ CHC,8,0.5036,,,,,,,,,,True
 2026-08-31,823663,814430,Brett Callahan,DET,DET @ MIN,5,0.5598,-122.0,127.0,,55.0,,,,,,
 2026-08-31,823663,679529,Spencer Torkelson,DET,DET @ MIN,7,0.5022,-113.0,122.0,,53.0,,,,,,
-2026-08-31,823982,669224,Austin Wells,NYY,NYY @ LAA,8,0.5021,,,,,,,,,,
+2026-08-31,823982,669224,Austin Wells,NYY,NYY @ LAA,9,0.5021,,,,,,,,,,
 2026-08-31,822855,592626,Joc Pederson,TEX,ATH @ TEX,9,0.502,,,,,,,,,,True
 2026-08-31,822932,683146,Brett Baty,NYM,NYM @ TB,8,0.4887,,,,,,,,,,True
 2026-08-31,822689,665923,Esteury Ruiz,MIA,MIA @ WSH,8,0.4887,,,,,,,,,,
@@ -40548,3 +40548,7 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-08-31,824635,807713,Matt Shaw,CHC,MIL @ CHC,9,0.4887,-104.0,108.0,,51.0,,,,,,
 2026-08-31,822689,640459,Brian Navarreto,MIA,MIA @ WSH,9,0.4887,144.0,-104.0,,41.0,,,,,,
 2026-08-31,824149,668670,Jake Rogers,CWS,CWS @ HOU,9,0.4887,122.0,-108.0,,45.0,,,,,,
+2026-08-31,825040,606466,Ketel Marte,AZ,PHI @ AZ,4,0.6615,-156.0,203.0,,61.0,,,,,,
+2026-08-31,823982,641355,Cody Bellinger,NYY,NYY @ LAA,2,0.6364,-9900.0,9900.0,,99.0,,,,,,
+2026-08-31,823982,642708,Amed Rosario,NYY,NYY @ LAA,4,0.5832,-9900.0,9900.0,,99.0,,,,,,
+2026-08-31,822689,677588,José Tena,WSH,MIA @ WSH,6,0.5357,,,,,,,,,,
