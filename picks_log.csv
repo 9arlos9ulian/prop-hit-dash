@@ -44059,7 +44059,7 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-09-13,823171,592518,Manny Machado,SD,SD @ SF,3,0.641,-203.0,212.0,,67.0,,,,,,
 2026-09-13,822682,687263,Zach Neto,LAA,LAA @ WSH,1,0.6404,-186.0,194.0,,65.0,,,,,,
 2026-09-13,823495,666182,Bo Bichette,NYM,NYM @ NYY,3,0.6395,-186.0,194.0,,65.0,,,,,,
-2026-09-13,824952,702284,Cole Young,SEA,SEA @ ATH,7,0.6395,-156.0,170.0,,61.0,,,,,,True
+2026-09-13,824952,702284,Cole Young,SEA,SEA @ ATH,7,0.6395,-156.0,170.0,,61.0,,,,,,
 2026-09-13,823658,668904,Royce Lewis,MIN,CLE @ MIN,6,0.6395,-138.0,163.0,,58.0,,,,,,True
 2026-09-13,824225,682985,Riley Greene,DET,COL @ DET,4,0.638,-178.0,233.0,,64.0,,,,,,
 2026-09-13,823008,805367,Chase Meidroth,CWS,CWS @ STL,7,0.638,-186.0,194.0,,65.0,,,,,,
@@ -44255,7 +44255,7 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-09-13,822928,676369,Nelson Velázquez,HOU,HOU @ TB,2,0.5614,,,,,,,,,,
 2026-09-13,822928,678489,Jorge Barrosa,HOU,HOU @ TB,7,0.5609,,,,,,,,,,
 2026-09-13,825033,553869,Elías Díaz,TEX,TEX @ AZ,8,0.5546,,,,,,,,,,
-2026-09-13,824952,703197,Michael Arroyo,SEA,SEA @ ATH,7,0.5534,,,,,,,,,,
+2026-09-13,824952,703197,Michael Arroyo,SEA,SEA @ ATH,7,0.5534,,,,,,,,,,True
 2026-09-13,825033,643376,Danny Jansen,TEX,TEX @ AZ,9,0.5236,,,,,,,,,,
 2026-09-13,824708,681987,Nate Eaton,BOS,KC @ BOS,9,0.5199,117.0,-100.0,,46.0,,,,,,
 2026-09-13,824952,642215,Weston Wilson,SEA,SEA @ ATH,8,0.509,178.0,-144.0,,36.0,,,,,,
