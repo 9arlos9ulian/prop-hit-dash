@@ -46116,7 +46116,7 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-09-20,822922,702332,Caleb Durbin,BOS,BOS @ TB,6,0.595,-144.0,156.0,,59.0,,,,,,
 2026-09-20,822922,810938,Ben Williamson,TB,BOS @ TB,6,0.5931,-163.0,178.0,,62.0,,,,,,
 2026-09-20,824381,663993,Nathaniel Lowe,CLE,ATH @ CLE,6,0.5916,-117.0,133.0,,54.0,,,,,,
-2026-09-20,824546,643217,Andrew Benintendi,CWS,DET @ CWS,5,0.5914,-117.0,133.0,,54.0,,,,,,
+2026-09-20,824546,643217,Andrew Benintendi,CWS,DET @ CWS,5,0.5914,-117.0,133.0,,54.0,,,,,,True
 2026-09-20,824381,695720,Tommy White,ATH,ATH @ CLE,6,0.5909,-113.0,117.0,,53.0,,,,,,
 2026-09-20,822922,686765,Nick Sogard,BOS,BOS @ TB,5,0.5909,-133.0,138.0,,57.0,,,,,,
 2026-09-20,823001,694673,Abimelec Ortiz,WSH,WSH @ STL,3,0.5909,,,,,,,,,,True
@@ -46135,7 +46135,7 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-09-20,824381,680869,Zack Gelof,ATH,ATH @ CLE,4,0.58,-104.0,113.0,,51.0,,,,,,
 2026-09-20,825028,694374,Tim Tawa,AZ,NYY @ AZ,9,0.58,,,,,,,,,,
 2026-09-20,824789,683002,Gunnar Henderson,BAL,MIL @ BAL,3,0.6017,-117.0,122.0,,54.0,,,,,,
-2026-09-20,825028,545121,Ildemaro Vargas,AZ,NYY @ AZ,8,0.5772,,,,,,,,,,True
+2026-09-20,825028,545121,Ildemaro Vargas,AZ,NYY @ AZ,8,0.5772,,,,,,,,,,
 2026-09-20,824789,687952,Christian Encarnacion-Strand,BAL,MIL @ BAL,5,0.5772,,,,,,,,,,True
 2026-09-20,823570,682626,Francisco Álvarez,NYM,PHI @ NYM,7,0.5767,-108.0,113.0,,52.0,,,,,,
 2026-09-20,823001,665953,Andrés Chaparro,WSH,WSH @ STL,2,0.5764,,,,,,,,,,
@@ -46207,7 +46207,7 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-09-20,824789,681297,Colton Cowser,BAL,MIL @ BAL,7,0.5071,,,,,,,,,,
 2026-09-20,823247,665923,Esteury Ruiz,MIA,MIA @ SD,8,0.4961,,,,,,,,,,True
 2026-09-20,822844,678218,Brandon Valenzuela,TOR,TOR @ TEX,8,0.493,,,,,,,,,,
-2026-09-20,822844,669701,Josh Smith,TOR,TOR @ TEX,6,0.4927,,,,,,,,,,
+2026-09-20,822844,669701,Josh Smith,TOR,TOR @ TEX,6,0.4927,,,,,,,,,,True
 2026-09-20,823975,666139,Josh Lowe,LAA,MIN @ LAA,7,0.4923,,,,,,,,,,
 2026-09-20,823329,571912,Luke Maile,KC,KC @ PIT,8,0.4921,108.0,-104.0,,48.0,,,,,,
 2026-09-20,822844,694497,Evan Carter,TEX,TOR @ TEX,9,0.4833,,,,,,,,,,
@@ -46238,8 +46238,10 @@ date,game_pk,batter,name,team,matchup,slot,p_hit,hit_odds,no_hit_odds,actual_hit
 2026-09-20,823247,691277,Deyvison De Los Santos,MIA,MIA @ SD,9,0.5153,178.0,-170.0,,36.0,,,,,,
 2026-09-20,823975,805346,Benjamin Ross,MIN,MIN @ LAA,9,0.515,,,,,,,,,,
 2026-09-20,823001,683083,Nasim Nuñez,WSH,WSH @ STL,9,0.5111,,,,,,,,,,
-2026-09-20,825028,656976,Pavin Smith,AZ,NYY @ AZ,8,0.51,150.0,-138.0,,40.0,,,,,,
+2026-09-20,825028,656976,Pavin Smith,AZ,NYY @ AZ,8,0.51,150.0,-138.0,,40.0,,,,,,True
 2026-09-20,823896,814154,Scott Bandura,SF,SF @ LAD,6,0.5068,257.0,-212.0,,28.0,,,,,,
 2026-09-20,823896,676439,Hunter Feduccia,LAD,SF @ LAD,9,0.4915,233.0,-203.0,,30.0,,,,,,
 2026-09-20,824789,665966,Carlos Narváez,BAL,MIL @ BAL,9,0.4077,,,,,,,,,,
 2026-09-20,823896,687529,Grant Mccray,SF,SF @ LAD,8,0.4062,,,,,,,,,,
+2026-09-20,824546,545341,Randal Grichuk,CWS,DET @ CWS,5,0.622,,,,,,,,,,
+2026-09-20,822844,807727,Charles Mcadoo,TOR,TOR @ TEX,6,0.5345,,,,,,,,,,
