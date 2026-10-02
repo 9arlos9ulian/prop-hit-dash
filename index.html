@@ -3374,6 +3374,25 @@ const S = {                                   // app state
   preview:{}
 };
 const TODAY = () => new Date().toLocaleDateString('en-CA');   // local, not UTC
+/* Offseason mode (2026-10-02). When the slate pipeline is switched off for the
+   winter, tonight_p_hit.csv simply stops changing — nothing deletes it — so the
+   page went on presenting the season's last slate as "Tonight", frozen
+   mid-game, indefinitely. The trigger is the AGE of that file's own games, not
+   a calendar: the All-Star break is the longest in-season gap (~4 days), so
+   OFFSEASON_DAYS clears it, and the first spring slate run turns the mode off
+   without anyone touching the page. */
+const OFFSEASON_DAYS = 7;
+/** ISO date of a slate's games. game_date is "dd/mm" with no year, so the year
+    is the latest one that does not put the date in the future. */
+function slateDay(bs){
+  const g=(bs.find(b=>b.raw?.game_date)?.raw.game_date||'').match(/^(\d{1,2})\/(\d{1,2})$/);
+  if(!g) return '';
+  const today=TODAY(); let y=+today.slice(0,4);
+  const iso=yr=>`${yr}-${g[2].padStart(2,'0')}-${g[1].padStart(2,'0')}`;
+  if(iso(y) > today) y--;
+  return iso(y);
+}
+const daysBetween = (a,b) => Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5);
 
 async function loadSlate(){
   // Tonight is the live file; any other date comes from the slates/ archive.
@@ -3390,6 +3409,10 @@ async function loadSlate(){
   applyContext(S.batters);
   S._rank = null;
   S.modified = modified;
+  if(!S.date){
+    const d=slateDay(S.batters);
+    S.offseason = d && daysBetween(d,TODAY())>=OFFSEASON_DAYS ? d : '';
+  }
   // The snapshot is a per-day "what changed since this morning" baseline for
   // the LIVE slate. Running it on an archive would diff a finished day against
   // today's baseline and — worse — overwrite that baseline with archived rows.
@@ -4065,6 +4088,25 @@ function viewHead({title, n, sub, action}){
 }
 
 /* ── Today ─────────────────────────────────────────────────────────── */
+/** Top of Today while the season is over: what happened, in the record's own
+    numbers, instead of a frozen slate pretending to be tonight. Everything here
+    is already in calibration.json; nothing new is computed. Without it (older
+    mirror push, failed fetch) the card still says the season is over. */
+function offseasonCard(){
+  if(!S.offseason) return '';
+  const cal=S.cal;
+  const days=cal?.days?.length;
+  const rec = cal ? `<p class="muted" style="margin-top:8px">Across <b class="num">${cal.n.toLocaleString()}</b> settled
+      picks${days?` over <b class="num">${days}</b> slates`:''} since ${esc(cal.since||'')}, the scores said
+      <b class="num">${pct(cal.meanP,1)}</b> and those batters got a hit
+      <b class="num">${pct(cal.baseRate,1)}</b> of the time.</p>` : '';
+  return `<section class="sec">
+    ${viewHead({title:'The season is over',
+      sub:'Mochi scores again when the first spring lineups post. Nothing on this page updates until then.',
+      action:{go:'honesty', label:'Full record'}})}
+    ${rec}
+  </section>`;
+}
 function viewToday(){
   const ranked=[...S.batters].sort(byScore);
   const short=ranked.slice(0,10);
@@ -4084,10 +4126,10 @@ function viewToday(){
      so, and the gap between #1 and #10 is usually a couple of points. */
   const lead = short.slice(0,4), tail = short.slice(4);
 
-  return `${ribbon()}
+  return `${offseasonCard()}${ribbon()}
   <section class="sec lead">
     ${viewHead({
-      title: S.date?'Shortlist':"Tonight's shortlist",
+      title: S.offseason && S.date===S.offseason ? 'The season’s last shortlist' : S.date?'Shortlist':"Tonight's shortlist",
       n: `top <b>${short.length}</b> of ${S.batters.length}`,
       sub: 'Highest calibrated hit probability on the slate',
       action: {go:'batters', label:`All ${S.batters.length}`}})}
@@ -5416,23 +5458,29 @@ function renderDateSel(){
   // Nothing to pick between → no control at all. This is the mirror's normal
   // state when slates_index.json hasn't shipped yet, and an empty dropdown
   // reads as broken.
-  const dates = S.dates.filter(d=>d!==today);
-  if(!dates.length){ sel.hidden = true; return; }
+  // Offseason: there is no "Tonight" to go back to; the last slate's own date
+  // is the home position, so it is listed as a date like the others.
+  const dates = S.dates.filter(d=>d!==today && !(S.offseason && d===S.offseason));
+  if(!dates.length && !S.offseason){ sel.hidden = true; return; }
   sel.hidden = false;
-  sel.classList.toggle('past', !!S.date);
-  sel.innerHTML = `<option value="">Tonight</option>` +
+  sel.classList.toggle('past', !!S.date && S.date!==S.offseason);
+  sel.innerHTML = (S.offseason ? `<option value="${S.offseason}">${esc(dateLabel(S.offseason))} · last</option>`
+                               : `<option value="">Tonight</option>`) +
     dates.map(d=>`<option value="${d}" ${S.date===d?'selected':''}>${esc(dateLabel(d))}</option>`).join('');
   sel.value = S.date;
 }
 /** Shown on every view while an archive is loaded — the board otherwise looks
     exactly like tonight, which is how you end up reading Tuesday as today. */
 function dateBar(){
+  if(S.offseason && (!S.date || S.date===S.offseason)) return `<div class="datebar">
+    <span><b>Offseason.</b> No games until spring. This is the season's last slate,
+    <b>${esc(dateLabel(S.offseason,true))}</b>.</span></div>`;
   if(!S.date) return '';
   const future = S.date > TODAY();
   return `<div class="datebar">
     <span>${future?'Previewing':'Viewing'} <b>${esc(dateLabel(S.date,true))}</b>${
       future ? ' — estimated lineups, not final' : ' — a finished slate, scores frozen as of first pitch'}</span>
-    <button class="lnk" id="dback">Back to tonight →</button>
+    <button class="lnk" id="dback">${S.offseason?'Back to the last slate →':'Back to tonight →'}</button>
   </div>`;
 }
 function renderNav(){
@@ -5825,7 +5873,7 @@ function wireView(){
   $$('#clearf,#clearf2').forEach(el=>el.addEventListener('click',clearBat));
   const mw=$('#morewatch'); if(mw) mw.addEventListener('click',()=>{ S.watchShowAll=true; render(); });
   const cl=$('#clearl'); if(cl) cl.addEventListener('click',()=>{ S.lq=''; render(); });
-  const back=$('#dback'); if(back) back.addEventListener('click',()=>goDate(''));
+  const back=$('#dback'); if(back) back.addEventListener('click',()=>goDate(S.offseason||''));
   $$('[data-star]').forEach(el=>el.addEventListener('click',ev=>{
     ev.stopPropagation();          // a table star sits INSIDE tr[data-k]
     toggleStar(el.dataset.star, el.dataset.name);
@@ -5923,6 +5971,14 @@ async function boot(force){
   const h=resolveView(location.hash.slice(1)); if(VIEWS.some(v=>v.id===h)) S.view=h;
   try{
     await loadSlate();
+    // The live file is the season's last slate. Re-open it as that date's
+    // ARCHIVE, which settle backfilled with real outcomes and which the page
+    // already knows to label as a finished day. No archive → keep the live
+    // file; the offseason banner still says what it is.
+    if(S.offseason){
+      S.date=S.offseason;
+      try{ await loadSlate(); }catch(e){ S.date=''; await loadSlate(); }
+    }
   }catch(e){
     $('#main').innerHTML=`<div class="empty">Couldn't load tonight's slate.<br>
       <span style="font-size:12.5px">${esc(e.message)}</span></div>`;
